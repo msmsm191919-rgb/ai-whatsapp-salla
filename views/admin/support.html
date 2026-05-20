@@ -1,0 +1,78 @@
+{% extends 'admin/layout.html' %}
+
+{% block content %}
+<div class="space-y-6">
+    <div class="flex justify-between items-end">
+        <div>
+            <h2 class="text-2xl font-bold text-gray-900">تذاكر الدعم الفني</h2>
+            <p class="text-gray-500 text-sm">إدارة شكاوى واقتراحات العملاء والرد عليها.</p>
+        </div>
+        <div class="flex gap-2">
+            <span class="bg-red-100 text-red-600 px-3 py-1 rounded-full text-xs font-bold shadow-sm">
+                <i class="fa-solid fa-fire ml-1"></i> 5 عاجلة
+            </span>
+            <span class="bg-blue-100 text-blue-600 px-3 py-1 rounded-full text-xs font-bold shadow-sm">
+                <i class="fa-solid fa-clock ml-1"></i> 12 قيد الانتظار
+            </span>
+        </div>
+    </div>
+
+    <!-- Tickets List -->
+    <div class="space-y-4">
+
+        <!-- Ticket 1 (Urgent) -->
+        <div
+            class="bg-white rounded-xl border border-red-200 p-5 shadow-sm hover:translate-x-1 transition-transform border-r-4 border-r-red-500 cursor-pointer group">
+            <div class="flex justify-between items-start">
+                <div>
+                    <h3
+                        class="font-bold text-lg text-gray-800 flex items-center gap-2 group-hover:text-red-700 transition">
+                        مشكلة في استلام الرسائل
+                        <span class="text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-bold">عاجل
+                            جداً</span>
+                    </h3>
+                    <p class="text-sm text-gray-500 mt-1">متجر الأناقة (ID: 55122) - يواجه مشكلة منذ 3 ساعات</p>
+                </div>
+                <span class="text-xs text-gray-400 font-bold">منذ 15 دقيقة</span>
+            </div>
+
+            <p class="text-gray-600 mt-3 text-sm line-clamp-2">الرسائل لا تصل للعملاء وتظهر علامة "فشل الإرسال" في
+                الداشبورد. قمنا بتجديد الـ Token ولكن المشكلة مستمرة. الرجاء التدخل فوراً.</p>
+
+            <div class="mt-4 flex gap-3 text-xs border-t border-gray-100 pt-3">
+                <button class="text-teal-600 font-bold hover:underline"><i class="fa-solid fa-reply ml-1"></i> الرد
+                    (سريع)</button>
+                <button class="text-gray-500 font-bold hover:text-gray-800"><i class="fa-solid fa-eye ml-1"></i> عرض
+                    التفاصيل</button>
+            </div>
+        </div>
+
+        <!-- Ticket 2 (Normal) -->
+        <div
+            class="bg-white rounded-xl border border-gray-200 p-5 shadow-sm hover:translate-x-1 transition-transform border-r-4 border-r-gray-300 cursor-pointer">
+            <div class="flex justify-between items-start">
+                <div>
+                    <h3 class="font-bold text-lg text-gray-800 flex items-center gap-2">
+                        كيف أفعل الرد الآلي؟
+                        <span
+                            class="text-[10px] bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full font-bold">استفسار</span>
+                    </h3>
+                    <p class="text-sm text-gray-500 mt-1">قهوة الصباح (ID: 11029)</p>
+                </div>
+                <span class="text-xs text-gray-400 font-bold">منذ ساعتين</span>
+            </div>
+
+            <p class="text-gray-600 mt-3 text-sm line-clamp-2">حاولت تفعيل الخاصية من الاعدادات لكن ما يظهر لي الخيار.
+                هل يحتاج باقة أعلى؟</p>
+
+            <div class="mt-4 flex gap-3 text-xs border-t border-gray-100 pt-3">
+                <button class="text-teal-600 font-bold hover:underline"><i class="fa-solid fa-reply ml-1"></i>
+                    الرد</button>
+                <button class="text-gray-500 font-bold hover:text-gray-800"><i class="fa-solid fa-eye ml-1"></i> عرض
+                    التفاصيل</button>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

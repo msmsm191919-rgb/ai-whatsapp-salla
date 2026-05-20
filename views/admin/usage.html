@@ -1,0 +1,124 @@
+{% extends 'admin/layout.html' %}
+
+{% block content %}
+<div class="space-y-6">
+    <div class="flex justify-between items-end">
+        <div>
+            <h2 class="text-2xl font-bold text-gray-900">استهلاك الموارد</h2>
+            <p class="text-gray-500 text-sm">مراقبة تفصيلية لاستهلاك المتاجر وحدود الـ API والذكاء الاصطناعي.</p>
+        </div>
+        <div class="flex gap-2">
+            <span class="bg-blue-100 text-blue-700 font-bold px-3 py-1 rounded-full text-xs">
+                خوادم Meta API: <span class="bg-green-500 rounded-full w-2 h-2 inline-block mx-1"></span> متصلة
+            </span>
+            <span class="bg-purple-100 text-purple-700 font-bold px-3 py-1 rounded-full text-xs">
+                OpenAI: <span class="bg-green-500 rounded-full w-2 h-2 inline-block mx-1"></span> مستقر
+            </span>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <!-- Message Quota -->
+        <div class="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+            <div class="flex justify-between items-start mb-4">
+                <div>
+                    <p class="text-xs font-bold text-gray-400 mb-1">إجمالي الرسائل (شهر)</p>
+                    <h3 class="text-2xl font-bold text-gray-900">142,500</h3>
+                </div>
+                <div class="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-lg flex items-center justify-center">
+                    <i class="fa-solid fa-paper-plane"></i>
+                </div>
+            </div>
+            <div class="w-full bg-gray-100 rounded-full h-1.5 mb-2">
+                <div class="bg-indigo-500 h-1.5 rounded-full" style="width: 75%"></div>
+            </div>
+            <p class="text-[10px] text-gray-500">75% من الحد الكلي للإرسال</p>
+        </div>
+
+        <!-- AI Tokens -->
+        <div class="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+            <div class="flex justify-between items-start mb-4">
+                <div>
+                    <p class="text-xs font-bold text-gray-400 mb-1">استهلاك AI Tokens</p>
+                    <h3 class="text-2xl font-bold text-gray-900">24.5M</h3>
+                </div>
+                <div class="w-10 h-10 bg-purple-50 text-purple-600 rounded-lg flex items-center justify-center">
+                    <i class="fa-solid fa-brain"></i>
+                </div>
+            </div>
+            <div class="w-full bg-gray-100 rounded-full h-1.5 mb-2">
+                <div class="bg-purple-500 h-1.5 rounded-full" style="width: 45%"></div>
+            </div>
+            <p class="text-[10px] text-gray-500">معدل طبيعي (أعلى 5% هذا الشهر)</p>
+        </div>
+
+        <!-- Costs -->
+        <div class="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+            <div class="flex justify-between items-start mb-4">
+                <div>
+                    <p class="text-xs font-bold text-gray-400 mb-1">تكلفة API التقديرية</p>
+                    <h3 class="text-2xl font-bold text-gray-900">$420</h3>
+                </div>
+                <div class="w-10 h-10 bg-green-50 text-green-600 rounded-lg flex items-center justify-center">
+                    <i class="fa-solid fa-file-invoice-dollar"></i>
+                </div>
+            </div>
+            <p class="text-[10px] text-red-500 font-bold mt-2"><i class="fa-solid fa-arrow-trend-up"></i> +$50 عن الشهر
+                الماضي</p>
+        </div>
+
+        <!-- Errors -->
+        <div class="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+            <div class="flex justify-between items-start mb-4">
+                <div>
+                    <p class="text-xs font-bold text-gray-400 mb-1">نسبة الفشل</p>
+                    <h3 class="text-2xl font-bold text-gray-900">0.05%</h3>
+                </div>
+                <div class="w-10 h-10 bg-red-50 text-red-600 rounded-lg flex items-center justify-center">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                </div>
+            </div>
+            <p class="text-[10px] text-green-500 font-bold mt-2">ممتاز (هدف < 1%)</p>
+        </div>
+    </div>
+
+    <!-- Usage By Tenant Table -->
+    <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-100 bg-gray-50">
+            <h3 class="font-bold text-gray-800">تفاصيل استهلاك المتاجر</h3>
+        </div>
+        <table class="w-full text-right">
+            <thead class="bg-gray-50 text-gray-500 text-xs font-medium border-b border-gray-200">
+                <tr>
+                    <th class="px-6 py-3">المتجر</th>
+                    <th class="px-6 py-3">عدد الرسائل</th>
+                    <th class="px-6 py-3">AI Requests</th>
+                    <th class="px-6 py-3">حالة الحد</th>
+                    <th class="px-6 py-3">إجراء</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+                <!-- Mock Rows -->
+                {% for i in range(1, 6) %}
+                <tr class="hover:bg-gray-50 transition">
+                    <td class="px-6 py-4 font-bold text-gray-700">متجر تجريبي {{ i }}</td>
+                    <td class="px-6 py-4">{{ i * 1250 }}</td>
+                    <td class="px-6 py-4">{{ i * 800 }}</td>
+                    <td class="px-6 py-4">
+                        {% if i == 4 %}
+                        <span class="bg-red-100 text-red-700 px-2 py-1 rounded text-xs font-bold">تجاوز الحد</span>
+                        {% else %}
+                        <span class="bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-bold">طبيعي</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4">
+                        <button class="text-teal-600 hover:underline text-xs font-bold">التفاصيل</button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+</div>
+{% endblock %}

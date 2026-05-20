@@ -1,2 +1,72 @@
+# ═══════════════════════════════════════════════════
+# 🔒 Secrets & Credentials — ممنوع تسليمها أو رفعها
+# ═══════════════════════════════════════════════════
 .env
-node_modules
+.env.local
+.env.production
+*.pem
+*.key
+*.cert
+
+# ═══════════════════════════════════════════════════
+# 💾 Database Files — تحتوي بيانات عملاء حقيقية
+# ═══════════════════════════════════════════════════
+*.sqlite
+*.sqlite-journal
+*.sqlite3
+*.db
+database/*.sqlite
+database/*.sqlite-journal
+database/backups/
+
+# ═══════════════════════════════════════════════════
+# 📱 WhatsApp Session — بيانات دخول وكوكيز (سرّية!)
+# ═══════════════════════════════════════════════════
+.wwebjs_auth/
+.wwebjs_cache/
+
+# ═══════════════════════════════════════════════════
+# 📦 Dependencies & Build artifacts
+# ═══════════════════════════════════════════════════
+node_modules/
+dist/
+build/
+.cache/
+.next/
+coverage/
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# ═══════════════════════════════════════════════════
+# 🖥️ OS / IDE
+# ═══════════════════════════════════════════════════
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ═══════════════════════════════════════════════════
+# 🧪 Dev/Test scripts — لا تنشرها للإنتاج
+# ═══════════════════════════════════════════════════
+test_*.js
+check_*.js
+simulate_*.js
+switch_to_*.js
+switch_one_*.js
+copy_logo.js
+generate_mockups.js
+enable_all_scenarios.js
+sync_plans.js
+setup_db.js
+fix_ui.js
+
+# ═══════════════════════════════════════════════════
+# 📝 Local docs (شخصية — ليست للتسليم)
+# ═══════════════════════════════════════════════════
+NOTES.md
+TODO.md
+SCRATCH.md
+*.local.md

@@ -1,0 +1,106 @@
+{% extends 'admin/layout.html' %}
+
+{% block content %}
+<div class="space-y-6">
+    <div class="flex justify-between items-end">
+        <div>
+            <h2 class="text-2xl font-bold text-gray-900">إعدادات النظام العامة</h2>
+            <p class="text-gray-500 text-sm">تهيئة خصائص المنصة، الربط مع Salla API، وإعدادات Meta.</p>
+        </div>
+        <button
+            class="bg-teal-600 text-white font-bold py-2 px-6 rounded-lg shadow-lg hover:bg-teal-700 transition transform hover:-translate-y-0.5">
+            <i class="fa-solid fa-save ml-2"></i> حفظ التغييرات
+        </button>
+    </div>
+
+    <!-- Layout Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+        <!-- Sidebar Navigation (Settings Tabs) -->
+        <div class="col-span-1 bg-white rounded-xl border border-gray-200 p-4 shadow-sm h-fit">
+            <div class="space-y-1">
+                <button
+                    class="w-full text-right px-4 py-2 font-bold text-teal-700 bg-teal-50 rounded-lg flex items-center justify-between group">
+                    <span><i class="fa-solid fa-cog ml-2"></i> الإعدادات الرئيسية</span>
+                    <i class="fa-solid fa-chevron-left text-xs opacity-50 group-hover:-translate-x-1 transition"></i>
+                </button>
+                <button
+                    class="w-full text-right px-4 py-2 text-gray-600 hover:bg-gray-50 rounded-lg flex items-center justify-between group">
+                    <span><i class="fa-brands fa-whatsapp ml-2"></i> بوابة Meta Cloud API</span>
+                </button>
+                <button
+                    class="w-full text-right px-4 py-2 text-gray-600 hover:bg-gray-50 rounded-lg flex items-center justify-between group">
+                    <span><i class="fa-solid fa-store ml-2"></i> تكوين متجر التطبيقات (Salla)</span>
+                </button>
+                <button
+                    class="w-full text-right px-4 py-2 text-gray-600 hover:bg-gray-50 rounded-lg flex items-center justify-between group">
+                    <span><i class="fa-solid fa-envelope ml-2"></i> البريد الإلكتروني (SMTP)</span>
+                </button>
+                <button
+                    class="w-full text-right px-4 py-2 text-gray-600 hover:bg-gray-50 rounded-lg flex items-center justify-between group">
+                    <span><i class="fa-solid fa-shield-halved ml-2"></i> الأمان والصلاحيات</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Main Settings Form -->
+        <div class="col-span-2 bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+            <h3 class="font-bold text-gray-800 border-b border-gray-100 pb-4 mb-6">الإعدادات الأساسية</h3>
+
+            <form class="space-y-6">
+                <!-- Branding -->
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-2">اسم النظام (في الداشبورد)</label>
+                    <input type="text" value="مبهر AI"
+                        class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-teal-500 bg-gray-50">
+                </div>
+
+                <!-- Support Email -->
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-2">بريد الدعم الفني الرئيسي</label>
+                    <input type="email" value="support@mobhir.ai"
+                        class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-teal-500 bg-gray-50">
+                </div>
+
+                <!-- Toggle Features -->
+                <div class="space-y-4">
+                    <label class="block text-sm font-bold text-gray-700">تفعيل المزايا التجريبية (Global)</label>
+
+                    <div
+                        class="flex items-center justify-between p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+                        <span class="font-medium text-gray-600">السماح بتسجيل الدخول التجريبي</span>
+                        <div
+                            class="relative inline-block w-10 h-6 align-middle select-none transition duration-200 ease-in">
+                            <input type="checkbox" checked
+                                class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer border-teal-500 right-0" />
+                            <label
+                                class="toggle-label block overflow-hidden h-6 rounded-full bg-teal-500 cursor-pointer"></label>
+                        </div>
+                    </div>
+
+                    <div
+                        class="flex items-center justify-between p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+                        <span class="font-medium text-gray-600">تفعيل وضع الصيانة (Maintenance Mode)</span>
+                        <div
+                            class="relative inline-block w-10 h-6 align-middle select-none transition duration-200 ease-in">
+                            <input type="checkbox"
+                                class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer border-gray-300 right-0" />
+                            <label
+                                class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"></label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Footer Text -->
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-2">نص التذييل (Footer Copy)</label>
+                    <textarea
+                        class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-teal-500 bg-gray-50 h-24">جميع الحقوق محفوظة © 2026 مبهر AI - الحل الأمثل لإدارة متاجر سلة.</textarea>
+                </div>
+
+            </form>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,17 @@
+# Docker & Node modules
+node_modules
+npm-debug.log
+Dockerfile
+docker-compose.yml
+.git
+.gitignore
+.env
+README.md
+START_HERE.md
+DEPLOY_HOSTINGER.md
+
+# Testing & Dev
+tests
+*.test.js
+simulate_*.js
+mock_*.js

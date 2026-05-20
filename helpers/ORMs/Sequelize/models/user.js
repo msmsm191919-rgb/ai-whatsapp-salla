@@ -9,9 +9,14 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
-      const { User, OauthTokens } = models;
+      const { User, OauthTokens, Subscription, WhatsAppConfig, MessageLog } = models;
       OauthTokens.belongsTo(User);
       User.hasMany(OauthTokens);
+
+      // SaaS Associations
+      if (Subscription) User.hasOne(Subscription);
+      if (WhatsAppConfig) User.hasOne(WhatsAppConfig);
+      if (MessageLog) User.hasMany(MessageLog);
     }
   }
 

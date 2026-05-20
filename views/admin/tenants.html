@@ -1,0 +1,224 @@
+{% extends 'admin/layout.html' %}
+
+{% block content %}
+<div class="space-y-6">
+
+    <!-- Header & Actions -->
+    <div class="flex justify-between items-center bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
+        <div>
+            <h2 class="text-xl font-bold text-gray-900 flex items-center gap-2">
+                <i class="fa-solid fa-shop text-teal-600"></i> إدارة المتاجر
+            </h2>
+            <p class="text-xs text-gray-500 mt-1">قائمة بجميع المتاجر المشتركة وحالتها الحالية.</p>
+        </div>
+        <div class="flex gap-3">
+            <div class="relative w-64">
+                <i class="fa-solid fa-search absolute right-3 top-3 text-gray-400 text-xs"></i>
+                <input type="text" placeholder="بحث باسم المتجر، الدومين، أو ID..."
+                    class="bg-gray-50 border border-gray-300 text-gray-700 text-sm rounded-lg focus:ring-teal-500 focus:border-teal-500 block w-full pr-9 pl-4 py-2 transition">
+            </div>
+
+            <select
+                class="bg-white border border-gray-300 text-gray-700 text-sm rounded-lg focus:ring-teal-500 focus:border-teal-500 py-2 px-3">
+                <option value="all">كل الحالات</option>
+                <option value="active">نشط</option>
+                <option value="pending">معلق</option>
+                <option value="suspended">موقوف</option>
+            </select>
+
+            <button
+                class="bg-teal-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow hover:bg-teal-700 transition flex items-center gap-2">
+                <i class="fa-solid fa-file-csv"></i> تصدير
+            </button>
+        </div>
+    </div>
+
+    <!-- Tenants Stats -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex items-center gap-4">
+            <div
+                class="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-lg">
+                {{ tenants|length }}</div>
+            <div>
+                <p class="text-gray-500 text-xs font-bold uppercase">إجمالي المتاجر</p>
+                <p class="text-gray-900 font-bold">+2 اليوم</p>
+            </div>
+        </div>
+        <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex items-center gap-4">
+            <div
+                class="w-10 h-10 rounded-full bg-green-50 text-green-600 flex items-center justify-center font-bold text-lg">
+                <i class="fa-solid fa-check"></i>
+            </div>
+            <div>
+                <p class="text-gray-500 text-xs font-bold uppercase">متاجر نشطة</p>
+                <p class="text-gray-900 font-bold">95%</p>
+            </div>
+        </div>
+        <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex items-center gap-4">
+            <div
+                class="w-10 h-10 rounded-full bg-yellow-50 text-yellow-600 flex items-center justify-center font-bold text-lg">
+                <i class="fa-brands fa-whatsapp"></i>
+            </div>
+            <div>
+                <p class="text-gray-500 text-xs font-bold uppercase">ربط واتساب</p>
+                <p class="text-gray-900 font-bold">88 متجر</p>
+            </div>
+        </div>
+        <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex items-center gap-4">
+            <div
+                class="w-10 h-10 rounded-full bg-purple-50 text-purple-600 flex items-center justify-center font-bold text-lg">
+                <i class="fa-solid fa-wand-magic-sparkles"></i>
+            </div>
+            <div>
+                <p class="text-gray-500 text-xs font-bold uppercase">يستخدمون AI</p>
+                <p class="text-gray-900 font-bold">76 متجر</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tenants Table -->
+    <div class="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+        <table class="w-full text-right text-sm text-gray-600">
+            <thead class="bg-gray-50 text-gray-500 uppercase font-bold text-xs border-b border-gray-200">
+                <tr>
+                    <th class="px-6 py-4">معلومات المتجر</th>
+                    <th class="px-6 py-4">الباقة / الحالة</th>
+                    <th class="px-6 py-4">اتصال واتساب</th>
+                    <th class="px-6 py-4">الاستهلاك (شهري)</th>
+                    <th class="px-6 py-4">تاريخ الانضمام</th>
+                    <th class="px-6 py-4 text-center">إجراءات</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+                {% if tenants and tenants.length > 0 %}
+                {% for t in tenants %}
+                <tr class="hover:bg-gray-50 transition group">
+                    <td class="px-6 py-4">
+                        <div class="flex items-center gap-3">
+                            <div
+                                class="w-10 h-10 rounded-lg bg-gradient-to-br from-teal-400 to-blue-500 text-white flex items-center justify-center font-bold text-sm shadow-sm">
+                                {{ t.store_name|slice(0,1) }}
+                            </div>
+                            <div>
+                                <div class="font-bold text-gray-900 text-base">{{ t.store_name }}</div>
+                                <div class="text-[10px] text-gray-400 font-mono tracking-wide">ID: {{
+                                    t.salla_merchant_id }}</div>
+                                {% if t.store_domain %}
+                                <a href="https://{{ t.store_domain }}" target="_blank"
+                                    class="text-[10px] text-teal-600 hover:underline flex items-center gap-1 mt-0.5">
+                                    <i class="fa-solid fa-link"></i> {{ t.store_domain }}
+                                </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4">
+                        <div class="flex flex-col gap-1">
+                            <span
+                                class="inline-flex max-w-min items-center px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-800 border border-blue-200">
+                                {% if t.Subscription and t.Subscription.Plan %} {{ t.Subscription.Plan.name }} {% else
+                                %} الأساسية {% endif %}
+                            </span>
+                            <span
+                                class="inline-flex max-w-min items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-green-50 text-green-700">
+                                <span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span> نشط
+                            </span>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4">
+                        {% if t.WhatsAppConfig and t.WhatsAppConfig.access_token %}
+                        <div class="flex items-center gap-2">
+                            <span
+                                class="w-8 h-8 rounded-full bg-green-100 text-green-600 flex items-center justify-center text-xs border border-green-200"
+                                title="متصل">
+                                <i class="fa-brands fa-whatsapp"></i>
+                            </span>
+                            <div class="text-xs">
+                                <p class="font-bold text-gray-700">متصل</p>
+                                <p class="text-[10px] text-gray-400">{{ t.WhatsAppConfig.phone_number_id }}</p>
+                            </div>
+                        </div>
+                        {% else %}
+                        <div class="flex items-center gap-2 opacity-60">
+                            <span
+                                class="w-8 h-8 rounded-full bg-gray-100 text-gray-400 flex items-center justify-center text-xs border border-gray-200"
+                                title="غير متصل">
+                                <i class="fa-brands fa-whatsapp"></i>
+                            </span>
+                            <div class="text-xs">
+                                <p class="font-bold text-gray-500">غير مربوط</p>
+                                <button class="text-[10px] text-blue-500 hover:underline">إرسال تذكير</button>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="text-xs font-bold text-gray-700">450 <span class="text-gray-400 font-normal">/
+                                    1000</span></span>
+                            <span class="text-[10px] text-teal-600 font-bold">45%</span>
+                        </div>
+                        <div class="w-32 bg-gray-200 rounded-full h-2 overflow-hidden">
+                            <div class="bg-gradient-to-r from-teal-400 to-blue-500 h-2 rounded-full" style="width: 45%">
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 text-xs text-gray-500">
+                        <div class="flex items-center gap-1">
+                            <i class="fa-regular fa-calendar"></i>
+                            {{ t.createdAt.toLocaleDateString('ar-SA') if t.createdAt else '2025-01-01' }}
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 text-center">
+                        <div
+                            class="flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                            <button title="تفاصيل المتجر"
+                                class="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition border border-transparent hover:border-blue-100">
+                                <i class="fa-solid fa-eye"></i>
+                            </button>
+                            <button title="دخول كمسؤول (Impersonate)"
+                                class="p-2 text-gray-500 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition border border-transparent hover:border-purple-100">
+                                <i class="fa-solid fa-user-secret"></i>
+                            </button>
+                            <button title="إعدادات"
+                                class="p-2 text-gray-500 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition border border-transparent hover:border-gray-200">
+                                <i class="fa-solid fa-gear"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+                {% else %}
+                <tr>
+                    <td colspan="6" class="px-6 py-16 text-center text-gray-400 bg-gray-50/50">
+                        <i class="fa-solid fa-store-slash text-4xl mb-4 text-gray-300"></i>
+                        <p class="font-medium">لا يوجد متاجر مسجلة حالياً</p>
+                    </td>
+                </tr>
+                {% endif %}
+            </tbody>
+        </table>
+
+        <!-- Pagination -->
+        <div class="bg-gray-50 px-6 py-4 border-t border-gray-200 flex items-center justify-between">
+            <span class="text-xs text-gray-500 font-bold">عرض 1-10 من {{ tenants|length }} متجر</span>
+            <div class="flex gap-2">
+                <button
+                    class="px-3 py-1.5 rounded-lg border border-gray-300 bg-white text-gray-400 text-xs font-bold disabled:opacity-50 cursor-not-allowed"
+                    disabled>السابق</button>
+                <div class="flex gap-1">
+                    <button
+                        class="px-3 py-1.5 rounded-lg border border-teal-500 bg-teal-50 text-teal-700 text-xs font-bold">1</button>
+                    <button
+                        class="px-3 py-1.5 rounded-lg border border-gray-300 bg-white text-gray-600 hover:bg-gray-50 text-xs font-bold">2</button>
+                    <button
+                        class="px-3 py-1.5 rounded-lg border border-gray-300 bg-white text-gray-600 hover:bg-gray-50 text-xs font-bold">3</button>
+                </div>
+                <button
+                    class="px-3 py-1.5 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 text-xs font-bold">التالي</button>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

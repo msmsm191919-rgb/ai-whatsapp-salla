@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>إنشاء حملة | مبهر AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Tajawal', sans-serif;
+        }
+
+        .chat-scroll::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .chat-scroll::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .chat-scroll::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 2px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        /* Layout Container */
+        .meta-layout {
+            display: grid;
+            grid-template-columns: 1fr 420px;
+            gap: 32px;
+            align-items: start;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 32px 24px;
+        }
+
+        .meta-preview-col {
+            position: sticky;
+            top: 96px;
+            height: calc(100vh - 140px);
+            max-height: calc(100vh - 140px);
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            border-radius: 30px;
+        }
+
+        .meta-phone {
+            width: 300px;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .meta-chat-scroll {
+            overflow-y: auto;
+            height: 100%;
+            scrollbar-width: thin;
+            scrollbar-color: #cbd5e1 transparent;
+        }
+
+        .meta-textarea {
+            min-height: 140px !important;
+            max-height: 280px !important;
+            resize: vertical !important;
+            height: auto;
+        }
+
+        @media (max-width: 1024px) {
+            .meta-layout {
+                grid-template-columns: 1fr;
+                padding: 16px;
+            }
+
+            .meta-preview-col {
+                position: relative;
+                top: 0;
+                height: 600px;
+                max-height: none;
+                order: 2;
+                width: 100%;
+            }
+
+            .meta-form-col {
+                order: 1;
+            }
+        }
+    </style>
+    <script>
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            sidebar.classList.toggle('translate-x-full');
+            overlay.classList.toggle('hidden');
+        }
+    </script>
+</head>
+
+<body class="bg-gray-50">
+
+    <div class="flex h-screen overflow-hidden">
+        <!-- Sidebar Overlay -->
+        <div id="sidebarOverlay" class="fixed inset-0 bg-black/50 z-40 hidden lg:hidden" onclick="toggleSidebar()">
+        </div>
+
+        <!-- Sidebar -->
+        <aside id="sidebar"
+            class="fixed lg:static inset-y-0 right-0 z-50 w-64 bg-[#1e293b] text-white transform translate-x-full lg:translate-x-0 transition-transform duration-300 flex flex-col shadow-2xl relative overflow-hidden">
+            <!-- Background Accents -->
+            <div class="absolute top-0 left-0 w-full h-full overflow-hidden opacity-10 pointer-events-none">
+                <div class="absolute -top-24 -left-24 w-64 h-64 bg-teal-500 rounded-full blur-[100px]"></div>
+                <div class="absolute bottom-0 right-0 w-64 h-64 bg-purple-500 rounded-full blur-[100px]"></div>
+            </div>
+
+            <div class="p-6 relative z-10 flex items-center gap-3 border-b border-gray-700/50">
+                <div
+                    class="w-10 h-10 bg-gradient-to-tr from-teal-400 to-blue-500 rounded-xl flex items-center justify-center shadow-lg shadow-teal-500/20">
+                    <i class="fa-solid fa-wand-magic-sparkles text-xl text-white"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-wide">Mobhir <span class="text-teal-400">AI</span></h1>
+                    <p class="text-[10px] text-gray-400 uppercase tracking-widest">Enterprise Edition</p>
+                </div>
+            </div>
+
+            <nav class="flex-1 py-6 px-3 space-y-1 relative z-10 overflow-y-auto custom-scrollbar">
+                <a href="/dashboard"
+                    class="flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all group mb-6 text-gray-400 hover:bg-white/5 hover:text-white">
+                    <i class="fa-solid fa-chart-pie w-5 group-hover:scale-110 transition-transform"></i>
+                    <span class="font-bold text-sm">لوحة التحكم</span>
+                </a>
+
+                <!-- Messaging Group -->
+                <div
+                    class="mb-2 px-3 text-[10px] font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2">
+                    <i class="fa-solid fa-message text-[9px]"></i> الرسائل والحملات
+                </div>
+                <a href="/logs"
+                    class="flex items-center gap-3 px-4 py-2 rounded-xl transition-all group text-gray-400 hover:bg-white/5 hover:text-white">
+                    <i class="fa-solid fa-comments w-5 group-hover:scale-110 transition-transform"></i>
+                    <span class="font-medium text-sm">المحادثات</span>
+                </a>
+                <a href="/campaigns"
+                    class="flex items-center gap-3 px-4 py-2 rounded-xl transition-all group bg-gradient-to-r from-teal-600/20 to-teal-600/5 text-teal-400 border border-teal-500/20 shadow-lg shadow-teal-900/10">
+                    <i class="fa-solid fa-bullhorn w-5 text-teal-400"></i>
+                    <span class="font-medium text-sm">حملات الرسائل</span>
+                </a>
+
+                <!-- Automation Group -->
+                <div
+                    class="mt-6 mb-2 px-3 text-[10px] font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2">
+                    <i class="fa-solid fa-bolt text-[9px]"></i> الأتمتة
+                </div>
+                <a href="/automation/carts"
+                    class="flex items-center gap-3 px-4 py-2 rounded-xl transition-all group text-gray-400 hover:bg-white/5 hover:text-white">
+                    <i class="fa-solid fa-cart-shopping w-5 group-hover:scale-110 transition-transform"></i>
+                    <span class="font-medium text-sm">السلات المتروكة</span>
+                </a>
+                <a href="/automation/orders"
+                    class="flex items-center gap-3 px-4 py-2 rounded-xl transition-all group text-gray-400 hover:bg-white/5 hover:text-white">
+                    <i class="fa-solid fa-box-open w-5 group-hover:scale-110 transition-transform"></i>
+                    <span class="font-medium text-sm">حالة الطلبات</span>
+                </a>
+
+                <!-- AI Group -->
+                <div
+                    class="mt-6 mb-2 px-3 text-[10px] font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2">
+                    <i class="fa-solid fa-brain text-[9px]"></i> الذكاء الاصطناعي
+                </div>
+                <a href="/ai-settings"
+                    class="flex items-center gap-3 px-4 py-2 rounded-xl transition-all group text-gray-400 hover:bg-white/5 hover:text-white">
+                    <i class="fa-solid fa-robot w-5 group-hover:scale-110 transition-transform"></i>
+                    <span class="font-medium text-sm">شخصية المساعد</span>
+                </a>
+                <a href="/knowledge-base"
+                    class="flex items-center gap-3 px-4 py-2 rounded-xl transition-all group text-gray-400 hover:bg-white/5 hover:text-white">
+                    <i class="fa-solid fa-book w-5 group-hover:scale-110 transition-transform"></i>
+                    <span class="font-medium text-sm">قاعدة المعرفة</span>
+                </a>
+                <a href="/scenarios"
+                    class="flex items-center gap-3 px-4 py-2 rounded-xl transition-all group text-gray-400 hover:bg-white/5 hover:text-white">
+                    <i class="fa-solid fa-wand-magic-sparkles w-5 group-hover:scale-110 transition-transform"></i>
+                    <span class="font-medium text-sm">السيناريوهات</span>
+                </a>
+
+                <!-- Management Group -->
+                <div
+                    class="mt-6 mb-2 px-3 text-[10px] font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2">
+                    <i class="fa-solid fa-sliders text-[9px]"></i> الإدارة
+                </div>
+                <a href="/customers"
+                    class="flex items-center gap-3 px-4 py-2 rounded-xl transition-all group text-gray-400 hover:bg-white/5 hover:text-white">
+                    <i class="fa-solid fa-users w-5 group-hover:scale-110 transition-transform"></i>
+                    <span class="font-medium text-sm">العملاء</span>
+                </a>
+                <a href="/settings"
+                    class="flex items-center gap-3 px-4 py-2 rounded-xl transition-all group text-gray-400 hover:bg-white/5 hover:text-white">
+                    <i class="fa-solid fa-gear w-5 group-hover:scale-110 transition-transform"></i>
+                    <span class="font-medium text-sm">الإعدادات</span>
+                </a>
+            </nav>
+
+            <!-- User Profile -->
+            <div class="p-4 border-t border-gray-700/50 bg-black/20 backdrop-blur-sm relative z-10">
+                <div class="flex items-center gap-3">
+                    <div class="relative">
+                        <div
+                            class="w-10 h-10 rounded-full bg-gradient-to-br from-gray-700 to-gray-600 border border-gray-500 flex items-center justify-center text-white font-bold shadow-md">
+                            {{ (user.merchant.name | first) if user.merchant.name else 'M' }}
+                        </div>
+                        <div
+                            class="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-[#1e293b] rounded-full">
+                        </div>
+                    </div>
+                    <div class="overflow-hidden">
+                        <p class="text-sm font-bold text-white truncate">{{ user.merchant.name or 'متجر غير معروف' }}
+                        </p>
+                        <p class="text-[10px] text-teal-400 flex items-center gap-1"><i
+                                class="fa-solid fa-bolt text-[8px]"></i> {{ plan_name or 'الأساسية' }}</p>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <main class="flex-1 overflow-y-auto bg-gray-50 relative custom-scrollbar">
+            <header
+                class="bg-white/80 backdrop-blur-md sticky top-0 z-40 border-b border-gray-200 px-8 py-4 flex items-center justify-between">
+                <div class="flex items-center gap-4">
+                    <button onclick="toggleSidebar()" class="lg:hidden text-gray-700 hover:text-teal-600 transition">
+                        <i class="fa-solid fa-bars text-xl"></i>
+                    </button>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <a href="/campaigns" class="text-gray-400 hover:text-teal-600 transition"><i
+                                    class="fa-solid fa-arrow-right"></i></a>
+                            <h2 class="text-2xl font-bold text-gray-800">حملة جديدة ✨</h2>
+                            <div
+                                class="mr-3 px-3 py-1 bg-gradient-to-r from-teal-50 to-blue-50 border border-teal-100 rounded-full flex items-center gap-2">
+                                <span class="w-1.5 h-1.5 rounded-full bg-teal-500 animate-pulse"></span>
+                                <span
+                                    class="text-[10px] font-bold bg-gradient-to-r from-teal-600 to-blue-600 bg-clip-text text-transparent transform translate-y-[1px]">مدعوم
+                                    بـ مبهر AI</span>
+                            </div>
+                        </div>
+                        <p class="text-sm text-gray-500 mt-1 mr-6">أنشئ حملتك التسويقية في 3 خطوات بسيطة</p>
+                    </div>
+                </div>
+                <div class="flex gap-2 items-center">
+                    <!-- Plan Quota Badge -->
+                    <div
+                        class="hidden md:flex items-center gap-2 px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-full text-xs font-bold text-gray-600">
+                        <i class="fa-solid fa-gauge-high text-teal-500"></i>
+                        <span>الرصيد:</span>
+                        <span
+                            class="{% if messages_remaining != -1 and messages_remaining < 100 %}text-red-500{% else %}text-teal-600{% endif %}">
+                            {% if messages_remaining == -1 %}∞{% else %}{{ messages_remaining }}{% endif %}
+                        </span>
+                        <span class="text-gray-400">رسالة</span>
+                    </div>
+                    <button id="scheduleBtn"
+                        class="bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 font-bold py-2 px-4 rounded-xl shadow-sm transition flex items-center gap-2 text-sm"
+                        title="جدولة لوقت لاحق">
+                        <i class="fa-regular fa-clock"></i> جدولة
+                    </button>
+                    <button id="sendBtn"
+                        class="bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-6 rounded-xl shadow-lg shadow-teal-500/30 transition flex items-center gap-2 text-sm">
+                        <i class="fa-solid fa-paper-plane"></i> إرسال الآن
+                    </button>
+                </div>
+            </header>
+
+            {% if not campaigns_enabled %}
+            <!-- Locked State -->
+            <div class="max-w-xl mx-auto mt-20 text-center p-10">
+                <div
+                    class="w-20 h-20 mx-auto bg-purple-100 rounded-2xl flex items-center justify-center text-4xl text-purple-500 mb-6">
+                    <i class="fa-solid fa-lock"></i>
+                </div>
+                <h2 class="text-2xl font-black text-gray-800 mb-3">الحملات غير متاحة في باقة {{ plan_name }}</h2>
+                <p class="text-gray-500 text-sm mb-6">قم بترقية باقتك لتتمكن من إرسال رسائل جماعية لعملائك.</p>
+                <a href="/pricing"
+                    class="bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-8 py-3 rounded-xl font-bold inline-flex items-center gap-2">
+                    <i class="fa-solid fa-rocket"></i> ترقية الباقة
+                </a>
+            </div>
+            {% else %}
+
+            <div class="meta-layout">
+
+                <!-- Right Column: Form -->
+                <div class="meta-form-col space-y-6">
+
+                    <!-- Step 1: Campaign Details -->
+                    <div
+                        class="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 relative overflow-hidden hover:shadow-md transition-shadow">
+                        <div class="absolute top-0 right-0 w-1.5 h-full bg-teal-500"></div>
+                        <div class="flex items-center gap-3 mb-6">
+                            <div
+                                class="w-8 h-8 rounded-full bg-teal-50 text-teal-600 flex items-center justify-center font-bold text-sm border border-teal-100">
+                                1</div>
+                            <h3 class="font-bold text-gray-800 text-lg">تفاصيل الحملة</h3>
+                        </div>
+                        <div class="space-y-5">
+                            <div>
+                                <label class="block text-sm font-bold text-gray-700 mb-2">اسم الحملة</label>
+                                <input type="text" id="campaignName" placeholder="مثال: عروض نهاية العام"
+                                    class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3.5 text-sm focus:bg-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition font-medium">
+                            </div>
+                            <div>
+                                <div class="flex justify-between items-center mb-2">
+                                    <label class="block text-sm font-bold text-gray-700">الجمهور المستهدف</label>
+                                    <a href="/customers"
+                                        class="text-xs text-teal-600 hover:text-teal-800 font-bold transition bg-teal-50 px-2 py-1 rounded-md"><i
+                                            class="fa-solid fa-users-gear ml-1"></i> إدارة القوائم</a>
+                                </div>
+                                <div class="relative">
+                                    <select id="audience"
+                                        class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3.5 text-sm focus:bg-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition appearance-none font-medium cursor-pointer">
+                                        <option value="all">جميع العملاء ({{ contacts_count }})</option>
+                                        <option value="vip">العملاء المميزين (VIP)</option>
+                                        <option value="abandoned">أصحاب السلات المتروكة</option>
+                                        <option value="test">رقم تجريبي (للتجربة)</option>
+                                    </select>
+                                    <div
+                                        class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+                                        <i class="fa-solid fa-chevron-down text-xs"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 2: Message Content (was Step 3, now Step 2 since we removed campaign type) -->
+                    <div
+                        class="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 relative overflow-hidden hover:shadow-md transition-shadow">
+                        <div class="absolute top-0 right-0 w-1.5 h-full bg-blue-500"></div>
+                        <div class="flex items-center gap-3 mb-6">
+                            <div
+                                class="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-sm border border-blue-100">
+                                2</div>
+                            <h3 class="font-bold text-gray-800 text-lg">محتوى الرسالة</h3>
+                        </div>
+
+                        <!-- Image Upload -->
+                        <div class="mb-5">
+                            <label class="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wide">صورة
+                                (اختياري)</label>
+                            <label for="campaignImage"
+                                class="flex items-center gap-4 p-3 border border-gray-200 border-dashed rounded-xl cursor-pointer hover:bg-gray-50 transition group bg-gray-50/30">
+                                <div
+                                    class="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center text-gray-400 group-hover:bg-white group-hover:text-blue-500 transition shadow-inner relative overflow-hidden">
+                                    <img id="imagePreviewThumbnail"
+                                        class="absolute inset-0 w-full h-full object-cover hidden">
+                                    <i class="fa-regular fa-image text-2xl" id="uploadIcon"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <p class="text-sm font-bold text-gray-700 group-hover:text-blue-600 transition">اضغط
+                                        لرفع صورة</p>
+                                    <p class="text-[10px] text-gray-400">JPG, PNG (Max 5MB)</p>
+                                </div>
+                                <div id="removeImageBtn"
+                                    class="hidden text-red-500 hover:bg-red-50 p-2 rounded-full transition"><i
+                                        class="fa-solid fa-trash-can"></i></div>
+                                <input id="campaignImage" type="file" class="hidden" accept="image/*">
+                            </label>
+                        </div>
+
+                        <!-- Variables Chips -->
+                        <div class="mb-3">
+                            <div class="flex items-center justify-between mb-2">
+                                <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide">نص
+                                    الرسالة</label>
+                                <div class="flex gap-2">
+                                    {% raw %}
+                                    <button type="button" onclick="insertVariable('{{name}}')"
+                                        class="text-[10px] bg-blue-50 hover:bg-blue-100 text-blue-600 px-2 py-1 rounded-md font-bold transition">اسم
+                                        العميل +</button>
+                                    <button type="button" onclick="insertVariable('{{discount_code}}')"
+                                        class="text-[10px] bg-purple-50 hover:bg-purple-100 text-purple-600 px-2 py-1 rounded-md font-bold transition">كود
+                                        خصم +</button>
+                                    {% endraw %}
+                                </div>
+                            </div>
+
+                            <div class="relative">
+                                <textarea id="campaignMessage" maxlength="500"
+                                    class="meta-textarea w-full bg-white border border-gray-200 rounded-xl p-4 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all shadow-inner leading-relaxed"
+                                    placeholder="اكتب رسالتك هنا..." oninput="autoResize(this)"></textarea>
+                                <div class="absolute bottom-3 left-3 text-[10px] text-gray-400 bg-white/80 px-2 py-0.5 rounded-full backdrop-blur-sm border border-gray-100 shadow-sm"
+                                    id="charCount">
+                                    0 / 500 حرف
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Link -->
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wide">رابط الزر
+                                (اختياري)</label>
+                            <div class="relative">
+                                <div
+                                    class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                                    <i class="fa-solid fa-link"></i>
+                                </div>
+                                <input type="url" id="campaignUrl" placeholder="https://" dir="ltr"
+                                    class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 pl-10 text-sm focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition font-mono">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 3: Plan Summary -->
+                    <div class="bg-gray-50 p-4 rounded-2xl border border-gray-200">
+                        <div class="flex items-center gap-3 mb-3">
+                            <div
+                                class="w-8 h-8 rounded-full bg-teal-50 text-teal-600 flex items-center justify-center font-bold text-sm border border-teal-100">
+                                3</div>
+                            <h3 class="font-bold text-gray-700 text-sm">معلومات الباقة</h3>
+                        </div>
+                        <div class="grid grid-cols-3 gap-3">
+                            <div class="bg-white p-3 rounded-xl border border-gray-100 text-center">
+                                <p class="text-[10px] text-gray-400 font-bold uppercase">الباقة</p>
+                                <p class="text-sm font-black text-teal-600 mt-1">{{ plan_name }}</p>
+                            </div>
+                            <div class="bg-white p-3 rounded-xl border border-gray-100 text-center">
+                                <p class="text-[10px] text-gray-400 font-bold uppercase">الرصيد المتبقي</p>
+                                <p
+                                    class="text-sm font-black {% if messages_remaining != -1 and messages_remaining < 100 %}text-red-500{% else %}text-gray-800{% endif %} mt-1">
+                                    {% if messages_remaining == -1 %}∞{% else %}{{ messages_remaining }}{% endif %}
+                                    <span class="text-[10px] text-gray-400 font-medium">رسالة</span>
+                                </p>
+                            </div>
+                            <div class="bg-white p-3 rounded-xl border border-gray-100 text-center">
+                                <p class="text-[10px] text-gray-400 font-bold uppercase">العملاء</p>
+                                <p class="text-sm font-black text-gray-800 mt-1">{{ contacts_count }}</p>
+                            </div>
+                        </div>
+                        {% if messages_remaining != -1 and messages_remaining < 50 %} <div
+                            class="mt-3 bg-red-50 border border-red-200 rounded-xl p-3 flex items-center gap-2">
+                            <i class="fa-solid fa-triangle-exclamation text-red-500"></i>
+                            <p class="text-xs text-red-600 font-bold">رصيدك منخفض جداً! <a href="/pricing"
+                                    class="underline">ترقية الباقة</a></p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Left Column: Sticky Preview -->
+            <div class="meta-preview-col">
+                <div
+                    class="meta-phone relative select-none shadow-2xl rounded-[35px] bg-[#1a1a1a] border-[8px] border-[#2c2c2c] ring-1 ring-black/20">
+                    <!-- Screen -->
+                    <div class="absolute inset-0 bg-[#EFECE5] rounded-[26px] overflow-hidden flex flex-col font-sans">
+                        <!-- Wallpaper -->
+                        <div
+                            class="absolute inset-0 opacity-100 z-0 bg-[url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png')] bg-[length:260px]">
+                        </div>
+
+                        <!-- Header -->
+                        <div id="appHeader"
+                            class="bg-[#008069] h-[55px] z-10 flex items-center px-3 text-white relative shadow-sm shrink-0"
+                            dir="rtl">
+                            <i class="fa-solid fa-arrow-right text-sm ml-2"></i>
+                            <div
+                                class="w-9 h-9 rounded-full bg-gray-200 border border-white/20 mr-2 flex items-center justify-center overflow-hidden">
+                                <i class="fa-solid fa-store text-gray-400 text-xs"></i>
+                            </div>
+                            <div class="mr-1 flex-1">
+                                <p class="text-[13px] font-bold leading-tight truncate w-32 text-white">{{
+                                    user.merchant.name
+                                    or 'اسم المتجر' }}</p>
+                            </div>
+                            <div class="flex gap-4 text-sm ml-1 opacity-50">
+                                <i class="fa-solid fa-ellipsis-vertical"></i>
+                            </div>
+                        </div>
+
+                        <!-- Chat Area -->
+                        <div class="flex-1 p-3 z-10 flex flex-col meta-chat-scroll chat-scroll">
+                            <!-- Message Bubble -->
+                            <div
+                                class="self-end max-w-[90%] mb-1 relative group mt-2 flex flex-col shadow-[0_1px_0.5px_rgba(0,0,0,0.13)] rounded-lg rounded-tl-none bg-[#d9fdd3] overflow-hidden min-w-[120px]">
+                                <div class="p-1 relative pb-5">
+                                    <!-- Image Preview -->
+                                    <div id="previewImageContainer"
+                                        class="hidden rounded-md overflow-hidden mb-1 bg-black/5">
+                                        <img id="previewImage" src="" class="w-full h-auto object-cover max-h-[160px]">
+                                    </div>
+                                    <!-- Text -->
+                                    <div class="px-2 pt-1 pb-1">
+                                        <p id="previewText"
+                                            class="text-[13px] text-[#111b21] leading-[1.4] whitespace-pre-wrap text-right"
+                                            dir="auto">نص الرسالة...</p>
+                                    </div>
+                                    <!-- Link Preview -->
+                                    <div id="previewLinkContainer"
+                                        class="hidden bg-[#CFE9BA] p-1.5 rounded mb-0.5 mx-1 border-l-2 border-[#A8CD99]">
+                                        <a href="#" id="previewLink"
+                                            class="text-[11px] text-blue-600 truncate block">Link</a>
+                                    </div>
+                                    <!-- Time -->
+                                    <div class="absolute bottom-1 left-2 flex items-center gap-0.5">
+                                        <span class="text-[9px] text-gray-500">9:41 م</span>
+                                        <i class="fa-solid fa-check-double text-[#53bdeb] text-[9px]"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Input Bar -->
+                        <div
+                            class="bg-[#f0f2f5] h-[50px] flex items-center px-2 gap-2 z-20 shrink-0 border-t border-gray-200">
+                            <div
+                                class="w-7 h-7 rounded-full bg-white flex items-center justify-center text-gray-500 text-sm shadow-sm">
+                                <i class="fa-solid fa-plus"></i>
+                            </div>
+                            <div
+                                class="flex-1 bg-white h-9 rounded-full flex items-center px-4 text-gray-400 text-[12px] shadow-sm text-right">
+                                مراسلة</div>
+                            <i class="fa-solid fa-microphone text-gray-500 text-base mx-1"></i>
+                        </div>
+
+                        <!-- Home Bar -->
+                        <div
+                            class="absolute bottom-1.5 left-1/2 -translate-x-1/2 w-24 h-1 bg-black/30 rounded-full z-20">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+    </div>
+    {% endif %}
+
+    </div>
+    </main>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    {% raw %}
+    <script>
+        (function () {
+            const messageInput = document.getElementById('campaignMessage');
+            const previewText = document.getElementById('previewText');
+            const urlInput = document.getElementById('campaignUrl');
+            const previewLinkContainer = document.getElementById('previewLinkContainer');
+            const previewLink = document.getElementById('previewLink');
+
+            const campaignImageInput = document.getElementById('campaignImage');
+            const imagePreviewThumbnail = document.getElementById('imagePreviewThumbnail');
+            const removeImageBtn = document.getElementById('removeImageBtn');
+            const previewImageContainer = document.getElementById('previewImageContainer');
+            const previewImage = document.getElementById('previewImage');
+
+            const mockData = { '{{name}}': 'عبدالله', '{{discount_code}}': 'OFF20' };
+            const defaultText = 'مرحباً {{name}} 👋\nلا تفوت عروضنا الخاصة لهذا الأسبوع! 😍\nخصم حصري لك بقيمة 20% باستخدام الكود: {{discount_code}}\nاطلب الآن قبل نفاذ الكمية 🏃‍♂️';
+            const defaultImageUrl = 'https://images.unsplash.com/photo-1549465220-1a8b9238cd48?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80';
+
+            let isCustomImage = false;
+
+            function updatePreview() {
+                if (!messageInput) return;
+
+                // Text
+                let val = messageInput.value || defaultText;
+                for (const [key, value] of Object.entries(mockData)) {
+                    val = val.replaceAll(key, value);
+                }
+                if (previewText) previewText.textContent = val;
+
+                // Image
+                if (previewImage) {
+                    if (!isCustomImage) {
+                        previewImage.src = defaultImageUrl;
+                        if (previewImageContainer) previewImageContainer.classList.remove('hidden');
+                    }
+                }
+
+                // Link
+                if (urlInput && urlInput.value && urlInput.value.length > 0) {
+                    if (previewLinkContainer) {
+                        previewLinkContainer.classList.remove('hidden');
+                        previewLink.textContent = urlInput.value;
+                    }
+                } else {
+                    if (previewLinkContainer) previewLinkContainer.classList.add('hidden');
+                }
+            }
+
+            // Listeners
+            if (messageInput) messageInput.addEventListener('input', updatePreview);
+            if (urlInput) urlInput.addEventListener('input', updatePreview);
+
+            if (campaignImageInput) {
+                campaignImageInput.addEventListener('change', function (e) {
+                    const file = e.target.files[0];
+                    if (file) {
+                        isCustomImage = true;
+                        const reader = new FileReader();
+                        reader.onload = function (e) {
+                            const result = e.target.result;
+                            if (imagePreviewThumbnail) {
+                                imagePreviewThumbnail.src = result;
+                                imagePreviewThumbnail.classList.remove('hidden');
+                            }
+                            if (removeImageBtn) removeImageBtn.classList.remove('hidden');
+                            if (previewImage) previewImage.src = result;
+                            if (previewImageContainer) previewImageContainer.classList.remove('hidden');
+                        }
+                        reader.readAsDataURL(file);
+                    }
+                });
+            }
+
+            if (removeImageBtn) {
+                removeImageBtn.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    if (campaignImageInput) campaignImageInput.value = '';
+                    isCustomImage = false;
+                    if (imagePreviewThumbnail) {
+                        imagePreviewThumbnail.src = '';
+                        imagePreviewThumbnail.classList.add('hidden');
+                    }
+                    if (removeImageBtn) removeImageBtn.classList.add('hidden');
+                    updatePreview();
+                });
+            }
+
+            updatePreview();
+        })();
+
+        window.autoResize = function (el) {
+            el.style.minHeight = '140px';
+            el.style.height = 'auto';
+            const newHeight = Math.min(Math.max(el.scrollHeight, 140), 280);
+            el.style.height = newHeight + 'px';
+
+            const counter = document.getElementById('charCount');
+            if (counter) counter.innerText = el.value.length + ' / 500 حرف';
+        };
+
+        window.insertVariable = function (text) {
+            const textarea = document.getElementById('campaignMessage');
+            if (!textarea) return;
+            const start = textarea.selectionStart;
+            const end = textarea.selectionEnd;
+            const val = textarea.value;
+            textarea.value = val.substring(0, start) + text + val.substring(end);
+            textarea.selectionStart = textarea.selectionEnd = start + text.length;
+            textarea.focus();
+            textarea.dispatchEvent(new Event('input'));
+        }
+
+        const sendBtn = document.getElementById('sendBtn');
+        if (sendBtn) {
+            sendBtn.onclick = async () => {
+                const originalText = sendBtn.innerHTML;
+
+                const name = document.getElementById('campaignName').value;
+                const audience = document.getElementById('audience').value;
+                let message = document.getElementById('campaignMessage').value;
+                const url = document.getElementById('campaignUrl').value;
+
+                if (!name || !message) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'بيانات ناقصة',
+                        text: 'يرجى إدخال اسم الحملة ومحتوى الرسالة',
+                        confirmButtonText: 'حسناً',
+                        confirmButtonColor: '#0d9488'
+                    });
+                    return;
+                }
+
+                if (url) {
+                    message += `\n\n${url}`;
+                }
+
+                sendBtn.disabled = true;
+                sendBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> جاري الإرسال...';
+
+                try {
+                    const response = await fetch('/api/campaigns/send', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            name,
+                            audience,
+                            type: 'whatsapp_api',
+                            message,
+                        })
+                    });
+
+                    const data = await response.json();
+
+                    if (response.ok && data.success) {
+                        Swal.fire({
+                            title: 'تم الإرسال بنجاح! 🚀',
+                            text: 'تم جدولة الحملة وبدء الإرسال للعملاء.',
+                            icon: 'success',
+                            timer: 2000,
+                            showConfirmButton: false
+                        }).then(() => {
+                            window.location.href = '/campaigns';
+                        });
+                    } else {
+                        throw new Error(data.message || 'حدث خطأ غير معروف');
+                    }
+
+                } catch (error) {
+                    console.error(error);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'فشل الإرسال',
+                        text: error.message,
+                        confirmButtonText: 'حاول مرة أخرى'
+                    });
+                    sendBtn.disabled = false;
+                    sendBtn.innerHTML = originalText;
+                }
+            };
+        }
+    </script>
+    {% endraw %}
+</body>
+
+</html>

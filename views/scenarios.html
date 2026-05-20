@@ -1,0 +1,116 @@
+{% extends "layouts/dashboard_master.html" %}
+
+{% block title %}السيناريوهات الذكية | Salla AI{% endblock %}
+
+{% block header_title %}السيناريوهات الذكية 🪄{% endblock %}
+{% block header_subtitle %}تفعيل الردود والمبادرات الآلية لزيادة المبيعات{% endblock %}
+
+{% block styles %}
+<style>
+    /* Custom Toggle Switch */
+    .toggle-checkbox:checked {
+        right: 0;
+        border-color: #0d9488;
+    }
+
+    .toggle-checkbox:checked+.toggle-label {
+        background-color: #0d9488;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto space-y-6">
+
+    <!-- Scenario 1: Abandoned Cart -->
+    <div
+        class="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm relative overflow-hidden transition hover:shadow-md group">
+        <div class="absolute top-0 right-0 w-1 h-full bg-orange-400"></div>
+        <div class="flex justify-between items-start">
+            <div class="flex gap-4">
+                <div
+                    class="w-12 h-12 rounded-2xl bg-orange-100 flex items-center justify-center text-orange-500 text-xl group-hover:scale-110 transition-transform">
+                    <i class="fa-solid fa-cart-shopping"></i>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-gray-900">استعادة السلات المتروكة 🛒</h3>
+                    <p class="text-sm text-gray-500 mt-1 max-w-lg leading-relaxed">إرسال رسالة تذكير ذكية
+                        وتلقائية للعميل الذي ترك سلة الشراء، لاقتراح المساعدة أو تقديم عرض خاص.</p>
+                </div>
+            </div>
+
+            <!-- Toggle -->
+            <div class="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in">
+                <input type="checkbox" name="abandoned_cart" id="toggle_cart"
+                    class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer border-gray-300 left-0 transition-all duration-200 shadow-sm"
+                    {% if settings.abandoned_cart %}checked{% endif %} onchange="saveScenarios()" />
+                <label for="toggle_cart"
+                    class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-200 cursor-pointer transition-colors duration-200"></label>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scenario 2: Review Request -->
+    <div
+        class="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm relative overflow-hidden transition hover:shadow-md group">
+        <div class="absolute top-0 right-0 w-1 h-full bg-yellow-400"></div>
+        <div class="flex justify-between items-start">
+            <div class="flex gap-4">
+                <div
+                    class="w-12 h-12 rounded-2xl bg-yellow-100 flex items-center justify-center text-yellow-500 text-xl group-hover:scale-110 transition-transform">
+                    <i class="fa-solid fa-star"></i>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-gray-900">طلب التقييم بعد الطلب ⭐</h3>
+                    <p class="text-sm text-gray-500 mt-1 leading-relaxed">إرسال رسالة شكر دافئة بعد اكتمال
+                        الطلب تطلب من العميل تقييم تجربته، مما يرفع ثقة العملاء الجدد.</p>
+                </div>
+            </div>
+
+            <!-- Toggle -->
+            <div class="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in">
+                <input type="checkbox" name="review_request" id="toggle_review"
+                    class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer border-gray-300 left-0 transition-all duration-200 shadow-sm"
+                    {% if settings.review_request %}checked{% endif %} onchange="saveScenarios()" />
+                <label for="toggle_review"
+                    class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-200 cursor-pointer transition-colors duration-200"></label>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    async function saveScenarios() {
+        const abandoned_cart = document.getElementById('toggle_cart').checked;
+        const review_request = document.getElementById('toggle_review').checked;
+
+        try {
+            const response = await fetch('/api/scenarios/save', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ abandoned_cart, review_request })
+            });
+
+            if (response.ok) {
+                const Toast = Swal.mixin({
+                    toast: true,
+                    position: 'top-start',
+                    showConfirmButton: false,
+                    timer: 2000,
+                    timerProgressBar: true
+                });
+                Toast.fire({ icon: 'success', title: 'تم حفظ التغييرات' });
+            } else {
+                throw new Error('Failed to save');
+            }
+        } catch (error) {
+            Swal.fire('خطأ', 'لم يتم حفظ الإعدادات، حاول مرة أخرى', 'error');
+            // Revert toggle if needed (optional)
+        }
+    }
+</script>
+{% endblock %}

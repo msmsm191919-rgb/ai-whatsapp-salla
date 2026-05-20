@@ -1,0 +1,70 @@
+{% extends "layouts/dashboard_master.html" %}
+
+{% block title %}قاعدة المعرفة | Salla AI{% endblock %}
+{% block header_title %}مصادر المعرفة 📚{% endblock %}
+{% block header_subtitle %}درب المساعد الذكي على منتجاتك لردود أكثر دقة{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-6">
+
+    <!-- Alert -->
+    <div
+        class="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-100 rounded-2xl p-6 flex flex-col md:flex-row items-center justify-between gap-6 shadow-sm">
+        <div class="flex items-start gap-4">
+            <div
+                class="w-12 h-12 rounded-full bg-white text-amber-500 flex items-center justify-center shadow-sm flex-shrink-0">
+                <i class="fa-solid fa-graduation-cap text-xl"></i>
+            </div>
+            <div>
+                <h4 class="font-bold text-gray-800 text-base">درب مساعدك الذكي الآن!</h4>
+                <p class="text-sm text-gray-600 mt-1 leading-relaxed">ارفع ملفات (PDF, Excel) أو أضف رابط
+                    المتجر، وسيقوم النظام بتحليل البيانات تلقائياً.</p>
+            </div>
+        </div>
+        <button
+            class="bg-amber-500 hover:bg-amber-600 text-white px-6 py-2.5 rounded-xl text-sm font-bold shadow-lg shadow-amber-200 transition">
+            <i class="fa-solid fa-plus ml-2"></i> إضافة مصدر جديد
+        </button>
+    </div>
+
+    <!-- Content Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <!-- Example Card -->
+        <div
+            class="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition group cursor-pointer">
+            <div class="flex justify-between items-start mb-4">
+                <div
+                    class="w-10 h-10 rounded-lg bg-red-50 text-red-500 flex items-center justify-center group-hover:bg-red-500 group-hover:text-white transition">
+                    <i class="fa-solid fa-file-pdf"></i>
+                </div>
+                <i class="fa-solid fa-ellipsis text-gray-300"></i>
+            </div>
+            <h3 class="font-bold text-gray-800">دليل المنتجات 2024</h3>
+            <p class="text-xs text-gray-400 mt-1">تمت الإضافة: قبل يومين</p>
+            <div class="mt-4 flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-green-500"></span>
+                <span class="text-xs font-bold text-gray-500">تم التدريب</span>
+            </div>
+        </div>
+
+        <!-- Example Card 2 -->
+        <div
+            class="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition group cursor-pointer">
+            <div class="flex justify-between items-start mb-4">
+                <div
+                    class="w-10 h-10 rounded-lg bg-blue-50 text-blue-500 flex items-center justify-center group-hover:bg-blue-500 group-hover:text-white transition">
+                    <i class="fa-solid fa-link"></i>
+                </div>
+                <i class="fa-solid fa-ellipsis text-gray-300"></i>
+            </div>
+            <h3 class="font-bold text-gray-800">رابط المتجر (Salla)</h3>
+            <p class="text-xs text-gray-400 mt-1">Salla.sa/mystore</p>
+            <div class="mt-4 flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                <span class="text-xs font-bold text-gray-500">نشط (تزامن تلقائي)</span>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

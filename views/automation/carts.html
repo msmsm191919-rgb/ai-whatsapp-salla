@@ -1,0 +1,143 @@
+{% extends "layouts/dashboard_master.html" %}
+
+{% block title %}السلات المتروكة | مبهر AI{% endblock %}
+{% block header_title %}السلات المتروكة 🛒{% endblock %}
+{% block header_subtitle %}متابعة واستعادة العملاء الذين لم يكملوا عملية الشراء{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+    {% if not automation_enabled %}
+    <!-- Locked State -->
+    <div
+        class="bg-gradient-to-br from-orange-50 via-white to-amber-50 border-2 border-orange-200 rounded-3xl p-10 text-center relative overflow-hidden">
+        <div class="absolute -top-20 -right-20 w-60 h-60 bg-orange-200 rounded-full blur-3xl opacity-30"></div>
+        <div class="relative z-10">
+            <div
+                class="w-20 h-20 mx-auto bg-orange-100 rounded-2xl flex items-center justify-center text-4xl text-orange-500 mb-6">
+                <i class="fa-solid fa-lock"></i>
+            </div>
+            <h2 class="text-2xl font-black text-gray-800 mb-3">الأتمتة غير متاحة في باقة {{ plan_name }}</h2>
+            <p class="text-gray-500 text-sm max-w-lg mx-auto mb-6">قم بترقية باقتك لتفعيل تنبيهات السلات المتروكة
+                التلقائية واستعادة عملائك.</p>
+            <a href="/pricing"
+                class="bg-gradient-to-r from-orange-500 to-amber-500 text-white px-8 py-3 rounded-xl font-bold inline-flex items-center gap-2 shadow-lg shadow-orange-500/30">
+                <i class="fa-solid fa-rocket"></i> ترقية الباقة
+            </a>
+        </div>
+    </div>
+    {% else %}
+
+    <!-- Automation Active Banner -->
+    <div
+        class="bg-gradient-to-r from-green-50 to-teal-50 border border-green-200 rounded-2xl p-5 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center text-green-600">
+                <i class="fa-solid fa-circle-check"></i>
+            </div>
+            <div>
+                <h4 class="font-bold text-green-800 text-sm">الأتمتة مفعّلة</h4>
+                <p class="text-xs text-green-600">سيتم إرسال تنبيه تلقائي للعملاء الذين تركوا سلاتهم خلال ساعة.</p>
+            </div>
+        </div>
+        <a href="/scenarios" class="text-sm text-teal-600 font-bold hover:underline flex items-center gap-1">
+            <i class="fa-solid fa-gear"></i> إعدادات السيناريوهات
+        </a>
+    </div>
+
+    <!-- Info Card -->
+    <div class="bg-white p-6 rounded-3xl border border-gray-200 shadow-sm">
+        <div class="flex items-start gap-4">
+            <div
+                class="w-12 h-12 bg-orange-50 rounded-2xl flex items-center justify-center text-orange-500 text-xl shrink-0">
+                <i class="fa-solid fa-cart-shopping"></i>
+            </div>
+            <div>
+                <h3 class="font-bold text-gray-800 mb-1">كيف تعمل تنبيهات السلات المتروكة؟</h3>
+                <p class="text-sm text-gray-500 leading-relaxed">
+                    عند ترك العميل لسلة تسوق بدون إتمام الشراء، يقوم النظام تلقائياً بإرسال رسالة واتساب تذكيرية تحتوي
+                    على تفاصيل المنتجات المتروكة.
+                    يمكنك تخصيص نص الرسالة وتوقيت الإرسال من <a href="/scenarios"
+                        class="text-teal-600 font-bold hover:underline">إعدادات السيناريوهات</a>.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Carts -->
+    <div class="bg-white rounded-3xl shadow-sm border border-gray-200 overflow-hidden">
+        <div class="p-6 border-b border-gray-100 flex justify-between items-center">
+            <h3 class="font-bold text-gray-800 flex items-center gap-2">
+                <i class="fa-solid fa-clock-rotate-left text-orange-500"></i> سجل السلات المتروكة
+            </h3>
+            <div class="flex gap-4 text-xs font-bold">
+                <span class="text-gray-500">إجمالي: {{ stats.totalAbandoned }}</span>
+                <span class="text-green-600">مستعادة: {{ stats.totalRecovered }}</span>
+                <span class="text-green-600">عائد: {{ stats.recoveredRevenue }} ر.س</span>
+            </div>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-right">
+                <thead>
+                    <tr class="bg-gray-50/50 text-xs text-gray-400 uppercase tracking-wider">
+                        <th class="px-6 py-4 font-bold">العميل</th>
+                        <th class="px-6 py-4 font-bold">قيمة السلة</th>
+                        <th class="px-6 py-4 font-bold">المنتجات</th>
+                        <th class="px-6 py-4 font-bold">الحالة</th>
+                        <th class="px-6 py-4 font-bold">محاولات الاستعادة</th>
+                        <th class="px-6 py-4 font-bold">التاريخ</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    {% for cart in carts %}
+                    <tr class="hover:bg-gray-50/50 transition">
+                        <td class="px-6 py-4">
+                            <div class="font-bold text-gray-800 text-sm">{{ cart.Customer.name or 'ضيف' }}</div>
+                            <div class="text-[10px] text-gray-400 font-mono">{{ cart.Customer.phone }}</div>
+                        </td>
+                        <td class="px-6 py-4 font-bold text-gray-900 text-sm">{{ cart.total_amount }} {{ cart.currency
+                            }}</td>
+                        <td class="px-6 py-4 text-xs text-gray-500">
+                            {% for item in cart.items %}
+                            <span class="block">• {{ item.product.name or item.name }}</span>
+                            {% endfor %}
+                        </td>
+                        <td class="px-6 py-4">
+                            {% if cart.status == 'recovered' %}
+                            <span class="px-2 py-1 rounded-full bg-green-100 text-green-600 text-[10px] font-bold">تم
+                                الشراء ✅</span>
+                            {% elif cart.status == 'abandoned' %}
+                            <span
+                                class="px-2 py-1 rounded-full bg-orange-100 text-orange-600 text-[10px] font-bold">متروكة
+                                ⏳</span>
+                            {% elif cart.status == 'lost' %}
+                            <span class="px-2 py-1 rounded-full bg-gray-100 text-gray-500 text-[10px] font-bold">مفقودة
+                                ❌</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 text-center">
+                            <span
+                                class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-50 text-blue-600 text-xs font-bold">{{
+                                cart.recovery_attempts or 0 }}</span>
+                        </td>
+                        <td class="px-6 py-4 text-xs text-gray-500" dir="ltr">{{ cart.created_at | date }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="px-6 py-12 text-center">
+                            <div
+                                class="w-14 h-14 mx-auto bg-gray-50 rounded-full flex items-center justify-center text-2xl text-gray-300 mb-3">
+                                <i class="fa-solid fa-cart-arrow-down"></i>
+                            </div>
+                            <p class="text-gray-400 font-bold text-sm">لا توجد سلات متروكة حتى الآن</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {% endif %}
+</div>
+{% endblock %}

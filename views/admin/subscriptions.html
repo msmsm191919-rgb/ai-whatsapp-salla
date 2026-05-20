@@ -1,0 +1,92 @@
+{% extends 'admin/layout.html' %}
+
+{% block content %}
+<div class="space-y-6">
+
+    <!-- Header & Filters -->
+    <div class="flex justify-between items-center bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+        <div>
+            <h2 class="text-xl font-bold text-gray-900">الاشتراكات (Subscriptions)</h2>
+            <p class="text-xs text-gray-500 mt-1">إدارة اشتراكات العملاء وحالات التجديد.</p>
+        </div>
+        <div class="flex gap-3">
+            <div class="flex bg-gray-100 rounded-lg p-1">
+                <button class="px-3 py-1 text-xs font-bold bg-white shadow rounded-md text-gray-800">الكل</button>
+                <button class="px-3 py-1 text-xs font-bold text-gray-500 hover:text-gray-700">Active</button>
+                <button class="px-3 py-1 text-xs font-bold text-gray-500 hover:text-gray-700">Trial</button>
+                <button class="px-3 py-1 text-xs font-bold text-gray-500 hover:text-gray-700">Expired</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Subscriptions Table -->
+    <div class="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+        <table class="w-full text-right text-sm text-gray-600">
+            <thead class="bg-gray-50 text-gray-500 uppercase font-bold text-xs border-b border-gray-200">
+                <tr>
+                    <th class="px-6 py-4">المتجر</th>
+                    <th class="px-6 py-4">الباقة</th>
+                    <th class="px-6 py-4">نوع الدفع</th>
+                    <th class="px-6 py-4">الحالة</th>
+                    <th class="px-6 py-4">تاريخ البداية</th>
+                    <th class="px-6 py-4">تاريخ النهاية</th>
+                    <th class="px-6 py-4 text-center">إجراءات</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+                {% for sub in subscriptions %}
+                <tr class="hover:bg-gray-50 transition">
+                    <td class="px-6 py-4 font-bold text-gray-900">{{ sub.Tenant.store_name }}</td>
+                    <td class="px-6 py-4">
+                        <span
+                            class="bg-blue-50 text-blue-700 px-2 py-0.5 rounded text-xs font-bold border border-blue-100">
+                            {{ sub.Plan.name }}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 text-xs font-mono">
+                        {% if sub.is_yearly %} سنوي (Annual) {% else %} شهري (Monthly) {% endif %}
+                    </td>
+                    <td class="px-6 py-4">
+                        {% if sub.status == 'active' %}
+                        <span
+                            class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                            Active ✅
+                        </span>
+                        {% elif sub.status == 'trial' %}
+                        <span
+                            class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-800">
+                            Trial ⏳
+                        </span>
+                        {% else %}
+                        <span
+                            class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+                            Expired ❌
+                        </span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 text-xs text-gray-500 font-mono">{{ sub.start_date }}</td>
+                    <td class="px-6 py-4 text-xs text-gray-500 font-mono">
+                        {% if sub.days_left < 7 %} <span class="text-red-500 font-bold">{{ sub.end_date }} ({{
+                            sub.days_left }} يوم)</span>
+                            {% else %}
+                            {{ sub.end_date }}
+                            {% endif %}
+                    </td>
+                    <td class="px-6 py-4 text-center">
+                        <button class="text-teal-600 hover:text-teal-800 text-xs font-bold underline">تجديد
+                            يدوي</button>
+                        <span class="text-gray-300 mx-2">|</span>
+                        <button class="text-gray-500 hover:text-gray-800 text-xs">تعديل</button>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" class="px-6 py-12 text-center text-gray-400">لا توجد اشتراكات مسجلة</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+</div>
+{% endblock %}

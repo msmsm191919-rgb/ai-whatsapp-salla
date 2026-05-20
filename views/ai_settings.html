@@ -1,0 +1,150 @@
+{% extends "layouts/dashboard_master.html" %}
+
+{% block title %}إعدادات الذكاء | Salla AI{% endblock %}
+{% block header_title %}إعدادات الذكاء 🧠{% endblock %}
+{% block header_subtitle %}خصص شخصية المساعد الذكي وكيفية رده على العملاء{% endblock %}
+
+{% block header_actions %}
+<button onclick="document.getElementById('settingsForm').submit()"
+    class="bg-blue-600 text-white px-6 py-2.5 rounded-xl text-sm font-bold hover:bg-blue-700 transition shadow-lg shadow-blue-200 flex items-center gap-2">
+    <i class="fa-solid fa-save"></i> حفظ التغييرات
+</button>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto space-y-8">
+
+    <form action="/settings/ai" method="POST" id="settingsForm" class="space-y-8">
+
+        <!-- Alert Section -->
+        <div class="bg-blue-50 border border-blue-100 rounded-2xl p-6 flex items-start gap-4 shadow-sm">
+            <div
+                class="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center flex-shrink-0">
+                <i class="fa-solid fa-wand-magic-sparkles text-lg"></i>
+            </div>
+            <div>
+                <h4 class="font-bold text-blue-900 text-sm">اجعل البوت يشبه هوية متجرك</h4>
+                <p class="text-xs text-blue-700 mt-1 leading-relaxed">يمكنك التحكم تماماً في طريقة تحدث
+                    البوت. هل تريده رسمياً؟ أم ودوداً جداً؟ يمكنك أيضاً تعليمه معلومات محددة عن متجرك ليجيب
+                    بدقة.</p>
+            </div>
+        </div>
+
+        <!-- Main Configuration Card -->
+        <div class="bg-white rounded-3xl shadow-sm border border-gray-200 p-8 relative overflow-hidden">
+            <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-purple-500">
+            </div>
+
+            <div class="flex items-center gap-3 mb-8">
+                <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                    <i class="fa-solid fa-fingerprint text-xl"></i>
+                </div>
+                <h3 class="text-lg font-bold text-gray-800">هوية وأسلوب البوت</h3>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <!-- Bot Name -->
+                <div class="space-y-2">
+                    <label class="block text-sm font-bold text-gray-700">اسم المساعد الذكي</label>
+                    <div class="relative">
+                        <span class="absolute right-4 top-3.5 text-gray-400"><i class="fa-solid fa-robot"></i></span>
+                        <input type="text" name="bot_name" value="{{ config.bot_name or 'مبهر AI' }}"
+                            class="w-full pr-10 pl-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-500 transition text-sm font-medium placeholder-gray-300"
+                            placeholder="مثلاً: مساعد المتجر">
+                    </div>
+                    <p class="text-[10px] text-gray-400">الاسم الذي سيستخدمه البوت للتعريف عن نفسه.</p>
+                </div>
+
+                <!-- Bot Tone -->
+                <div class="space-y-2">
+                    <label class="block text-sm font-bold text-gray-700">نبرة الحديث (Tone)</label>
+                    <div class="relative">
+                        <span class="absolute right-4 top-3.5 text-gray-400"><i
+                                class="fa-solid fa-masks-theater"></i></span>
+                        <select name="bot_tone"
+                            class="w-full pr-10 pl-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-500 transition text-sm font-medium bg-white appearance-none">
+                            <option value="friendly" {% if config.bot_tone=='friendly' %}selected{% endif %}>ودود ومرح
+                                (موصى به) 😊</option>
+                            <option value="formal" {% if config.bot_tone=='formal' %}selected{% endif %}>
+                                رسمي ومهني 💼</option>
+                            <option value="funny" {% if config.bot_tone=='funny' %}selected{% endif %}>فكاهي
+                                وخفيف الظل 😂</option>
+                        </select>
+                        <i
+                            class="fa-solid fa-chevron-down absolute left-4 top-4 text-gray-400 text-xs pointer-events-none"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Knowledge Config -->
+        <div class="bg-white rounded-3xl shadow-sm border border-gray-200 p-8 relative overflow-hidden">
+            <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-teal-500 to-green-500"></div>
+
+            <div class="flex items-center gap-3 mb-8">
+                <div class="w-10 h-10 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center">
+                    <i class="fa-solid fa-brain text-xl"></i>
+                </div>
+                <h3 class="text-lg font-bold text-gray-800">المعرفة الأساسية</h3>
+            </div>
+
+            <div class="space-y-6">
+                <!-- Policy -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="space-y-2">
+                        <label class="block text-sm font-bold text-gray-700">مدة التوصيل</label>
+                        <input type="text" name="shipping_time" value="{{ config.shipping_time or '' }}"
+                            placeholder="مثلاً: 3-5 أيام داخل الرياض"
+                            class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-500 transition text-sm">
+                    </div>
+                    <div class="space-y-2">
+                        <label class="block text-sm font-bold text-gray-700">سياسة الاسترجاع</label>
+                        <input type="text" name="policy_return" value="{{ config.policy_return or '' }}"
+                            placeholder="مثلاً: خلال 7 أيام من الاستلام"
+                            class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-500 transition text-sm">
+                    </div>
+                </div>
+
+                <!-- Custom Instructions -->
+                <div class="space-y-2">
+                    <label class="block text-sm font-bold text-gray-700">تعليمات خاصة (Custom
+                        Instructions)</label>
+                    <textarea name="custom_instructions" rows="4"
+                        class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-500 transition text-sm placeholder-gray-300"
+                        placeholder="أضف أي معلومات إضافية أو تعليمات تريد من البوت الالتزام بها... (مثلاً: لا تعطي أسعار الجملة، دائماً اقترح منتجات بديلة)">{{ config.custom_instructions or '' }}</textarea>
+                    <p class="text-[10px] text-gray-400">سيتم دمج هذه التعليمات في الـ System Prompt الخاص
+                        بالذكاء الاصطناعي.</p>
+                </div>
+            </div>
+
+        </div>
+
+    </form>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    // Check URL params for 'saved' status
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('status') === 'saved') {
+        const Toast = Swal.mixin({
+            toast: true,
+            position: 'top-start',
+            showConfirmButton: false,
+            timer: 3000,
+            timerProgressBar: true,
+            didOpen: (toast) => {
+                toast.addEventListener('mouseenter', Swal.stopTimer)
+                toast.addEventListener('mouseleave', Swal.resumeTimer)
+            }
+        });
+        Toast.fire({
+            icon: 'success',
+            title: 'تم حفظ الإعدادات بنجاح'
+        });
+    }
+</script>
+{% endblock %}

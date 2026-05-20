@@ -1,0 +1,89 @@
+{% extends 'admin/layout.html' %}
+
+{% block content %}
+<div class="space-y-6">
+    <div class="flex justify-between items-end">
+        <div>
+            <h2 class="text-2xl font-bold text-gray-900">سجلات النظام</h2>
+            <p class="text-gray-500 text-sm">تتبع جميع عمليات الإرسال والردود الآلية في الوقت الفعلي.</p>
+        </div>
+        <div class="flex gap-2">
+            <input type="text" placeholder="بحث بالرقم أو المحتوى..."
+                class="border border-gray-300 rounded px-3 py-2 text-xs w-64">
+            <button class="bg-gray-800 text-white px-4 py-2 rounded text-xs hover:bg-gray-700">تحديث</button>
+        </div>
+    </div>
+
+    <!-- Logs Table -->
+    <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <table class="w-full text-right">
+            <thead class="bg-gray-50 text-gray-500 text-xs font-medium border-b border-gray-200 uppercase">
+                <tr>
+                    <th class="px-6 py-3">الوقت</th>
+                    <th class="px-6 py-3">المتجر</th>
+                    <th class="px-6 py-3">النوع</th>
+                    <th class="px-6 py-3">المحتوى</th>
+                    <th class="px-6 py-3">الحالة</th>
+                    <th class="px-6 py-3">التفاصيل</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100 text-sm">
+                {% if logs and logs.length > 0 %}
+                {% for log in logs %}
+                <tr class="hover:bg-gray-50 transition group">
+                    <td class="px-6 py-4 whitespace-nowrap text-gray-500 text-xs dir-ltr">{{
+                        log.createdAt.toLocaleString('en-US') if log.createdAt else 'N/A' }}</td>
+                    <td class="px-6 py-4 font-bold text-gray-800">{{ log.Tenant.store_name if log.Tenant else 'Unknown'
+                        }}</td>
+                    <td class="px-6 py-4">
+                        {% if log.direction == 'in' %}
+                        <span class="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-[10px] font-bold"><i
+                                class="fa-solid fa-arrow-down mr-1"></i> وارد</span>
+                        {% else %}
+                        <span class="bg-green-100 text-green-700 px-2 py-1 rounded-full text-[10px] font-bold"><i
+                                class="fa-solid fa-arrow-up mr-1"></i> صادر</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 truncate max-w-xs text-gray-600" title="{{ log.content }}">{{ log.content }}
+                    </td>
+                    <td class="px-6 py-4">
+                        {% if log.status == 'sent' or log.status == 'received' %}
+                        <span class="text-green-500 font-bold text-xs"><i class="fa-solid fa-check-circle"></i> {{
+                            log.status }}</span>
+                        {% else %}
+                        <span class="text-red-500 font-bold text-xs"><i class="fa-solid fa-times-circle"></i> {{
+                            log.status }}</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4">
+                        <button
+                            class="text-gray-400 hover:text-teal-600 font-bold text-xs opacity-0 group-hover:opacity-100 transition">عرض
+                            JSON</button>
+                    </td>
+                </tr>
+                {% endfor %}
+                {% else %}
+                <tr>
+                    <td colspan="6" class="text-center py-12 text-gray-400">
+                        <i class="fa-solid fa-box-open text-4xl mb-3 block opacity-20"></i>
+                        <p>لا توجد سجلات لعرضها حالياً.</p>
+                    </td>
+                </tr>
+                {% endif %}
+            </tbody>
+        </table>
+
+        <!-- Pagination Mock -->
+        <div class="bg-gray-50 px-6 py-3 border-t border-gray-200 flex justify-between items-center">
+            <span class="text-xs text-gray-500 font-bold">عرض 1-50 من 1200</span>
+            <div class="flex gap-1">
+                <button
+                    class="px-3 py-1 bg-white border border-gray-300 rounded text-xs text-gray-400 disabled:opacity-50"
+                    disabled>السابق</button>
+                <button
+                    class="px-3 py-1 bg-white border border-gray-300 rounded text-xs text-gray-700 hover:bg-gray-100">التالي</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

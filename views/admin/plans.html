@@ -1,0 +1,361 @@
+{% extends 'admin/layout.html' %}
+
+{% block content %}
+<div class="space-y-6">
+    <div class="flex justify-between items-end">
+        <div>
+            <h2 class="text-2xl font-bold text-gray-900">إدارة الباقات الاحترافية</h2>
+            <p class="text-gray-500 text-sm">قم بتخصيص كل تفاصيل خطط الاشتراك، من التسعير إلى قدرات الذكاء الاصطناعي.
+            </p>
+        </div>
+        <button
+            onclick="document.getElementById('newPlanModal').classList.remove('hidden'); document.getElementById('newPlanModal').classList.add('flex');"
+            class="bg-gray-900 text-white font-bold py-2 px-5 rounded-lg shadow-lg hover:bg-black transition transform hover:-translate-y-0.5 text-sm flex items-center gap-2">
+            <i class="fa-solid fa-plus-circle"></i> إضافة باقة
+        </button>
+    </div>
+
+    <!-- Plans Grid -->
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+
+        {% for plan in plans %}
+        {% set f = plan.features or {} %}
+        {% set themeInfo = {
+        'teal': 'border-teal-500 bg-teal-50',
+        'blue': 'border-blue-500 bg-blue-50',
+        'purple': 'border-purple-500 bg-purple-50',
+        'orange': 'border-orange-500 bg-orange-50',
+        'red': 'border-red-500 bg-red-50',
+        'gray': 'border-gray-500 bg-gray-50'
+        } %}
+        {% set currentTheme = themeInfo[f.color or 'gray'] %}
+
+        <form action="/admin/plans/save" method="POST"
+            class="bg-white rounded-xl border border-gray-200 shadow-sm relative overflow-visible flex flex-col group transition hover:shadow-md border-t-4 {{ f.color if f.color else 'border-gray-500' }}">
+            <input type="hidden" name="id" value="{{ plan.id }}">
+
+            <!-- Floating Badge -->
+            {% if f.badge %}
+            <div class="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-10">
+                <span class="bg-gray-900 text-white text-[10px] uppercase font-bold px-3 py-1 rounded-full shadow-sm">
+                    {{ f.badge }}
+                </span>
+            </div>
+            {% endif %}
+
+            <!-- Visibility Toggle (Top Right) -->
+            <div class="absolute top-3 left-3 z-10">
+                <label class="cursor-pointer text-gray-400 hover:text-gray-600 transition" title="إظهار/إخفاء الباقة">
+                    <input type="checkbox" name="is_visible" class="hidden peer" {{ 'checked' if (f.is_visible is not
+                        defined or f.is_visible) }}>
+                    <i class="fa-solid fa-eye peer-checked:text-teal-600 peer-checked:block hidden text-sm"></i>
+                    <i class="fa-solid fa-eye-slash block peer-checked:hidden text-sm"></i>
+                </label>
+            </div>
+
+            <!-- Header -->
+            <div class="p-5 border-b border-gray-100 text-center relative bg-gray-50/50">
+                <input type="text" name="name" value="{{ plan.name }}" required
+                    class="block w-full text-center font-black text-xl text-gray-800 bg-transparent border-none focus:ring-0 p-0 placeholder-gray-300">
+                <p class="text-[10px] text-gray-400 mt-1 uppercase tracking-widest font-bold">PLAN ID: {{ plan.id }}</p>
+            </div>
+
+            <!-- TABS CONTROLLER -->
+            <div class="flex text-[10px] font-bold text-gray-500 border-b border-gray-100 bg-white">
+                <button type="button" onclick="switchTab('{{ plan.id }}', 'basic')" id="tab-btn-basic-{{ plan.id }}"
+                    class="flex-1 py-3 text-teal-600 border-b-2 border-teal-600 bg-gray-50">الأساسية</button>
+                <button type="button" onclick="switchTab('{{ plan.id }}', 'features')"
+                    id="tab-btn-features-{{ plan.id }}"
+                    class="flex-1 py-3 hover:text-gray-800 hover:bg-gray-50">المميزات</button>
+                <button type="button" onclick="switchTab('{{ plan.id }}', 'design')" id="tab-btn-design-{{ plan.id }}"
+                    class="flex-1 py-3 hover:text-gray-800 hover:bg-gray-50">التصميم</button>
+            </div>
+
+            <!-- TAB CONTENT AREA -->
+            <div class="p-5 flex-1 bg-white min-h-[350px]">
+
+                <!-- TAB 1: BASIC (Pricing & Limits) -->
+                <div id="tab-content-basic-{{ plan.id }}" class="space-y-5 block">
+                    <!-- Pricing -->
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="bg-gray-50 p-2 rounded border border-gray-100 text-center">
+                            <label class="block text-[10px] text-gray-400 font-bold mb-1">الشهري</label>
+                            <input type="number" step="0.01" name="price_monthly" value="{{ plan.price_monthly }}"
+                                class="w-full bg-transparent text-center font-black text-lg text-gray-800 border-none p-0 focus:ring-0">
+                            <span class="text-[9px] text-gray-400">ر.س</span>
+                        </div>
+                        <div class="bg-purple-50 p-2 rounded border border-purple-100 text-center">
+                            <label class="block text-[10px] text-purple-400 font-bold mb-1">السنوي</label>
+                            <input type="number" step="0.01" name="price_yearly" value="{{ plan.price_yearly }}"
+                                class="w-full bg-transparent text-center font-black text-lg text-purple-700 border-none p-0 focus:ring-0">
+                            <span class="text-[9px] text-purple-400">ر.س</span>
+                        </div>
+                    </div>
+
+                    <!-- Limits Group -->
+                    <div class="space-y-4 pt-2">
+                        <div class="flex items-center justify-between border-b border-gray-50 pb-2">
+                            <span class="text-xs font-bold text-gray-600"><i
+                                    class="fa-solid fa-envelope ml-2 text-gray-400"></i> حد الرسائل</span>
+                            <input type="number" name="msg_limit_monthly" value="{{ plan.msg_limit_monthly }}"
+                                class="w-20 text-center text-sm font-bold bg-gray-100 rounded border-none py-1 h-8 focus:ring-1 focus:ring-teal-500">
+                        </div>
+                        <div class="flex items-center justify-between border-b border-gray-50 pb-2">
+                            <span class="text-xs font-bold text-gray-600"><i
+                                    class="fa-brands fa-whatsapp ml-2 text-gray-400"></i> أرقام واتساب</span>
+                            <input type="number" name="whatsapp_count" value="{{ f.whatsapp_count or 1 }}"
+                                class="w-16 text-center text-sm font-bold bg-gray-100 rounded border-none py-1 h-8 focus:ring-1 focus:ring-teal-500">
+                        </div>
+                        <div class="flex items-center justify-between border-b border-gray-50 pb-2">
+                            <span class="text-xs font-bold text-gray-600"><i
+                                    class="fa-solid fa-users ml-2 text-gray-400"></i> أعضاء الفريق</span>
+                            <input type="number" name="feat_team_members" value="{{ f.team_members or 1 }}"
+                                class="w-16 text-center text-sm font-bold bg-gray-100 rounded border-none py-1 h-8 focus:ring-1 focus:ring-teal-500">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 2: FEATURES (AI & Modules) -->
+                <div id="tab-content-features-{{ plan.id }}" class="space-y-5 hidden">
+
+                    <!-- AI Config -->
+                    <div class="bg-gradient-to-br from-indigo-50 to-purple-50 p-3 rounded-lg border border-purple-100">
+                        <div class="flex justify-between items-center mb-3">
+                            <span class="text-xs font-black text-indigo-800"><i class="fa-solid fa-robot ml-1"></i>
+                                الذكاء الاصطناعي</span>
+                            <label class="toggle-switch relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" name="feat_ai_enabled" class="sr-only peer" {{ 'checked' if
+                                    f.ai_enabled }}>
+                                <div
+                                    class="w-8 h-4 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-indigo-600">
+                                </div>
+                            </label>
+                        </div>
+                        <select name="feat_ai_model"
+                            class="w-full text-[10px] font-bold bg-white border-none rounded py-1 px-2 mb-2 text-gray-700 shadow-sm focus:ring-0">
+                            <option value="gpt-3.5-turbo" {{ 'selected' if f.ai_model=='gpt-3.5-turbo' }}>GPT-3.5 Turbo
+                                (Standard)</option>
+                            <option value="gpt-4" {{ 'selected' if f.ai_model=='gpt-4' }}>GPT-4 (Premium)</option>
+                            <option value="gpt-4o" {{ 'selected' if f.ai_model=='gpt-4o' }}>GPT-4o (Ultra Fast)</option>
+                        </select>
+                        <div class="flex justify-between items-center text-[10px]">
+                            <span class="text-gray-500">ملفات التدريب</span>
+                            <input type="number" name="feat_ai_training_docs" value="{{ f.ai_training_docs or 0 }}"
+                                class="w-12 text-center bg-white rounded border-none h-6">
+                        </div>
+                    </div>
+
+                    <!-- Toggles Grid -->
+                    <div class="space-y-2">
+                        <!-- Campaigns -->
+                        <label
+                            class="flex items-center justify-between p-2 hover:bg-gray-50 rounded cursor-pointer transition">
+                            <div class="flex items-center gap-2">
+                                <div
+                                    class="w-6 h-6 rounded bg-green-100 text-green-600 flex items-center justify-center text-xs">
+                                    <i class="fa-solid fa-bullhorn"></i></div>
+                                <span class="text-xs font-bold text-gray-700">حملات تسويقية</span>
+                            </div>
+                            <input type="checkbox" name="feat_campaigns" class="accent-teal-600 w-4 h-4 rounded"
+                                {{ 'checked' if f.campaigns }}>
+                        </label>
+
+                        <!-- API Access -->
+                        <label
+                            class="flex items-center justify-between p-2 hover:bg-gray-50 rounded cursor-pointer transition">
+                            <div class="flex items-center gap-2">
+                                <div
+                                    class="w-6 h-6 rounded bg-blue-100 text-blue-600 flex items-center justify-center text-xs">
+                                    <i class="fa-solid fa-code"></i></div>
+                                <span class="text-xs font-bold text-gray-700">API Access</span>
+                            </div>
+                            <input type="checkbox" name="feat_api_access" class="accent-teal-600 w-4 h-4 rounded"
+                                {{ 'checked' if f.api_access }}>
+                        </label>
+
+                        <!-- No Branding -->
+                        <label
+                            class="flex items-center justify-between p-2 hover:bg-gray-50 rounded cursor-pointer transition">
+                            <div class="flex items-center gap-2">
+                                <div
+                                    class="w-6 h-6 rounded bg-orange-100 text-orange-600 flex items-center justify-center text-xs">
+                                    <i class="fa-solid fa-copyright"></i></div>
+                                <span class="text-xs font-bold text-gray-700">إزالة "مبهر"</span>
+                            </div>
+                            <input type="checkbox" name="feat_remove_branding" class="accent-teal-600 w-4 h-4 rounded"
+                                {{ 'checked' if f.remove_branding }}>
+                        </label>
+                    </div>
+
+                    <!-- Support Level -->
+                    <div class="pt-2 border-t border-gray-100">
+                        <label class="block text-[10px] font-bold text-gray-400 mb-1">مستوى الدعم</label>
+                        <select name="feat_support_level"
+                            class="w-full text-xs bg-gray-50 border-transparent rounded py-2 px-2 text-gray-700 focus:bg-white focus:border-gray-200 focus:ring-0">
+                            <option value="email" {{ 'selected' if f.support_level=='email' }}>بريد إلكتروني (Standard)
+                            </option>
+                            <option value="priority" {{ 'selected' if f.support_level=='priority' }}>أولوية (Priority)
+                            </option>
+                            <option value="dedicated" {{ 'selected' if f.support_level=='dedicated' }}>مدير حساب
+                                (Dedicated)</option>
+                        </select>
+                    </div>
+
+                </div>
+
+                <!-- TAB 3: DESIGN (Color & Badges) -->
+                <div id="tab-content-design-{{ plan.id }}" class="space-y-6 hidden">
+
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 mb-2">لون الباقة (Theme)</label>
+                        <div class="flex gap-3">
+                            <label class="cursor-pointer">
+                                <input type="radio" name="ui_color" value="teal" class="peer sr-only" {{ 'checked' if
+                                    f.color=='teal' }}>
+                                <div
+                                    class="w-6 h-6 rounded-full bg-teal-500 ring-2 ring-transparent peer-checked:ring-offset-2 peer-checked:ring-teal-500">
+                                </div>
+                            </label>
+                            <label class="cursor-pointer">
+                                <input type="radio" name="ui_color" value="blue" class="peer sr-only" {{ 'checked' if
+                                    f.color=='blue' }}>
+                                <div
+                                    class="w-6 h-6 rounded-full bg-blue-500 ring-2 ring-transparent peer-checked:ring-offset-2 peer-checked:ring-blue-500">
+                                </div>
+                            </label>
+                            <label class="cursor-pointer">
+                                <input type="radio" name="ui_color" value="purple" class="peer sr-only" {{ 'checked' if
+                                    f.color=='purple' }}>
+                                <div
+                                    class="w-6 h-6 rounded-full bg-purple-500 ring-2 ring-transparent peer-checked:ring-offset-2 peer-checked:ring-purple-500">
+                                </div>
+                            </label>
+                            <label class="cursor-pointer">
+                                <input type="radio" name="ui_color" value="orange" class="peer sr-only" {{ 'checked' if
+                                    f.color=='orange' }}>
+                                <div
+                                    class="w-6 h-6 rounded-full bg-orange-500 ring-2 ring-transparent peer-checked:ring-offset-2 peer-checked:ring-orange-500">
+                                </div>
+                            </label>
+                            <label class="cursor-pointer">
+                                <input type="radio" name="ui_color" value="gray" class="peer sr-only" {{ 'checked' if
+                                    f.color=='gray' or not f.color }}>
+                                <div
+                                    class="w-6 h-6 rounded-full bg-gray-500 ring-2 ring-transparent peer-checked:ring-offset-2 peer-checked:ring-gray-500">
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 mb-2">الشارة (Badge)</label>
+                        <select name="ui_badge"
+                            class="w-full text-xs bg-gray-50 border-gray-200 rounded py-2 text-gray-700">
+                            <option value="">بدون شارة</option>
+                            <option value="الأكثر شعبية" {{ 'selected' if f.badge=='الأكثر شعبية' }}>🔥 الأكثر شعبية
+                            </option>
+                            <option value="الأفضل قيمة" {{ 'selected' if f.badge=='الأفضل قيمة' }}>💎 الأفضل قيمة
+                            </option>
+                            <option value="جديد" {{ 'selected' if f.badge=='جديد' }}>✨ جديد</option>
+                        </select>
+                    </div>
+
+                    <div class="mt-8 p-3 bg-yellow-50 rounded border border-yellow-100">
+                        <p class="text-[10px] text-yellow-800 leading-relaxed">
+                            <i class="fa-solid fa-lightbulb ml-1"></i> تلميح: الألوان والشارات تساعد في توجيه العملاء
+                            نحو الباقة التي تريد بيعها أكثر (مثل باقة الـ Pro).
+                        </p>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <!-- Footer Action -->
+            <div class="bg-gray-50 p-4 border-t border-gray-100 flex justify-between items-center">
+                <button type="button" class="text-red-400 hover:text-red-600 text-[10px] font-bold"
+                    onclick="alert('للحذف، يرجى التواصل مع الدعم الفني (Safety Lock).')">
+                    <i class="fa-solid fa-trash"></i>
+                </button>
+                <button type="submit"
+                    class="bg-gray-900 text-white font-bold py-2 px-6 rounded-lg hover:bg-black transition text-xs shadow-md flex items-center gap-2">
+                    <i class="fa-solid fa-check"></i> حفظ التعديلات
+                </button>
+            </div>
+        </form>
+        {% endfor %}
+
+    </div>
+</div>
+
+<!-- Modal for New ONLY -->
+<div id="newPlanModal"
+    class="fixed inset-0 bg-gray-900 bg-opacity-60 hidden items-center justify-center z-50 backdrop-blur-sm">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg p-6">
+        <h3 class="text-xl font-bold text-gray-900 mb-4">إضافة باقة أساسية</h3>
+        <p class="text-xs text-gray-500 mb-6">يمكنك تعديل باقي التفاصيل المتقدمة بعد إنشاء الباقة.</p>
+        <form action="/admin/plans/save" method="POST">
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">اسم الباقة</label>
+                    <input type="text" name="name" required
+                        class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:ring-teal-500 focus:border-teal-500">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-1">سعر شهري</label>
+                        <input type="number" step="0.01" name="price_monthly" required
+                            class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:ring-teal-500 focus:border-teal-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-1">سعر سنوي</label>
+                        <input type="number" step="0.01" name="price_yearly" required
+                            class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:ring-teal-500 focus:border-teal-500">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">حد الرسائل المبدئي</label>
+                    <input type="number" name="msg_limit_monthly" required
+                        class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:ring-teal-500 focus:border-teal-500">
+                </div>
+            </div>
+            <div class="mt-6 flex justify-end gap-3">
+                <button type="button"
+                    onclick="document.getElementById('newPlanModal').classList.add('hidden'); document.getElementById('newPlanModal').classList.remove('flex');"
+                    class="px-4 py-2 text-gray-600 font-bold hover:bg-gray-100 rounded-lg text-sm">إلغاء</button>
+                <button type="submit"
+                    class="px-6 py-2 bg-teal-600 text-white font-bold rounded-lg hover:bg-teal-700 text-sm">إنشاء
+                    سريع</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function switchTab(planId, tabName) {
+        // 1. Reset all tabs for this plan
+        ['basic', 'features', 'design'].forEach(t => {
+            const btn = document.getElementById(`tab-btn-${t}-${planId}`);
+            const content = document.getElementById(`tab-content-${t}-${planId}`);
+
+            // Reset Button Style
+            btn.classList.remove('text-teal-600', 'border-b-2', 'border-teal-600', 'bg-gray-50');
+            btn.classList.add('hover:text-gray-800', 'hover:bg-gray-50');
+
+            // Hide Content
+            content.classList.add('hidden');
+            content.classList.remove('block');
+        });
+
+        // 2. Activate Selected
+        const activeBtn = document.getElementById(`tab-btn-${tabName}-${planId}`);
+        const activeContent = document.getElementById(`tab-content-${tabName}-${planId}`);
+
+        activeBtn.classList.add('text-teal-600', 'border-b-2', 'border-teal-600', 'bg-gray-50');
+        activeBtn.classList.remove('hover:text-gray-800', 'hover:bg-gray-50');
+
+        activeContent.classList.remove('hidden');
+        activeContent.classList.add('block');
+    }
+</script>
+{% endblock %}
