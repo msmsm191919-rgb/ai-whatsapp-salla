@@ -2058,9 +2058,10 @@ app.post("/api/campaigns/send", async (req, res) => {
 
     const { name, audience, type, message } = req.body;
 
-    // ⏱️ التأخير بين كل رسالة (بالثواني) — يحدده التاجر لتجنّب الحظر
-    // الحدود: من 1 لـ 300 ثانية، الافتراضي 2 ثانية
-    const delaySeconds = Math.min(Math.max(parseInt(req.body.delay_seconds, 10) || 2, 1), 300);
+    // ⏱️ التأخير بين كل رسالة (بالثواني) — ثابت آمن لحماية رقم التاجر من الحظر
+    // مخفي عن الواجهة عمداً (إعداد احترافي آمن افتراضياً). الحدود 1-300 لو مُرّر عبر API.
+    const SAFE_DELAY_SECONDS = 7;
+    const delaySeconds = Math.min(Math.max(parseInt(req.body.delay_seconds, 10) || SAFE_DELAY_SECONDS, 1), 300);
 
     // 2. Create Campaign Record
     const campaign = await db.models.Campaign.create({
