@@ -50,7 +50,11 @@ router.post('/billing/checkout', async (req, res) => {
 });
 
 // GET /api/billing/simulate-success (DEV ONLY)
+// ⛔ محمي: يمنع تزوير نجاح الدفع في الإنتاج
 router.get('/billing/simulate-success', async (req, res) => {
+    if (process.env.NODE_ENV === 'production') {
+        return res.status(404).send("Not found");
+    }
     try {
         const { ref } = req.query;
         if (!ref) return res.status(400).send("Missing ref");

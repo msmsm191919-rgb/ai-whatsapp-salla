@@ -254,13 +254,21 @@ app.use((req, res, next) => {
   next();
 });
 
+// ⛔ حارس endpoints التطوير — يرجّع 404 في الإنتاج (يمنع تزوير الترقية/الدفع)
+const devOnly = (req, res, next) => {
+  if (process.env.NODE_ENV === 'production') {
+    return res.status(404).json({ ok: false, error: 'Not found' });
+  }
+  next();
+};
+
 app.use('/api', apiRoutes);
 app.use('/dashboard', dashboardRoutes);
 app.use('/settings', settingsRoutes);
 app.use('/admin', adminRoutes);
 
 // DEV TOOL: Force Upgrade
-app.get('/force-upgrade', async (req, res) => {
+app.get('/force-upgrade', devOnly, async (req, res) => {
   const db = SallaDatabase.connection;
   const tenant = await db.models.Tenant.findOne({ where: { salla_merchant_id: req.user.merchant.id } });
   const [sub] = await db.models.Subscription.findOrCreate({ where: { tenant_id: tenant.id }, defaults: { plan_id: 2 } });
@@ -271,7 +279,7 @@ app.get('/force-upgrade', async (req, res) => {
 });
 
 // DEV: Simulate Abandoned Cart Route
-app.get('/simulate/abandoned-cart', async (req, res) => {
+app.get('/simulate/abandoned-cart', devOnly, async (req, res) => {
   const mockPayload = {
     merchant: 123456789, // Our Demo Tenant
     data: {
@@ -1349,7 +1357,7 @@ app.get("/dev/switch-plan/:plan", async (req, res) => {
 
 // 🔧 Trigger scenario manually (Dev / Test)
 // GET /api/scenarios/trigger/:key  → birthday | reactivation | price_drop
-app.get("/api/scenarios/trigger/:key", async (req, res) => {
+app.get("/api/scenarios/trigger/:key", devOnly, async (req, res) => {
   try {
     const { runNow } = require('./jobs/scheduler');
     const t0 = Date.now();
@@ -2469,6 +2477,21 @@ app.get("/whatsapp-simulator", (req, res) => {
   res.render("simulator.html", { user: req.user });
 });
 
+// ═══════════════════════════════════════════════════════════════════
+// 🎭 تجربة عامة للزوّار (Demo) — ردود ذكية مكتوبة مسبقاً (بدون OpenAI)
+// عام، بدون مصادقة، وصفر تكلفة — لتحفيز الزائر على الاشتراك
+// ═══════════════════════════════════════════════════════════════════
+const DemoBot = require('./services/DemoBot');
+app.post("/api/demo/chat", (req, res) => {
+  try {
+    const { message } = req.body || {};
+    const result = DemoBot.reply(message);
+    res.json({ ok: true, ...result });
+  } catch (e) {
+    res.json({ ok: true, reply: 'أهلاً فيك! 😊 كيف أقدر أخدمك؟', tag: 'error' });
+  }
+});
+
 // Simulator API to send message and get AI reply
 app.post("/api/simulator/send", async (req, res) => {
   try {
@@ -2516,8 +2539,8 @@ SallaDatabase.connect().then(async (connection) => {
           name: 'الأساسية',
           price_monthly: 79,
           price_yearly: 759,
-          msg_limit_monthly: 1000,
-          trial_days: 5,
+          msg_limit_monthly: 10000,
+          trial_days: 7,
           ai_model_config: { model: 'gpt-4o-mini' },
           is_active: true,
           features: {
@@ -2538,7 +2561,7 @@ SallaDatabase.connect().then(async (connection) => {
           name: 'النمو',
           price_monthly: 149,
           price_yearly: 1430,
-          msg_limit_monthly: 5000,
+          msg_limit_monthly: 15000,
           ai_model_config: { model: 'gpt-4o' },
           is_active: true,
           features: {
@@ -2552,14 +2575,17 @@ SallaDatabase.connect().then(async (connection) => {
             support_level: 'priority',
             api_access: true,
             remove_branding: false,
-            scenarios: 'advanced'
+            scenarios: 'advanced',
+            messages_overage_price: 0.02,
+            messages_hard_limit: 30000,
+            fair_use: true
           }
         },
         {
           name: 'الشركات',
-          price_monthly: 349,
-          price_yearly: 3350,
-          msg_limit_monthly: -1,
+          price_monthly: 299,
+          price_yearly: 2850,
+          msg_limit_monthly: 30000,
           ai_model_config: { model: 'gpt-4o' },
           is_active: true,
           features: {
@@ -2575,7 +2601,10 @@ SallaDatabase.connect().then(async (connection) => {
             remove_branding: true,
             scenarios: 'advanced',
             ai_custom: true,
-            priority_support: true
+            priority_support: true,
+            messages_overage_price: 0.015,
+            messages_hard_limit: 60000,
+            fair_use: true
           }
         }
       ];
