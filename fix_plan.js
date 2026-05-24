@@ -12,36 +12,11 @@ const SallaDatabase = require("./database/db_instance");
         // ⚠️ هذه المميزات مطابقة 100% لـ services/planGate.js و views/pricing.html
         const arabicPlans = [
             {
-                name: 'المجانية',
-                price_monthly: 0,
-                price_yearly: 0,
-                msg_limit_monthly: 500,
-                trial_days: 0,
-                is_active: true,
-                features: {
-                    whatsapp_count: 1,
-                    campaigns: false,
-                    automation: true,
-                    automation_carts: true,
-                    automation_orders: false,
-                    welcome_messages: true,
-                    auto_reply_bot: true,
-                    ai_enabled: true,
-                    ai_advanced: false,
-                    ai_model: 'GPT-4o Mini',
-                    ai_training_docs: 1,
-                    team_members: 1,
-                    support_level: 'community',
-                    scenarios: 'basic',
-                    messages_hard_limit: 500     // حد صارم — لا overage
-                }
-            },
-            {
                 name: 'الأساسية',
                 price_monthly: 79,
                 price_yearly: 759,
                 msg_limit_monthly: 10000,
-                trial_days: 5,
+                trial_days: 7,               // 🎁 تجربة مجانية 7 أيام للعملاء الجدد
                 is_active: true,
                 features: {
                     whatsapp_count: 1,

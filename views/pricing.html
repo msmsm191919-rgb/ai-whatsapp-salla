@@ -164,66 +164,7 @@
     </div>
 
     <!-- Plans Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-stretch">
-
-        <!-- ── المجانية ── -->
-        <div
-            class="plan-card bg-white rounded-3xl border border-gray-200 flex flex-col overflow-hidden shadow-sm hover:shadow-xl">
-            <div class="h-1.5 bg-gradient-to-r from-green-400 to-emerald-500"></div>
-            <div class="p-7 flex-1 flex flex-col">
-                <div class="flex items-center gap-3 mb-5">
-                    <div
-                        class="w-12 h-12 rounded-2xl bg-green-50 flex items-center justify-center border border-green-100">
-                        <i class="fa-solid fa-gift text-green-600 text-lg"></i>
-                    </div>
-                    <div>
-                        <h3 class="text-lg font-black text-gray-900">المجانية</h3>
-                        <p class="text-[11px] text-gray-400">جرّب بدون التزام</p>
-                    </div>
-                </div>
-
-                <div class="flex items-baseline gap-2 mb-6">
-                    <span class="text-4xl font-black text-gray-900">0</span>
-                    <div class="flex flex-col">
-                        <span class="text-gray-400 text-sm">ر.س / للأبد</span>
-                        <span class="text-[10px] text-green-600 font-bold">بدون بطاقة</span>
-                    </div>
-                </div>
-
-                <div class="border-t border-gray-100 pt-5 flex-1">
-                    <ul class="space-y-3 text-[13px] text-gray-600">
-                        <li class="feature-row flex items-center gap-2.5 px-2 py-1"><i
-                                class="fa-solid fa-circle-check text-green-500 text-xs w-4"></i><span><strong>500</strong>
-                                رسالة شهرياً</span></li>
-                        <li class="feature-row flex items-center gap-2.5 px-2 py-1"><i
-                                class="fa-solid fa-circle-check text-green-500 text-xs w-4"></i><span>ربط <strong>1</strong>
-                                رقم واتساب</span></li>
-                        <li class="feature-row flex items-center gap-2.5 px-2 py-1"><i
-                                class="fa-solid fa-circle-check text-green-500 text-xs w-4"></i><span>بوت رد آلي (قوائم)</span>
-                        </li>
-                        <li class="feature-row flex items-center gap-2.5 px-2 py-1"><i
-                                class="fa-solid fa-circle-check text-green-500 text-xs w-4"></i><span>استعادة السلات
-                                المتروكة</span></li>
-                        <li class="feature-row flex items-center gap-2.5 px-2 py-1 opacity-40"><i
-                                class="fa-solid fa-xmark text-gray-400 text-xs w-4"></i><span>إشعارات حالة الطلب</span>
-                        </li>
-                        <li class="feature-row flex items-center gap-2.5 px-2 py-1 opacity-40"><i
-                                class="fa-solid fa-xmark text-gray-400 text-xs w-4"></i><span>حملات تسويقية</span></li>
-                    </ul>
-                </div>
-
-                {% if current_plan == 'المجانية' %}
-                <div class="mt-6 py-3.5 text-center bg-gray-100 text-gray-500 font-bold rounded-xl text-sm">
-                    <i class="fa-solid fa-check-circle ml-1"></i> باقتك الحالية
-                </div>
-                {% else %}
-                <button onclick="startCheckout('المجانية')"
-                    class="shine block w-full py-3.5 mt-6 text-center bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold rounded-xl shadow-lg shadow-green-500/30 hover:-translate-y-1 transition-all text-sm">
-                    ابدأ مجاناً <i class="fa-solid fa-arrow-left mr-1"></i>
-                </button>
-                {% endif %}
-            </div>
-        </div>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
 
         <!-- ── الأساسية ── -->
         <div
@@ -239,6 +180,10 @@
                         <h3 class="text-lg font-black text-gray-900">الأساسية</h3>
                         <p class="text-[11px] text-gray-400">للبداية السريعة</p>
                     </div>
+                </div>
+
+                <div class="mb-4 inline-flex items-center gap-1.5 bg-green-50 text-green-700 text-[11px] font-bold px-3 py-1.5 rounded-full border border-green-100 w-fit">
+                    <i class="fa-solid fa-gift text-[10px]"></i> جرّب 7 أيام مجاناً — بدون بطاقة
                 </div>
 
                 <div class="flex items-baseline gap-2 mb-6">
@@ -589,8 +534,9 @@
                     <i
                         class="fa-solid fa-chevron-down text-xs text-gray-400 group-open:rotate-180 transition-transform"></i>
                 </summary>
-                <p class="px-5 pb-4 text-sm text-gray-600 leading-relaxed">نعم! نقدم 5 أيام تجريبية مجانية لجميع
-                    الباقات. يمكنك الإلغاء في أي وقت خلال الفترة التجريبية بدون أي رسوم.</p>
+                <p class="px-5 pb-4 text-sm text-gray-600 leading-relaxed">نعم! العملاء الجدد يحصلون على <strong>7 أيام
+                    تجربة مجانية</strong> على باقة الأساسية بكامل مميزاتها — بدون بطاقة ائتمان. بعد انتهاء التجربة
+                    تختار باقة وتدفع للاستمرار، وإلا يتوقف الإرسال التلقائي تلقائياً.</p>
             </details>
             <details class="bg-gray-50 rounded-xl border border-gray-100 group">
                 <summary

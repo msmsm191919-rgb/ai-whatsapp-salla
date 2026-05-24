@@ -9,46 +9,8 @@ const SallaDatabase = require('../database/db_instance');
 // أي تعديل هنا لازم يتعدّل في pricing.html والعكس صحيح
 const PLANS = {
     // ════════════════════════════════════════
-    // 0️⃣ المجانية — 0 ر.س / شهر — للتجربة والجذب (Freemium)
-    // ════════════════════════════════════════
-    // ✓ 500 رسالة شهرياً | ✓ 1 رقم واتساب | ✓ بوت رد آلي
-    // ✓ استعادة السلات المتروكة (سيناريو واحد) | ✓ AI Mini
-    // ✗ حملات | ✗ إشعارات طلب | ✗ استيراد عملاء
-    'المجانية': {
-        price_monthly: 0,
-        pages: [
-            'dashboard', 'customers', 'scenarios', 'knowledge_base',
-            'ai_settings', 'logs', 'settings', 'account', 'simulator',
-            'automation_carts'
-        ],
-        features: {
-            campaigns: false,
-            automation_carts: true,       // ✅ استعادة السلات فقط (للجذب)
-            automation_orders: false,     // ❌ إشعارات الطلب (الأساسية فأعلى)
-            welcome_messages: true,
-            auto_reply_bot: true,
-            ai_advanced: false,           // GPT-4o Mini فقط
-            api_access: false,
-            custom_ai_training: false,
-            white_label: false,
-            priority_support: false,
-            digital_products: false,
-            customers_import: false,
-            ai_cart_negotiator: false
-        },
-        limits: {
-            whatsapp_numbers: 1,
-            team_members: 1,
-            knowledge_docs: 1,
-            messages_monthly: 500,        // حد صارم — لا overage في المجانية
-            messages_hard_limit: 500,
-            ai_model: 'GPT-4o Mini'
-        },
-        scenarios: ['abandoned_cart']
-    },
-
-    // ════════════════════════════════════════
     // 1️⃣ الأساسية — 79 ر.س / شهر — للبداية السريعة
+    // 🎁 تجربة مجانية 7 أيام للعملاء الجدد (status='trial')، بعدها يدفع أو يتوقف
     // ════════════════════════════════════════
     // ✓ 10,000 رسالة شهرياً | ✓ 1 رقم واتساب | ✓ بوت رد آلي
     // ✓ استعادة السلات المتروكة | ✓ إشعارات حالة الطلب

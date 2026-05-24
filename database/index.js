@@ -61,7 +61,7 @@ class SallaDatabase {
               price_monthly: 79.00,
               price_yearly: 759.00,
               msg_limit_monthly: 10000, // Boosted from 1000
-              trial_days: 5,
+              trial_days: 7, // 🎁 تجربة مجانية 7 أيام للعملاء الجدد
               features: {
                 whatsapp_count: 1,
                 scenarios: 'basic',
