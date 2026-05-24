@@ -2058,6 +2058,10 @@ app.post("/api/campaigns/send", async (req, res) => {
 
     const { name, audience, type, message } = req.body;
 
+    // ⏱️ التأخير بين كل رسالة (بالثواني) — يحدده التاجر لتجنّب الحظر
+    // الحدود: من 1 لـ 300 ثانية، الافتراضي 2 ثانية
+    const delaySeconds = Math.min(Math.max(parseInt(req.body.delay_seconds, 10) || 2, 1), 300);
+
     // 2. Create Campaign Record
     const campaign = await db.models.Campaign.create({
       tenant_id: tenant.id,
@@ -2109,7 +2113,7 @@ app.post("/api/campaigns/send", async (req, res) => {
       // WhatsApp Cloud API limits: ~80 messages/second for Business API
       // But for safety and to avoid blocks, we use conservative limits:
       const BATCH_SIZE = 10;                    // Messages per batch
-      const DELAY_BETWEEN_MESSAGES = 2000;      // 2 seconds between messages (safe)
+      const DELAY_BETWEEN_MESSAGES = delaySeconds * 1000;  // ⏱️ يحدده التاجر (بالثواني)
       const DELAY_BETWEEN_BATCHES = 30000;      // 30 seconds between batches
       const DELAY_ON_ERROR = 60000;             // 60 seconds on error (backoff)
       // Result: ~5 messages/minute = ~300/hour = ~7,200/day (very safe)
