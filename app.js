@@ -2012,6 +2012,91 @@ app.get("/customers", async (req, res) => {
   }
 });
 
+// 📞 توحيد رقم الجوال السعودي → صيغة E.164 بدون +
+function _normalizePhone(p) {
+  let s = String(p == null ? '' : p).replace(/[^\d]/g, '');
+  if (!s) return '';
+  if (s.startsWith('00')) s = s.slice(2);
+  if (s.startsWith('0')) s = '966' + s.slice(1);          // 05xxxxxxxx → 9665xxxxxxxx
+  else if (s.startsWith('5') && s.length === 9) s = '966' + s; // 5xxxxxxxx → 9665xxxxxxxx
+  return s;
+}
+
+async function _getCustomerTenant(req) {
+  if (!req.user) req.user = { merchant: { id: 123456789, name: 'Demo Merchant' } };
+  const db = SallaDatabase.connection;
+  const tenant = await db.models.Tenant.findOne({ where: { salla_merchant_id: req.user.merchant.id } });
+  return { db, tenant };
+}
+
+// ➕ إضافة عميل واحد يدوياً
+app.post("/api/customers", async (req, res) => {
+  try {
+    const { db, tenant } = await _getCustomerTenant(req);
+    if (!tenant) return res.status(404).json({ ok: false, error: 'Tenant not found' });
+    const name = (req.body.name || '').toString().trim();
+    const phone = _normalizePhone(req.body.phone);
+    const email = (req.body.email || '').toString().trim() || null;
+    if (!name || !phone) return res.status(400).json({ ok: false, error: 'الاسم ورقم الجوال مطلوبان' });
+
+    const [customer, created] = await db.models.Customer.findOrCreate({
+      where: { tenant_id: tenant.id, phone },
+      defaults: { tenant_id: tenant.id, name, phone, email, status: 'active' }
+    });
+    if (!created) return res.status(409).json({ ok: false, error: 'هذا الرقم مضاف مسبقاً' });
+    res.json({ ok: true, customer });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+// 📥 استيراد عملاء دفعة واحدة (من CSV/Excel — تُرسل كمصفوفة JSON من المتصفح)
+app.post("/api/customers/import", async (req, res) => {
+  try {
+    const { db, tenant } = await _getCustomerTenant(req);
+    if (!tenant) return res.status(404).json({ ok: false, error: 'Tenant not found' });
+    const rows = Array.isArray(req.body.customers) ? req.body.customers : [];
+    if (!rows.length) return res.status(400).json({ ok: false, error: 'لا توجد بيانات للاستيراد' });
+
+    let added = 0, skipped = 0, invalid = 0;
+    for (const r of rows) {
+      const name = (r.name || r['الاسم'] || r['اسم'] || '').toString().trim();
+      const phone = _normalizePhone(r.phone || r['الجوال'] || r['رقم'] || r['الهاتف'] || r['رقم الجوال'] || '');
+      const email = (r.email || r['البريد'] || '').toString().trim() || null;
+      if (!name || !phone) { invalid++; continue; }
+      const [, created] = await db.models.Customer.findOrCreate({
+        where: { tenant_id: tenant.id, phone },
+        defaults: { tenant_id: tenant.id, name, phone, email, status: 'active' }
+      });
+      created ? added++ : skipped++;
+    }
+    res.json({ ok: true, added, skipped, invalid, total: rows.length });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+// 📤 تصدير عملاء التاجر كـ CSV
+app.get("/customers/export", async (req, res) => {
+  try {
+    const { db, tenant } = await _getCustomerTenant(req);
+    if (!tenant) return res.status(404).send('Tenant not found');
+    const customers = await db.models.Customer.findAll({
+      where: { tenant_id: tenant.id }, order: [['created_at', 'DESC']]
+    });
+    const esc = (v) => `"${String(v == null ? '' : v).replace(/"/g, '""')}"`;
+    let csv = 'الاسم,رقم الجوال,البريد,عدد الطلبات,إجمالي الإنفاق\n';
+    for (const c of customers) {
+      csv += [esc(c.name), esc(c.phone), esc(c.email), c.total_orders || 0, c.total_spent || 0].join(',') + '\n';
+    }
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', 'attachment; filename="my_customers.csv"');
+    res.send('﻿' + csv);
+  } catch (e) {
+    res.status(500).send('Error: ' + e.message);
+  }
+});
+
 app.post("/api/campaigns/send", async (req, res) => {
   try {
     // 1. Auth & Validation

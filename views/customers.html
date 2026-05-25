@@ -1,170 +1,254 @@
 {% extends "layouts/dashboard_master.html" %}
 
-{% block title %}إدارة العملاء | Salla AI{% endblock %}
-{% block header_title %}قوائم العملاء 👥{% endblock %}
+{% block title %}العملاء | مبهر AI{% endblock %}
+{% block header_title %}قوائم العملاء{% endblock %}
 {% block header_subtitle %}إدارة وتصنيف عملائك لزيادة فعالية الحملات{% endblock %}
 
 {% block header_actions %}
 <div class="flex gap-3">
-    <button
-        class="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-xl text-sm font-bold hover:bg-gray-50 hover:text-teal-600 transition shadow-sm flex items-center gap-2">
-        <i class="fa-solid fa-file-export"></i> تصدير (Excel)
+    <a href="/customers/export" class="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold border border-slate-200 bg-white text-slate-600 hover:border-teal-300 hover:text-teal-600 transition shadow-sm">
+        <i class="fa-solid fa-file-export"></i> تصدير Excel
+    </a>
+    <button onclick="document.getElementById('importInput').click()" class="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold border border-slate-200 bg-white text-slate-600 hover:border-teal-300 hover:text-teal-600 transition shadow-sm">
+        <i class="fa-solid fa-file-import"></i> استيراد CSV/Excel
     </button>
-    <button
-        class="bg-teal-600 text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-teal-700 transition shadow-lg shadow-teal-200 flex items-center gap-2">
+    <input type="file" id="importInput" accept=".csv,.xlsx,.xls" class="hidden" onchange="handleImport(event)">
+    <button onclick="openAddCustomer()" class="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold text-white transition shadow-lg" style="background: linear-gradient(135deg, #0d9488, #0ea5e9); box-shadow: 0 4px 14px rgba(13,148,136,0.3);">
         <i class="fa-solid fa-user-plus"></i> إضافة عميل
     </button>
 </div>
 {% endblock %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto space-y-6">
+<div class="max-w-7xl mx-auto space-y-5">
 
-    <!-- Stats Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <!-- Total Customers -->
-        <div
-            class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4 group hover:border-teal-200 transition">
-            <div
-                class="w-12 h-12 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center text-xl group-hover:scale-110 transition">
-                <i class="fa-solid fa-users"></i>
+    <!-- Stats Row -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="stat-card card">
+            <div class="metric-icon" style="background: #eff6ff; color: #1d4ed8;">
+                <i class="fa-solid fa-users text-base"></i>
             </div>
             <div>
-                <p class="text-xs text-gray-500 font-bold uppercase">إجمالي العملاء</p>
-                <p class="text-2xl font-black text-gray-800">{{ total_customers }}</p>
+                <p class="text-xs text-slate-400 font-bold uppercase tracking-wider">إجمالي العملاء</p>
+                <p class="text-2xl font-black text-slate-800 mt-0.5" style="font-family: Inter, sans-serif;">{{ total_customers }}</p>
             </div>
         </div>
-
-        <!-- VIP -->
-        <div
-            class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4 group hover:border-yellow-200 transition">
-            <div
-                class="w-12 h-12 rounded-full bg-yellow-50 text-yellow-600 flex items-center justify-center text-xl group-hover:scale-110 transition">
-                <i class="fa-solid fa-star"></i>
+        <div class="stat-card card">
+            <div class="metric-icon" style="background: #fefce8; color: #ca8a04;">
+                <i class="fa-solid fa-star text-base"></i>
             </div>
             <div>
-                <p class="text-xs text-gray-500 font-bold uppercase">عملاء VIP</p>
-                <p class="text-2xl font-black text-gray-800">{{ vip_count }}</p>
+                <p class="text-xs text-slate-400 font-bold uppercase tracking-wider">عملاء VIP</p>
+                <p class="text-2xl font-black text-slate-800 mt-0.5" style="font-family: Inter, sans-serif;">{{ vip_count }}</p>
             </div>
         </div>
-
-        <!-- New Today -->
-        <div
-            class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4 group hover:border-green-200 transition">
-            <div
-                class="w-12 h-12 rounded-full bg-green-50 text-green-600 flex items-center justify-center text-xl group-hover:scale-110 transition">
-                <i class="fa-solid fa-user-plus"></i>
+        <div class="stat-card card">
+            <div class="metric-icon" style="background: #f0fdf4; color: #16a34a;">
+                <i class="fa-solid fa-user-plus text-base"></i>
             </div>
             <div>
-                <p class="text-xs text-gray-500 font-bold uppercase">عملاء جدد (اليوم)</p>
-                <p class="text-2xl font-black text-gray-800">+{{ new_today }}</p>
+                <p class="text-xs text-slate-400 font-bold uppercase tracking-wider">جدد اليوم</p>
+                <p class="text-2xl font-black text-slate-800 mt-0.5" style="font-family: Inter, sans-serif;">+{{ new_today }}</p>
             </div>
         </div>
-
-        <!-- Active -->
-        <div
-            class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4 group hover:border-purple-200 transition">
-            <div
-                class="w-12 h-12 rounded-full bg-purple-50 text-purple-600 flex items-center justify-center text-xl group-hover:scale-110 transition">
-                <i class="fa-brands fa-whatsapp"></i>
+        <div class="stat-card card">
+            <div class="metric-icon" style="background: #f0fdfa; color: #0d9488;">
+                <i class="fa-brands fa-whatsapp text-base"></i>
             </div>
             <div>
-                <p class="text-xs text-gray-500 font-bold uppercase">باقة</p>
-                <p class="text-2xl font-black text-teal-600">{{ plan_name }}</p>
+                <p class="text-xs text-slate-400 font-bold uppercase tracking-wider">الباقة</p>
+                <p class="text-lg font-black text-teal-600 mt-0.5">{{ plan_name }}</p>
             </div>
         </div>
     </div>
 
-    <!-- Customers Table -->
-    <div class="bg-white rounded-3xl shadow-sm border border-gray-200 overflow-hidden">
-        <table class="w-full text-right">
-            <thead>
-                <tr class="bg-gray-50 border-b border-gray-200 text-xs text-gray-500 uppercase">
-                    <th class="px-6 py-4 font-bold">العميل</th>
-                    <th class="px-6 py-4 font-bold">رقم الهاتف</th>
-                    <th class="px-6 py-4 font-bold text-center">الطلبات</th>
-                    <th class="px-6 py-4 font-bold text-center">إجمالي المشتريات</th>
-                    <th class="px-6 py-4 font-bold">حالة الواتساب</th>
-                    <th class="px-6 py-4 font-bold"></th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-100">
-                {% for customer in customers %}
-                <tr class="hover:bg-gray-50/50 transition group">
-                    <td class="px-6 py-4">
-                        <div class="flex items-center gap-3">
-                            <div
-                                class="w-10 h-10 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center text-gray-600 font-bold text-sm border border-gray-200">
-                                {{ (customer.name | first) if customer.name else '?' }}
-                            </div>
-                            <div>
-                                <p class="text-sm font-bold text-gray-800">{{ customer.name or 'عميل زائر'
-                                    }}</p>
-                                <p class="text-[10px] text-gray-400">آخر ظهور: قبل يومين</p>
-                            </div>
-                        </div>
-                    </td>
-                    <td class="px-6 py-4">
-                        <div class="flex items-center gap-2 text-gray-600 text-sm font-mono dir-ltr">
-                            <span>{{ customer.phone }}</span>
-                            <i class="fa-brands fa-whatsapp text-green-500"></i>
-                        </div>
-                    </td>
-                    <td class="px-6 py-4 text-center">
-                        <span
-                            class="inline-block px-2 py-1 bg-gray-100 text-gray-600 rounded-md text-xs font-bold font-mono">{{
-                            customer.total_orders }}</span>
-                    </td>
-                    <td class="px-6 py-4 text-center">
-                        <span class="font-bold text-teal-600 text-sm">{{ customer.total_spent }} ر.س</span>
-                    </td>
-                    <td class="px-6 py-4">
-                        <div class="flex items-center gap-2">
-                            <div class="w-2 h-2 rounded-full bg-green-500"></div>
-                            <span class="text-xs font-bold text-gray-600">نشط</span>
-                        </div>
-                    </td>
-                    <td class="px-6 py-4 text-left">
-                        <button class="text-gray-400 hover:text-teal-600 transition p-2 hover:bg-teal-50 rounded-lg">
-                            <i class="fa-solid fa-ellipsis-vertical"></i>
-                        </button>
-                    </td>
-                </tr>
-                {% else %}
-                <tr>
-                    <td colspan="6" class="px-6 py-12 text-center text-gray-400">
-                        <div class="flex flex-col items-center gap-3">
-                            <div class="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center text-2xl">
-                                <i class="fa-regular fa-folder-open"></i>
-                            </div>
-                            <p>لم يتم العثور على عملاء بعد</p>
-                        </div>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+    <!-- Table Card -->
+    <div class="card overflow-hidden p-0">
+        <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+            <h3 class="font-bold text-slate-700 flex items-center gap-2 text-sm">
+                <i class="fa-solid fa-list text-teal-500"></i> قائمة العملاء
+            </h3>
+            <div class="relative hidden md:block">
+                <input type="text" placeholder="بحث عن عميل..."
+                    class="pl-4 pr-9 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-slate-50 text-slate-700 transition w-56">
+                <i class="fa-solid fa-search absolute right-3 top-2.5 text-slate-300 text-xs"></i>
+            </div>
+        </div>
 
-        <!-- Pagination (Static/Mock) -->
-        <div class="px-6 py-4 border-t border-gray-200 flex items-center justify-between text-xs text-gray-500">
-            <span>إجمالي {{ total_customers }} عميل</span>
-            <div class="flex gap-2">
-                <button
-                    class="w-8 h-8 flex items-center justify-center border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50"
-                    disabled><i class="fa-solid fa-chevron-right"></i></button>
-                <button
-                    class="w-8 h-8 flex items-center justify-center bg-teal-600 text-white rounded-lg shadow-md">1</button>
-                <button
-                    class="w-8 h-8 flex items-center justify-center border border-gray-200 rounded-lg hover:bg-gray-50">2</button>
-                <button
-                    class="w-8 h-8 flex items-center justify-center border border-gray-200 rounded-lg hover:bg-gray-50">3</button>
-                <span class="flex items-center justify-center w-8">...</span>
-                <button
-                    class="w-8 h-8 flex items-center justify-center border border-gray-200 rounded-lg hover:bg-gray-50"><i
-                        class="fa-solid fa-chevron-left"></i></button>
+        <div class="overflow-x-auto">
+            <table class="w-full text-right">
+                <thead>
+                    <tr class="bg-slate-50 border-b border-slate-100 text-xs text-slate-400 uppercase tracking-wider">
+                        <th class="px-6 py-3.5 font-bold">العميل</th>
+                        <th class="px-6 py-3.5 font-bold">رقم الهاتف</th>
+                        <th class="px-6 py-3.5 font-bold text-center">الطلبات</th>
+                        <th class="px-6 py-3.5 font-bold text-center">إجمالي المشتريات</th>
+                        <th class="px-6 py-3.5 font-bold">الحالة</th>
+                        <th class="px-6 py-3.5"></th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for customer in customers %}
+                    <tr class="hover:bg-slate-50/70 transition group">
+                        <td class="px-6 py-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-9 h-9 rounded-xl flex items-center justify-center text-white font-bold text-sm shadow-sm flex-shrink-0"
+                                    style="background: linear-gradient(135deg, #0d9488, #3b82f6);">
+                                    {{ (customer.name | first) if customer.name else '?' }}
+                                </div>
+                                <div>
+                                    <p class="text-sm font-bold text-slate-700">{{ customer.name or 'عميل زائر' }}</p>
+                                    <p class="text-[10px] text-slate-400">آخر ظهور: قبل يومين</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="flex items-center gap-2 text-slate-500 text-sm" dir="ltr">
+                                <i class="fa-brands fa-whatsapp text-green-500 text-base"></i>
+                                <span class="font-mono">{{ customer.phone }}</span>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 text-center">
+                            <span class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 text-slate-600 text-xs font-bold" style="font-family: Inter, sans-serif;">
+                                {{ customer.total_orders }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 text-center">
+                            <span class="font-bold text-teal-600 text-sm" style="font-family: Inter, sans-serif;">
+                                {{ customer.total_spent }} <span class="text-slate-400 font-normal text-xs">ر.س</span>
+                            </span>
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="flex items-center gap-2">
+                                <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span>
+                                <span class="text-xs font-bold text-slate-500">نشط</span>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 text-left">
+                            <button class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-300 hover:text-teal-600 hover:bg-teal-50 transition">
+                                <i class="fa-solid fa-ellipsis-vertical text-sm"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="px-6 py-16 text-center">
+                            <div class="flex flex-col items-center gap-3">
+                                <div class="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center text-2xl text-slate-300">
+                                    <i class="fa-regular fa-folder-open"></i>
+                                </div>
+                                <p class="text-slate-500 font-bold text-sm">لا يوجد عملاء حتى الآن</p>
+                                <p class="text-xs text-slate-400">سيظهر عملاؤك هنا بعد أول طلب أو محادثة</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        <div class="px-6 py-4 border-t border-slate-100 bg-slate-50/30 flex items-center justify-between">
+            <span class="text-xs text-slate-400 font-bold">إجمالي {{ total_customers }} عميل</span>
+            <div class="flex gap-1.5">
+                <button class="w-8 h-8 flex items-center justify-center border border-slate-200 rounded-lg text-slate-300 cursor-not-allowed" disabled>
+                    <i class="fa-solid fa-chevron-right text-xs"></i>
+                </button>
+                <button class="w-8 h-8 flex items-center justify-center text-white rounded-lg text-xs font-bold" style="background: linear-gradient(135deg, #0d9488, #0ea5e9);">1</button>
+                <button class="w-8 h-8 flex items-center justify-center border border-slate-200 rounded-lg hover:bg-slate-50 text-slate-500 text-xs font-bold">2</button>
+                <button class="w-8 h-8 flex items-center justify-center border border-slate-200 rounded-lg hover:bg-slate-50 text-slate-500 text-xs font-bold">3</button>
+                <span class="w-8 flex items-center justify-center text-slate-300">...</span>
+                <button class="w-8 h-8 flex items-center justify-center border border-slate-200 rounded-lg hover:bg-slate-50 text-slate-500">
+                    <i class="fa-solid fa-chevron-left text-xs"></i>
+                </button>
             </div>
         </div>
     </div>
 
 </div>
+
+<!-- ➕ Modal: إضافة عميل -->
+<div id="addCustomerModal" class="fixed inset-0 z-50 hidden items-center justify-center" style="background:rgba(15,23,42,0.5);">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
+        <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+            <h3 class="font-bold text-slate-800 flex items-center gap-2"><i class="fa-solid fa-user-plus text-teal-500"></i> إضافة عميل جديد</h3>
+            <button onclick="closeAddCustomer()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="p-6 space-y-4">
+            <div>
+                <label class="block text-xs font-bold text-slate-500 mb-1.5">اسم العميل *</label>
+                <input id="ac_name" type="text" placeholder="مثال: عبدالله محمد" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:bg-white focus:ring-2 focus:ring-teal-500 outline-none transition">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-500 mb-1.5">رقم الجوال *</label>
+                <input id="ac_phone" type="tel" dir="ltr" placeholder="05xxxxxxxx" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm font-mono focus:bg-white focus:ring-2 focus:ring-teal-500 outline-none transition text-right">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-500 mb-1.5">البريد (اختياري)</label>
+                <input id="ac_email" type="email" dir="ltr" placeholder="email@example.com" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:bg-white focus:ring-2 focus:ring-teal-500 outline-none transition text-right">
+            </div>
+        </div>
+        <div class="px-6 py-4 bg-slate-50 flex gap-3 justify-end">
+            <button onclick="closeAddCustomer()" class="px-4 py-2.5 rounded-xl text-sm font-bold text-slate-500 hover:bg-slate-200 transition">إلغاء</button>
+            <button id="ac_save" onclick="saveCustomer()" class="px-5 py-2.5 rounded-xl text-sm font-bold text-white transition shadow-lg" style="background:linear-gradient(135deg,#0d9488,#0ea5e9);">حفظ العميل</button>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script>
+    function openAddCustomer() {
+        const m = document.getElementById('addCustomerModal');
+        m.classList.remove('hidden'); m.classList.add('flex');
+    }
+    function closeAddCustomer() {
+        const m = document.getElementById('addCustomerModal');
+        m.classList.add('hidden'); m.classList.remove('flex');
+    }
+
+    async function saveCustomer() {
+        const name = document.getElementById('ac_name').value.trim();
+        const phone = document.getElementById('ac_phone').value.trim();
+        const email = document.getElementById('ac_email').value.trim();
+        if (!name || !phone) { alert('الاسم ورقم الجوال مطلوبان'); return; }
+        const btn = document.getElementById('ac_save');
+        btn.disabled = true; btn.textContent = 'جاري الحفظ...';
+        try {
+            const r = await fetch('/api/customers', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, phone, email })
+            });
+            const data = await r.json();
+            if (data.ok) { location.reload(); }
+            else { alert('❌ ' + (data.error || 'فشل الحفظ')); btn.disabled = false; btn.textContent = 'حفظ العميل'; }
+        } catch (e) { alert('❌ خطأ: ' + e.message); btn.disabled = false; btn.textContent = 'حفظ العميل'; }
+    }
+
+    // 📥 استيراد CSV/Excel — يُقرأ في المتصفح ويُرسل كمصفوفة JSON
+    function handleImport(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = async function (e) {
+            try {
+                const data = new Uint8Array(e.target.result);
+                const wb = XLSX.read(data, { type: 'array' });
+                const sheet = wb.Sheets[wb.SheetNames[0]];
+                const rows = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+                if (!rows.length) { alert('الملف فارغ أو غير صالح'); return; }
+                const r = await fetch('/api/customers/import', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ customers: rows })
+                });
+                const result = await r.json();
+                if (result.ok) {
+                    alert(`✅ تم الاستيراد!\nأُضيف: ${result.added}\nمكرر (تخطّي): ${result.skipped}\nغير صالح: ${result.invalid}`);
+                    location.reload();
+                } else { alert('❌ ' + (result.error || 'فشل الاستيراد')); }
+            } catch (err) { alert('❌ خطأ في قراءة الملف: ' + err.message); }
+            finally { event.target.value = ''; }
+        };
+        reader.readAsArrayBuffer(file);
+    }
+</script>
 {% endblock %}
