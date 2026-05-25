@@ -20,7 +20,9 @@ const SallaDatabase = require("./database/db_instance");
                 is_active: true,
                 features: {
                     whatsapp_count: 1,
-                    campaigns: false,
+                    campaigns: true,              // ✅ رسائل جماعية مجانية عبر QR (لكل الباقات)
+                    whatsapp_qr: true,
+                    whatsapp_api: false,          // ❌ API ميزة النمو فأعلى
                     automation: true,             // ✅ السلات + الطلبات مفتوحة
                     automation_carts: true,
                     automation_orders: true,

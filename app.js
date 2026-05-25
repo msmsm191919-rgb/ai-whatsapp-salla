@@ -2710,7 +2710,9 @@ SallaDatabase.connect().then(async (connection) => {
           is_active: true,
           features: {
             whatsapp_count: 1,
-            campaigns: false,
+            campaigns: true,              // ✅ رسائل جماعية مجانية عبر QR
+            whatsapp_qr: true,
+            whatsapp_api: false,
             automation: true,
             ai_enabled: true,
             ai_model: 'GPT-4o Mini',

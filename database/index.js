@@ -65,7 +65,9 @@ class SallaDatabase {
               features: {
                 whatsapp_count: 1,
                 scenarios: 'basic',
-                campaigns: false,
+                campaigns: true,          // ✅ رسائل جماعية مجانية عبر QR
+                whatsapp_qr: true,
+                whatsapp_api: false,
                 automation: true,
                 ai_enabled: true,
                 ai_advanced: false

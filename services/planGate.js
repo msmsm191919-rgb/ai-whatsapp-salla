@@ -22,10 +22,11 @@ const PLANS = {
             'dashboard', 'customers', 'scenarios', 'knowledge_base',
             'ai_settings', 'logs', 'settings', 'account', 'simulator',
             'automation_carts',   // ✅ مسموحة في الأساسية (استعادة السلات)
-            'automation_orders'   // ✅ مسموحة في الأساسية (حالة الطلب)
+            'automation_orders',  // ✅ مسموحة في الأساسية (حالة الطلب)
+            'campaigns'           // ✅ الحملات الجماعية مجانية للكل عبر QR (ميزتنا التنافسية)
         ],
         features: {
-            campaigns: false,             // ❌ حملات تسويقية
+            campaigns: true,              // ✅ حملات جماعية مجانية (عبر QR) — متاحة لكل الباقات
             automation_carts: true,       // ✅ استعادة السلات المتروكة
             automation_orders: true,      // ✅ إشعارات حالة الطلب
             welcome_messages: true,       // ✅ إشعارات ترحيبية
