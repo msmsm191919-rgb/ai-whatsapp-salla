@@ -1,152 +1,183 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>لوحة الإدارة - مبهر AI</title>
-    <!-- Tailwind & Fonts -->
+    <title>لوحة الإدارة — مبهر AI</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        body {
-            font-family: 'Tajawal', sans-serif;
-        }
+        *, body { font-family: 'Cairo', sans-serif; }
+        .font-mono, [dir="ltr"], .inter { font-family: 'Inter', monospace; }
 
-        .admin-sidebar-link {
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 6px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+        .admin-link {
             display: flex;
             align-items: center;
-            padding: 0.75rem 1rem;
-            color: #9ca3af;
-            /* gray-400 */
-            border-radius: 0.5rem;
-            transition: all 0.2s;
+            gap: 10px;
+            padding: 9px 14px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #94a3b8;
+            transition: all 0.15s;
+        }
+        .admin-link:hover { background: rgba(255,255,255,0.06); color: #e2e8f0; }
+        .admin-link.active {
+            background: linear-gradient(135deg, rgba(13,148,136,0.18), rgba(14,165,233,0.10));
+            color: #2dd4bf;
+            border: 1px solid rgba(13,148,136,0.25);
+        }
+        .admin-link i { width: 18px; text-align: center; font-size: 13px; }
+
+        .admin-group-label {
+            font-size: 10px;
+            font-weight: 700;
+            color: #475569;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            padding: 0 14px;
+            margin: 18px 0 6px;
         }
 
-        .admin-sidebar-link:hover,
-        .admin-sidebar-link.active {
-            background-color: #1f2937;
-            /* gray-800 */
-            color: #fff;
+        .kpi-card {
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            transition: box-shadow 0.2s;
         }
-
-        .admin-sidebar-link i {
-            width: 1.5rem;
+        .kpi-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.06); }
+        .kpi-icon {
+            width: 44px; height: 44px;
+            border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 18px; flex-shrink: 0;
         }
-
-        /* Global Custom Scrollbar */
-        ::-webkit-scrollbar {
-            width: 10px;
-        }
-
-        ::-webkit-scrollbar-track {
-            background: #f1f1f1;
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
-            border-radius: 5px;
-        }
-
-        ::-webkit-scrollbar-thumb:hover {
-            background: #94a3b8;
-        }
+        .admin-table thead tr { background: #f8fafc; }
+        .admin-table thead th { padding: 12px 20px; font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; }
+        .admin-table tbody tr { border-bottom: 1px solid #f1f5f9; transition: background 0.15s; }
+        .admin-table tbody tr:hover { background: #f8fafc; }
+        .admin-table tbody td { padding: 14px 20px; font-size: 13px; color: #374151; }
     </style>
 </head>
+<body class="bg-slate-100 min-h-screen flex text-sm">
 
-<body class="bg-gray-100 min-h-screen flex text-sm">
+    <!-- Sidebar -->
+    <aside class="fixed inset-y-0 right-0 w-60 flex flex-col z-20 overflow-hidden" style="background: #0f172a;">
+        <!-- Ambient glows -->
+        <div class="absolute -top-20 -right-20 w-56 h-56 rounded-full pointer-events-none opacity-20" style="background: #0d9488; filter: blur(80px);"></div>
+        <div class="absolute bottom-0 left-0 w-48 h-48 rounded-full pointer-events-none opacity-10" style="background: #8b5cf6; filter: blur(60px);"></div>
 
-    <!-- 1.2 Sidebar -->
-    <aside class="w-64 bg-gray-900 text-white flex-shrink-0 flex flex-col items-center py-6 fixed h-full z-20">
         <!-- Logo -->
-        <div class="px-6 w-full mb-8 flex items-center gap-2">
-            <div class="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center text-white font-bold">A</div>
-            <h1 class="text-lg font-bold">مبهر <span class="text-teal-400">Admin</span></h1>
+        <div class="relative z-10 flex items-center gap-3 px-5 py-5 border-b" style="border-color: rgba(255,255,255,0.06);">
+            <div class="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+                style="background: linear-gradient(135deg, #dc2626, #ef4444); box-shadow: 0 4px 12px rgba(220,38,38,0.3);">
+                <i class="fa-solid fa-shield-halved text-white text-sm"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-white text-sm leading-tight">مبهر <span style="color: #f87171;">Admin</span></h1>
+                <p class="text-[10px] uppercase tracking-widest" style="color: #475569;">Super Panel</p>
+            </div>
         </div>
 
-        <!-- Navigation -->
-        <nav class="flex-1 w-full px-4 space-y-1 overflow-y-auto">
-            <a href="/admin" class="admin-sidebar-link {% if page == 'overview' %}active{% endif %}">
+        <!-- Nav -->
+        <nav class="relative z-10 flex-1 overflow-y-auto px-3 py-4 space-y-0.5">
+            <a href="/admin" class="admin-link {% if page == 'overview' %}active{% endif %}">
                 <i class="fa-solid fa-gauge-high"></i> لوحة التحكم
             </a>
-            <a href="/admin/tenants" class="admin-sidebar-link {% if page == 'tenants' %}active{% endif %}">
+
+            <p class="admin-group-label">إدارة المتاجر</p>
+            <a href="/admin/tenants" class="admin-link {% if page == 'tenants' %}active{% endif %}">
                 <i class="fa-solid fa-store"></i> المتاجر
             </a>
-            <a href="/admin/subscriptions" class="admin-sidebar-link {% if page == 'subscriptions' %}active{% endif %}">
+            <a href="/admin/customers" class="admin-link {% if page == 'customers' %}active{% endif %}">
+                <i class="fa-solid fa-address-book"></i> العملاء (الأرقام)
+            </a>
+            <a href="/admin/subscriptions" class="admin-link {% if page == 'subscriptions' %}active{% endif %}">
                 <i class="fa-solid fa-file-invoice-dollar"></i> الاشتراكات
             </a>
-            <a href="/admin/billing" class="admin-sidebar-link {% if page == 'billing' %}active{% endif %}">
-                <i class="fa-solid fa-money-bill-wave"></i> الفوترة والمدفوعات
+            <a href="/admin/billing" class="admin-link {% if page == 'billing' %}active{% endif %}">
+                <i class="fa-solid fa-money-bill-wave"></i> الفوترة
             </a>
-            <div class="border-t border-gray-700 my-2 mx-2"></div>
-            <a href="/admin/usage" class="admin-sidebar-link {% if page == 'usage' %}active{% endif %}">
-                <i class="fa-solid fa-chart-pie"></i> الرسائل والاستهلاك
+
+            <p class="admin-group-label">التحليلات</p>
+            <a href="/admin/usage" class="admin-link {% if page == 'usage' %}active{% endif %}">
+                <i class="fa-solid fa-chart-pie"></i> الاستهلاك
             </a>
-            <a href="/admin/reports" class="admin-sidebar-link {% if page == 'reports' %}active{% endif %}">
+            <a href="/admin/reports" class="admin-link {% if page == 'reports' %}active{% endif %}">
                 <i class="fa-solid fa-file-lines"></i> التقارير
             </a>
-            <a href="/admin/logs" class="admin-sidebar-link {% if page == 'logs' %}active{% endif %}">
-                <i class="fa-solid fa-bug"></i> السجلات والأخطاء
+            <a href="/admin/logs" class="admin-link {% if page == 'logs' %}active{% endif %}">
+                <i class="fa-solid fa-bug"></i> السجلات
             </a>
-            <div class="border-t border-gray-700 my-2 mx-2"></div>
-            <a href="/admin/plans" class="admin-sidebar-link {% if page == 'plans' %}active{% endif %}">
+
+            <p class="admin-group-label">الإعدادات</p>
+            <a href="/admin/plans" class="admin-link {% if page == 'plans' %}active{% endif %}">
                 <i class="fa-solid fa-layer-group"></i> الباقات
             </a>
-            <a href="/admin/settings" class="admin-sidebar-link {% if page == 'settings' %}active{% endif %}">
+            <a href="/admin/settings" class="admin-link {% if page == 'settings' %}active{% endif %}">
                 <i class="fa-solid fa-gear"></i> الإعدادات
             </a>
-            <a href="/admin/support" class="admin-sidebar-link {% if page == 'support' %}active{% endif %}">
-                <i class="fa-solid fa-headset"></i> الدعم والتذاكر
+            <a href="/admin/support" class="admin-link {% if page == 'support' %}active{% endif %}">
+                <i class="fa-solid fa-headset"></i> الدعم
             </a>
         </nav>
 
-        <!-- User Profile -->
-        <div class="w-full px-4 mt-4">
-            <div class="bg-gray-800 rounded-lg p-3 flex items-center gap-3">
-                <div class="w-8 h-8 rounded-full bg-gray-600 flex items-center justify-center">
-                    <i class="fa-solid fa-user-shield text-xs"></i>
+        <!-- User -->
+        <div class="relative z-10 px-3 py-3 border-t" style="border-color: rgba(255,255,255,0.06); background: rgba(0,0,0,0.2);">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style="background: #1e293b; border: 1px solid #334155;">
+                    <i class="fa-solid fa-user-shield text-xs" style="color: #f87171;"></i>
                 </div>
-                <div class="flex-1 overflow-hidden">
-                    <p class="text-xs font-bold truncate">Super Admin</p>
-                    <p class="text-[10px] text-gray-400">admin@mobhir.ai</p>
+                <div class="flex-1 min-w-0">
+                    <p class="text-xs font-bold text-white truncate">Super Admin</p>
+                    <p class="text-[10px] truncate" style="color: #64748b;">admin@mobhir.ai</p>
                 </div>
-                <a href="/logout" class="text-gray-400 hover:text-white"><i
-                        class="fa-solid fa-right-from-bracket"></i></a>
+                <a href="/logout" class="w-7 h-7 rounded-lg flex items-center justify-center transition" style="color: #475569;"
+                    onmouseover="this.style.color='#f87171'" onmouseout="this.style.color='#475569'">
+                    <i class="fa-solid fa-right-from-bracket text-xs"></i>
+                </a>
             </div>
         </div>
     </aside>
 
-    <!-- Content Wrapper -->
-    <div class="flex-1 flex flex-col mr-64 w-full">
-        <!-- 1.1 Top Bar -->
-        <header
-            class="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-8 sticky top-0 z-10 shadow-sm">
-            <!-- Search -->
-            <div class="flex-1 max-w-lg relative">
-                <i class="fa-solid fa-magnifying-glass absolute right-3 top-3 text-gray-400"></i>
-                <input type="text" placeholder="ابحث عن متجر، رقم، أو Merchant ID..."
-                    class="w-full bg-gray-50 border border-gray-200 rounded-lg pr-10 pl-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 transition">
+    <!-- Main -->
+    <div class="flex-1 flex flex-col mr-60">
+        <!-- Topbar -->
+        <header class="h-14 bg-white border-b border-slate-200 flex items-center justify-between px-6 sticky top-0 z-10 shadow-sm">
+            <div class="relative max-w-sm w-full">
+                <i class="fa-solid fa-magnifying-glass absolute right-3 top-1/2 -translate-y-1/2 text-slate-300 text-xs"></i>
+                <input type="text" placeholder="ابحث عن متجر، رقم، Merchant ID..."
+                    class="w-full bg-slate-50 border border-slate-200 rounded-xl pr-9 pl-4 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-teal-400 focus:border-teal-400 transition">
             </div>
-
-            <!-- Right Actions -->
-            <div class="flex items-center gap-4 mr-4">
-                <button class="relative p-2 text-gray-400 hover:text-gray-600 transition">
-                    <span class="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full border border-white"></span>
-                    <i class="fa-regular fa-bell text-lg"></i>
+            <div class="flex items-center gap-4">
+                <button class="relative w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition">
+                    <span class="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-red-500 rounded-full border border-white"></span>
+                    <i class="fa-regular fa-bell text-sm"></i>
                 </button>
-                <div class="h-8 w-px bg-gray-200"></div>
-                <span class="text-xs font-bold text-gray-500">{{ now_date }}</span>
+                <div class="h-5 w-px bg-slate-200"></div>
+                <span class="text-xs font-bold text-slate-400">{{ now_date }}</span>
+                <a href="/dashboard" class="flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-teal-600 transition">
+                    <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i> لوحة المتجر
+                </a>
             </div>
         </header>
 
-        <!-- Dynamic Content -->
-        <main class="p-8">
+        <!-- Content -->
+        <main class="flex-1 p-6 overflow-auto">
             {% block content %}{% endblock %}
         </main>
     </div>
 
 </body>
-
 </html>

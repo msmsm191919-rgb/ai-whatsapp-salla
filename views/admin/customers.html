@@ -1,0 +1,130 @@
+{% extends 'admin/layout.html' %}
+
+{% block content %}
+<div class="space-y-5">
+
+    <!-- Header -->
+    <div style="background:#fff; border:1px solid #e2e8f0; border-radius:16px; padding:20px 24px;" class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+            <h2 class="font-black text-slate-800 flex items-center gap-2" style="font-size:18px;">
+                <i class="fa-solid fa-address-book" style="color:#0d9488;"></i> عملاء جميع المتاجر
+            </h2>
+            <p class="text-xs mt-1" style="color:#94a3b8;">كل أرقام العملاء المسجّلين عبر كل التجار — محفوظة في قاعدة البيانات</p>
+        </div>
+        <div class="flex gap-3 flex-wrap">
+            <div class="relative">
+                <i class="fa-solid fa-search absolute right-3 top-1/2 -translate-y-1/2 text-xs" style="color:#cbd5e1;"></i>
+                <input id="custSearch" type="text" placeholder="بحث بالاسم أو الرقم أو المتجر..." onkeyup="filterCustomers()"
+                    style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:8px 34px 8px 14px; font-size:13px; width:240px; outline:none;"
+                    onfocus="this.style.borderColor='#0d9488'" onblur="this.style.borderColor='#e2e8f0'">
+            </div>
+            <a href="/admin/customers/export"
+                style="background:linear-gradient(135deg,#0d9488,#0ea5e9); color:#fff; border:none; border-radius:10px; padding:8px 18px; font-size:12px; font-weight:700; cursor:pointer; display:flex; align-items:center; gap:6px; text-decoration:none;">
+                <i class="fa-solid fa-file-csv"></i> تصدير Excel
+            </a>
+        </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+        <div class="kpi-card">
+            <div class="kpi-icon" style="background:#eff6ff; color:#2563eb;"><i class="fa-solid fa-users"></i></div>
+            <div>
+                <p class="text-xs font-bold uppercase tracking-wider" style="color:#94a3b8;">إجمالي العملاء</p>
+                <p class="text-2xl font-black text-slate-800 mt-0.5" style="font-family:Inter,sans-serif;">{{ total }}</p>
+            </div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-icon" style="background:#f0fdf4; color:#16a34a;"><i class="fa-solid fa-store"></i></div>
+            <div>
+                <p class="text-xs font-bold uppercase tracking-wider" style="color:#94a3b8;">عدد المتاجر</p>
+                <p class="text-2xl font-black text-slate-800 mt-0.5" style="font-family:Inter,sans-serif;">{{ tenantsCount }}</p>
+            </div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-icon" style="background:#f0fdf4; color:#25d366;"><i class="fa-brands fa-whatsapp"></i></div>
+            <div>
+                <p class="text-xs font-bold uppercase tracking-wider" style="color:#94a3b8;">أرقام محفوظة</p>
+                <p class="text-2xl font-black text-slate-800 mt-0.5" style="font-family:Inter,sans-serif;">{{ total }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Customers Table -->
+    <div style="background:#fff; border:1px solid #e2e8f0; border-radius:16px; overflow:hidden;">
+        <div class="overflow-x-auto">
+            <table class="w-full text-right admin-table" id="custTable">
+                <thead>
+                    <tr>
+                        <th>العميل</th>
+                        <th>رقم الجوال</th>
+                        <th>المتجر (التاجر)</th>
+                        <th>الطلبات</th>
+                        <th>الإنفاق</th>
+                        <th>تاريخ الإضافة</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if customers and customers.length > 0 %}
+                    {% for c in customers %}
+                    <tr class="cust-row">
+                        <td>
+                            <div class="flex items-center gap-3">
+                                <div class="w-9 h-9 rounded-xl text-white flex items-center justify-center font-bold text-xs flex-shrink-0"
+                                    style="background: linear-gradient(135deg, #f59e0b, #ef4444);">
+                                    {{ c.name|slice(0,1) }}
+                                </div>
+                                <div>
+                                    <p class="font-bold text-slate-800" style="font-size:13px;">{{ c.name }}</p>
+                                    {% if c.email %}<p class="text-[10px]" style="color:#94a3b8;" dir="ltr">{{ c.email }}</p>{% endif %}
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="inline-flex items-center gap-1.5 font-mono font-bold" style="color:#0d9488; font-size:13px;" dir="ltr">
+                                <i class="fa-brands fa-whatsapp" style="color:#25d366;"></i> {{ c.phone }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="inline-flex w-fit items-center px-2.5 py-0.5 rounded-lg text-[11px] font-bold" style="background:#eff6ff; color:#1d4ed8;">
+                                <i class="fa-solid fa-store ml-1 text-[9px]"></i> {{ c.Tenant.store_name if c.Tenant else '—' }}
+                            </span>
+                        </td>
+                        <td><span class="font-bold text-slate-700" style="font-family:Inter,sans-serif;">{{ c.total_orders or 0 }}</span></td>
+                        <td><span class="font-bold text-slate-700" style="font-family:Inter,sans-serif;">{{ c.total_spent or 0 }} <span class="text-[10px]" style="color:#94a3b8;">ر.س</span></span></td>
+                        <td>
+                            <span class="text-xs" style="color:#94a3b8; font-family:Inter,sans-serif;">
+                                {{ c.created_at.toLocaleDateString('ar-SA') if c.created_at else '—' }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center py-16" style="color:#94a3b8;">
+                            <i class="fa-solid fa-user-slash text-3xl mb-3 block" style="color:#e2e8f0;"></i>
+                            <p class="font-bold text-sm">لا يوجد عملاء مسجّلون بعد</p>
+                            <p class="text-xs mt-1">تُحفظ أرقام العملاء تلقائياً عند مزامنة سلة أو إضافتهم يدوياً</p>
+                        </td>
+                    </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+        <div class="flex items-center justify-between px-5 py-3.5 border-t border-slate-100" style="background:#f8fafc;">
+            <span class="text-xs font-bold" style="color:#94a3b8;">عرض {{ customers|length }} من {{ total }} عميل</span>
+            <span class="text-[11px]" style="color:#cbd5e1;">آخر تحديث: {{ now_date }}</span>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    function filterCustomers() {
+        const q = document.getElementById('custSearch').value.toLowerCase();
+        document.querySelectorAll('#custTable tbody tr.cust-row').forEach(row => {
+            row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+        });
+    }
+</script>
+{% endblock %}
