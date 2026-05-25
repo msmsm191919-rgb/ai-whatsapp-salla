@@ -4,23 +4,22 @@
 {% block header_title %}قوائم العملاء{% endblock %}
 {% block header_subtitle %}إدارة وتصنيف عملائك لزيادة فعالية الحملات{% endblock %}
 
-{% block header_actions %}
-<div class="flex gap-3">
-    <a href="/customers/export" class="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold border border-slate-200 bg-white text-slate-600 hover:border-teal-300 hover:text-teal-600 transition shadow-sm">
-        <i class="fa-solid fa-file-export"></i> تصدير Excel
-    </a>
-    <button onclick="document.getElementById('importInput').click()" class="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold border border-slate-200 bg-white text-slate-600 hover:border-teal-300 hover:text-teal-600 transition shadow-sm">
-        <i class="fa-solid fa-file-import"></i> استيراد CSV/Excel
-    </button>
-    <input type="file" id="importInput" accept=".csv,.xlsx,.xls" class="hidden" onchange="handleImport(event)">
-    <button onclick="openAddCustomer()" class="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold text-white transition shadow-lg" style="background: linear-gradient(135deg, #0d9488, #0ea5e9); box-shadow: 0 4px 14px rgba(13,148,136,0.3);">
-        <i class="fa-solid fa-user-plus"></i> إضافة عميل
-    </button>
-</div>
-{% endblock %}
-
 {% block content %}
 <div class="max-w-7xl mx-auto space-y-5">
+
+    <!-- شريط الأدوات: إضافة / استيراد / تصدير -->
+    <div class="flex flex-wrap gap-3 justify-end">
+        <a href="/customers/export" class="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold border border-slate-200 bg-white text-slate-600 hover:border-teal-300 hover:text-teal-600 transition shadow-sm">
+            <i class="fa-solid fa-file-export"></i> تصدير Excel
+        </a>
+        <button onclick="document.getElementById('importInput').click()" class="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold border border-slate-200 bg-white text-slate-600 hover:border-teal-300 hover:text-teal-600 transition shadow-sm">
+            <i class="fa-solid fa-file-import"></i> استيراد CSV/Excel
+        </button>
+        <input type="file" id="importInput" accept=".csv,.xlsx,.xls" class="hidden" onchange="handleImport(event)">
+        <button onclick="openAddCustomer()" class="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-white transition shadow-lg" style="background: linear-gradient(135deg, #0d9488, #0ea5e9); box-shadow: 0 4px 14px rgba(13,148,136,0.3);">
+            <i class="fa-solid fa-user-plus"></i> إضافة عميل
+        </button>
+    </div>
 
     <!-- Stats Row -->
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
