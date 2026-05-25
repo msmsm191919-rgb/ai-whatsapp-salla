@@ -2183,6 +2183,88 @@ app.get("/customers/export", async (req, res) => {
   }
 });
 
+// 🚀 تنفيذ إرسال حملة (يُستخدم للإرسال الفوري والمجدول) — مع تأخير آمن ضد الحظر
+async function dispatchCampaign(campaignId, campaignImage = null) {
+  const db = SallaDatabase.connection;
+  const { Op } = require('sequelize');
+  const campaign = await db.models.Campaign.findByPk(campaignId);
+  if (!campaign) return;
+  const tenant = await db.models.Tenant.findByPk(campaign.tenant_id);
+  if (!tenant) return;
+  await campaign.update({ status: 'processing' });
+
+  const audience = campaign.target_group;
+  const message = campaign.message_body || '';
+
+  // جلب الجمهور المستهدف
+  let customers = [];
+  if (audience === 'vip') {
+    customers = await db.models.Customer.findAll({ where: { tenant_id: tenant.id, [Op.or]: [{ total_orders: { [Op.gt]: 3 } }, { total_spent: { [Op.gt]: 500 } }] } });
+  } else if (audience === 'abandoned') {
+    customers = await db.models.Customer.findAll({ where: { tenant_id: tenant.id }, limit: 5 });
+  } else if (audience === 'test') {
+    customers = [{ name: 'تاجر (تجربة)', phone: '966500000000', id: 'test' }];
+  } else {
+    customers = await db.models.Customer.findAll({ where: { tenant_id: tenant.id } });
+  }
+  await campaign.update({ stats_total: customers.length });
+
+  // تحديد القناة: QR أولاً ثم Meta
+  const metaConfig = await db.models.WhatsAppConfig.findOne({ where: { tenant_id: tenant.id } });
+  const useWaWeb = waWeb.isReady(tenant.id);
+  const canSendApi = (!useWaWeb && metaConfig && metaConfig.access_token);
+  let mediaId = null;
+  if (canSendApi && campaignImage) {
+    try { mediaId = await uploadMetaMedia(metaConfig, campaignImage); } catch (e) { console.error('[Campaign] image upload failed:', e.message); }
+  }
+  console.log(`[Campaign] Dispatching #${campaign.id} to ${customers.length} (${useWaWeb ? 'QR' : (canSendApi ? 'API' : 'Mock')})`);
+
+  const BATCH_SIZE = 10, DELAY_MSG = 7000, DELAY_BATCH = 30000, DELAY_ERR = 60000;
+  let sentInBatch = 0, totalSent = 0, totalFailed = 0;
+
+  for (const customer of customers) {
+    if (!customer.phone) continue;
+    try {
+      const personalMsg = message.replace(/{{name}}/g, customer.name || 'عميلنا العزيز').replace(/{{discount_code}}/g, 'SALE20');
+      if (useWaWeb) {
+        if (campaignImage) await waWeb.sendImage(tenant.id, customer.phone, campaignImage, personalMsg);
+        else await waWeb.sendMessage(tenant.id, customer.phone, personalMsg);
+      } else if (canSendApi) {
+        if (mediaId) await sendMetaImage(metaConfig, customer.phone, mediaId, personalMsg);
+        else await sendMetaMessage(metaConfig, customer.phone, personalMsg);
+      }
+      await campaign.increment('stats_sent');
+      totalSent++; sentInBatch++;
+      await db.models.MessageLog.create({ tenant_id: tenant.id, direction: 'out', content: personalMsg, status: 'sent', to_phone: customer.phone, metadata: { campaign_id: campaign.id } });
+      await incrementUsage(tenant.id, db.models, 1);
+    } catch (err) {
+      console.error(`[Campaign] Failed ${customer.phone}:`, err.message);
+      await campaign.increment('stats_failed'); totalFailed++;
+      if (err.response && (err.response.status === 429 || err.response.status === 503)) await new Promise(r => setTimeout(r, DELAY_ERR));
+    }
+    if (sentInBatch >= BATCH_SIZE) { sentInBatch = 0; await new Promise(r => setTimeout(r, DELAY_BATCH)); }
+    else await new Promise(r => setTimeout(r, DELAY_MSG));
+  }
+  await campaign.update({ status: 'completed' });
+  console.log(`[Campaign] ✅ #${campaign.id} done. Sent: ${totalSent}, Failed: ${totalFailed}`);
+}
+
+// ⏰ معالج الحملات المجدولة — يفحص كل دقيقة
+setInterval(async () => {
+  try {
+    const db = SallaDatabase.connection;
+    if (!db || !db.models.Campaign) return;
+    const { Op } = require('sequelize');
+    const due = await db.models.Campaign.findAll({
+      where: { status: 'scheduled', scheduled_at: { [Op.lte]: new Date() } }, limit: 5
+    });
+    for (const c of due) {
+      console.log(`[Campaign] ⏰ تشغيل حملة مجدولة #${c.id}`);
+      dispatchCampaign(c.id).catch(e => console.error('Scheduled dispatch error:', e.message));
+    }
+  } catch (e) { /* تجاهل */ }
+}, 60000);
+
 app.post("/api/campaigns/send", async (req, res) => {
   try {
     // 1. Auth & Validation
@@ -2227,176 +2309,38 @@ app.post("/api/campaigns/send", async (req, res) => {
     }
     // ---------------------------
 
-    const { name, audience, type, message } = req.body;
-    const campaignImage = req.body.image || null;   // صورة الحملة (base64 data URL) — اختياري
+    const { name, audience, message } = req.body;
+    const campaignImage = req.body.image || null;   // صورة الحملة (base64) — للإرسال الفوري فقط
 
-    // ⏱️ التأخير بين كل رسالة (بالثواني) — ثابت آمن لحماية رقم التاجر من الحظر
-    // مخفي عن الواجهة عمداً (إعداد احترافي آمن افتراضياً). الحدود 1-300 لو مُرّر عبر API.
-    const SAFE_DELAY_SECONDS = 7;
-    const delaySeconds = Math.min(Math.max(parseInt(req.body.delay_seconds, 10) || SAFE_DELAY_SECONDS, 1), 300);
+    // 📅 الجدولة: لو مُرّر وقت مستقبلي → نحفظ الحملة كمجدولة (يرسلها الـ cron)
+    let scheduledAt = null;
+    if (req.body.scheduled_at) {
+      const d = new Date(req.body.scheduled_at);
+      if (!isNaN(d.getTime()) && d.getTime() > Date.now() + 30000) scheduledAt = d;
+    }
 
-    // 2. Create Campaign Record
+    // 2. إنشاء سجل الحملة
     const campaign = await db.models.Campaign.create({
       tenant_id: tenant.id,
       name: name || 'بدون اسم',
       target_group: audience,
       message_body: message,
-      status: 'processing',
-      media_url: campaignImage ? 'image_attached' : null, // علامة فقط (لا نخزّن base64 الضخم)
-      stats_total: 0,
+      status: scheduledAt ? 'scheduled' : 'processing',
+      scheduled_at: scheduledAt,
+      media_url: campaignImage ? 'image_attached' : null,
+      stats_total: audienceCount,
       stats_sent: 0
     });
 
-    console.log(`[Campaign] Created Campaign ID: ${campaign.id} for ${tenant.store_name}`);
-
-    // 3. fetch Target Customers
-    let customers = [];
-    if (audience === 'all') {
-      customers = await db.models.Customer.findAll({ where: { tenant_id: tenant.id } });
-    } else if (audience === 'vip') {
-      customers = await db.models.Customer.findAll({
-        where: {
-          tenant_id: tenant.id,
-          [Op.or]: [{ total_orders: { [Op.gt]: 3 } }, { total_spent: { [Op.gt]: 500 } }]
-        }
-      });
-    } else if (audience === 'abandoned') {
-      // Mock for now, or filter by tags if available
-      customers = await db.models.Customer.findAll({ where: { tenant_id: tenant.id }, limit: 5 });
-    } else if (audience === 'test') {
-      // Send to Merchant Only (Simulated)
-      customers = [{
-        name: 'تاجر (تجربة)',
-        phone: '966500000000', // Should be replaced with actual merchant phone if available
-        id: 'test'
-      }];
+    // 📅 حملة مجدولة — لا نرسل الآن، الـ cron يتكفّل في وقتها
+    if (scheduledAt) {
+      console.log(`[Campaign] 📅 Scheduled #${campaign.id} for ${scheduledAt.toISOString()}`);
+      return res.json({ success: true, scheduled: true, scheduledAt: scheduledAt.toISOString(), campaignId: campaign.id, message: 'تمت جدولة الحملة بنجاح' });
     }
 
-    // Update Request Count
-    await campaign.update({ stats_total: customers.length });
-
-    // 4. Background Sending Process with Smart Rate Limiting
-    (async () => {
-      console.log(`[Campaign] Starting sending to ${customers.length} customers...`);
-
-      const metaConfig = await db.models.WhatsAppConfig.findOne({ where: { tenant_id: tenant.id } });
-      // 📱 الأولوية لقناة QR (whatsapp-web) الخاصة بهذا التاجر إذا كانت متصلة، ثم Meta الرسمي
-      const useWaWeb = waWeb.isReady(tenant.id);
-      // ✅ إصلاح: نقبل 'api' و'whatsapp_api' (الواجهة ترسل whatsapp_api)
-      const canSendApi = (!useWaWeb && (type === 'api' || type === 'whatsapp_api') && metaConfig && metaConfig.access_token);
-      if (useWaWeb) console.log('[Campaign] 📱 الإرسال عبر قناة QR (whatsapp-web)');
-
-      // 🖼️ رفع الصورة مرة واحدة للحصول على media_id يُعاد استخدامه لكل العملاء (أوفر وأسرع)
-      let mediaId = null;
-      if (canSendApi && campaignImage) {
-        try {
-          mediaId = await uploadMetaMedia(metaConfig, campaignImage);
-          console.log(`[Campaign] 🖼️ Image uploaded to Meta (media_id: ${mediaId})`);
-        } catch (e) {
-          console.error('[Campaign] ⚠️ Image upload failed — sending text only:', e.message);
-        }
-      }
-
-      // ─── Rate Limit Configuration ───
-      // WhatsApp Cloud API limits: ~80 messages/second for Business API
-      // But for safety and to avoid blocks, we use conservative limits:
-      const BATCH_SIZE = 10;                    // Messages per batch
-      const DELAY_BETWEEN_MESSAGES = delaySeconds * 1000;  // ⏱️ يحدده التاجر (بالثواني)
-      const DELAY_BETWEEN_BATCHES = 30000;      // 30 seconds between batches
-      const DELAY_ON_ERROR = 60000;             // 60 seconds on error (backoff)
-      // Result: ~5 messages/minute = ~300/hour = ~7,200/day (very safe)
-
-      let batchCount = 0;
-      let sentInBatch = 0;
-      let totalSent = 0;
-      let totalFailed = 0;
-
-      console.log(`[Campaign] Rate Limit: ${BATCH_SIZE} msgs/batch, ${DELAY_BETWEEN_MESSAGES / 1000}s between msgs, ${DELAY_BETWEEN_BATCHES / 1000}s between batches`);
-
-      for (let i = 0; i < customers.length; i++) {
-        const customer = customers[i];
-        if (!customer.phone) continue;
-
-        try {
-          // A. Personalize
-          let personalMsg = message
-            .replace(/{{name}}/g, customer.name || 'عميلنا العزيز')
-            .replace(/{{discount_code}}/g, 'SALE20');
-
-          // B. Send (QR / Meta / Mock)
-          let sent = false;
-          if (useWaWeb) {
-            // 📱 إرسال عبر واتساب الجوال (QR) — جلسة هذا التاجر
-            if (campaignImage) {
-              await waWeb.sendImage(tenant.id, customer.phone, campaignImage, personalMsg);
-            } else {
-              await waWeb.sendMessage(tenant.id, customer.phone, personalMsg);
-            }
-            sent = true;
-          } else if (canSendApi) {
-            if (mediaId) {
-              // إرسال كرسالة صورة + النص كتعليق (caption)
-              await sendMetaImage(metaConfig, customer.phone, mediaId, personalMsg);
-            } else {
-              await sendMetaMessage(metaConfig, customer.phone, personalMsg);
-            }
-            sent = true;
-          } else {
-            // Mock Send
-            sent = true;
-          }
-
-          // C. Update Campaign Stats
-          if (sent) {
-            await campaign.increment('stats_sent');
-            totalSent++;
-            sentInBatch++;
-
-            // Log
-            await db.models.MessageLog.create({
-              tenant_id: tenant.id,
-              direction: 'out',
-              content: personalMsg,
-              status: 'sent',
-              to_phone: customer.phone,
-              metadata: { campaign_id: campaign.id }
-            });
-
-            // Increment Usage (Fix for limits)
-            await incrementUsage(tenant.id, db.models, 1);
-          }
-
-        } catch (err) {
-          console.error(`[Campaign] Failed to send to ${customer.phone}:`, err.message);
-          await campaign.increment('stats_failed');
-          totalFailed++;
-
-          // If API error (rate limit, auth, etc.), wait longer
-          if (err.response && (err.response.status === 429 || err.response.status === 503)) {
-            console.log(`[Campaign] ⚠️ Rate limit hit! Pausing ${DELAY_ON_ERROR / 1000}s...`);
-            await new Promise(r => setTimeout(r, DELAY_ON_ERROR));
-          }
-        }
-
-        // ─── Smart Delay Logic ───
-        // Check if we completed a batch
-        if (sentInBatch >= BATCH_SIZE) {
-          batchCount++;
-          console.log(`[Campaign] 📦 Batch ${batchCount} done (${totalSent}/${customers.length} sent, ${totalFailed} failed). Cooling down ${DELAY_BETWEEN_BATCHES / 1000}s...`);
-          sentInBatch = 0;
-          await new Promise(r => setTimeout(r, DELAY_BETWEEN_BATCHES));
-        } else {
-          // Normal delay between individual messages
-          await new Promise(r => setTimeout(r, DELAY_BETWEEN_MESSAGES));
-        }
-      }
-
-      await campaign.update({ status: 'completed' });
-      console.log(`[Campaign] ✅ Campaign ${campaign.id} Completed. Sent: ${totalSent}, Failed: ${totalFailed}`);
-
-    })().catch(err => console.error("Background Campaign Error:", err));
-
-    // Respond immediately
+    // 🚀 إرسال فوري (في الخلفية)
+    console.log(`[Campaign] Created #${campaign.id} for ${tenant.store_name} — sending now`);
+    dispatchCampaign(campaign.id, campaignImage).catch(err => console.error("Background Campaign Error:", err));
     res.json({ success: true, message: "Campaign queued successfully", campaignId: campaign.id });
 
   } catch (e) {

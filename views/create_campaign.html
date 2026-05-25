@@ -561,6 +561,25 @@
     </main>
     </div>
 
+    <!-- 📅 نافذة جدولة الحملة -->
+    <div id="scheduleModal" class="fixed inset-0 z-50 hidden items-center justify-center" style="background:rgba(15,23,42,0.5);">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden">
+            <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                <h3 class="font-bold text-slate-800 flex items-center gap-2"><i class="fa-regular fa-clock text-teal-500"></i> جدولة الحملة</h3>
+                <button onclick="closeSchedule()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="p-6">
+                <label class="block text-xs font-bold text-slate-500 mb-2">اختر تاريخ ووقت الإرسال</label>
+                <input id="scheduleInput" type="datetime-local" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:bg-white focus:ring-2 focus:ring-teal-500 outline-none transition">
+                <p class="text-[11px] text-slate-400 mt-2">💡 سيرسل النظام الحملة تلقائياً في الوقت المحدد. (الجدولة للنص — للصور استخدم الإرسال الفوري)</p>
+            </div>
+            <div class="px-6 py-4 bg-slate-50 flex gap-3 justify-end">
+                <button onclick="closeSchedule()" class="px-4 py-2.5 rounded-xl text-sm font-bold text-slate-500 hover:bg-slate-200 transition">إلغاء</button>
+                <button onclick="confirmSchedule()" class="px-5 py-2.5 rounded-xl text-sm font-bold text-white shadow-lg" style="background:linear-gradient(135deg,#0d9488,#0ea5e9);">تأكيد الجدولة</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     {% raw %}
@@ -677,78 +696,78 @@
             textarea.dispatchEvent(new Event('input'));
         }
 
+        // دالة مشتركة: إرسال فوري (scheduledAt=null) أو مجدول (ISO string)
+        async function submitCampaign(scheduledAt) {
+            const name = document.getElementById('campaignName').value;
+            const audience = document.getElementById('audience').value;
+            let message = document.getElementById('campaignMessage').value;
+            const url = document.getElementById('campaignUrl').value;
+            const thumb = document.getElementById('imagePreviewThumbnail');
+            const image = (thumb && thumb.src && thumb.src.startsWith('data:')) ? thumb.src : null;
+
+            if (!name || !message) {
+                Swal.fire({ icon: 'error', title: 'بيانات ناقصة', text: 'يرجى إدخال اسم الحملة ومحتوى الرسالة', confirmButtonColor: '#0d9488' });
+                return;
+            }
+            if (url) message += `\n\n${url}`;
+
+            // الحملة المجدولة لا تدعم الصور حالياً
+            const payload = { name, audience, type: 'whatsapp_api', message };
+            if (scheduledAt) payload.scheduled_at = scheduledAt;
+            else if (image) payload.image = image;
+
+            const sendBtn = document.getElementById('sendBtn');
+            const scheduleBtn = document.getElementById('scheduleBtn');
+            sendBtn.disabled = true; scheduleBtn.disabled = true;
+            sendBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> جاري المعالجة...';
+
+            try {
+                const response = await fetch('/api/campaigns/send', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await response.json();
+                if (response.ok && data.success) {
+                    Swal.fire({
+                        title: data.scheduled ? 'تمت الجدولة! 📅' : 'تم الإرسال بنجاح! 🚀',
+                        text: data.scheduled ? 'سيتم إرسال الحملة في الوقت المحدد تلقائياً.' : 'بدأ إرسال الحملة لعملائك.',
+                        icon: 'success', timer: 2200, showConfirmButton: false
+                    }).then(() => { window.location.href = '/campaigns'; });
+                } else {
+                    throw new Error(data.message || 'حدث خطأ غير معروف');
+                }
+            } catch (error) {
+                Swal.fire({ icon: 'error', title: 'فشل العملية', text: error.message, confirmButtonText: 'حاول مرة أخرى' });
+                sendBtn.disabled = false; scheduleBtn.disabled = false;
+                sendBtn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> إرسال الآن';
+            }
+        }
+
+        // زر الإرسال الفوري
         const sendBtn = document.getElementById('sendBtn');
-        if (sendBtn) {
-            sendBtn.onclick = async () => {
-                const originalText = sendBtn.innerHTML;
+        if (sendBtn) sendBtn.onclick = () => submitCampaign(null);
 
-                const name = document.getElementById('campaignName').value;
-                const audience = document.getElementById('audience').value;
-                let message = document.getElementById('campaignMessage').value;
-                const url = document.getElementById('campaignUrl').value;
-                // صورة الحملة (base64) — تُقرأ من المعاينة المصغّرة عند رفع صورة مخصّصة
-                const thumb = document.getElementById('imagePreviewThumbnail');
-                const image = (thumb && thumb.src && thumb.src.startsWith('data:')) ? thumb.src : null;
-
-                if (!name || !message) {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'بيانات ناقصة',
-                        text: 'يرجى إدخال اسم الحملة ومحتوى الرسالة',
-                        confirmButtonText: 'حسناً',
-                        confirmButtonColor: '#0d9488'
-                    });
-                    return;
-                }
-
-                if (url) {
-                    message += `\n\n${url}`;
-                }
-
-                sendBtn.disabled = true;
-                sendBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> جاري الإرسال...';
-
-                try {
-                    const response = await fetch('/api/campaigns/send', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            name,
-                            audience,
-                            type: 'whatsapp_api',
-                            message,
-                            image,
-                        })
-                    });
-
-                    const data = await response.json();
-
-                    if (response.ok && data.success) {
-                        Swal.fire({
-                            title: 'تم الإرسال بنجاح! 🚀',
-                            text: 'تم جدولة الحملة وبدء الإرسال للعملاء.',
-                            icon: 'success',
-                            timer: 2000,
-                            showConfirmButton: false
-                        }).then(() => {
-                            window.location.href = '/campaigns';
-                        });
-                    } else {
-                        throw new Error(data.message || 'حدث خطأ غير معروف');
-                    }
-
-                } catch (error) {
-                    console.error(error);
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'فشل الإرسال',
-                        text: error.message,
-                        confirmButtonText: 'حاول مرة أخرى'
-                    });
-                    sendBtn.disabled = false;
-                    sendBtn.innerHTML = originalText;
-                }
-            };
+        // زر الجدولة — يفتح نافذة اختيار الوقت
+        const scheduleBtn = document.getElementById('scheduleBtn');
+        if (scheduleBtn) scheduleBtn.onclick = () => {
+            const dt = document.getElementById('scheduleModal');
+            // اضبط الحد الأدنى = الآن + 5 دقائق
+            const min = new Date(Date.now() + 5 * 60000);
+            min.setMinutes(min.getMinutes() - min.getTimezoneOffset());
+            document.getElementById('scheduleInput').min = min.toISOString().slice(0, 16);
+            dt.classList.remove('hidden'); dt.classList.add('flex');
+        };
+        function closeSchedule() {
+            const dt = document.getElementById('scheduleModal');
+            dt.classList.add('hidden'); dt.classList.remove('flex');
+        }
+        function confirmSchedule() {
+            const val = document.getElementById('scheduleInput').value;
+            if (!val) { alert('اختر تاريخ ووقت الإرسال'); return; }
+            const when = new Date(val);
+            if (when.getTime() < Date.now() + 60000) { alert('اختر وقتاً في المستقبل'); return; }
+            closeSchedule();
+            submitCampaign(when.toISOString());
         }
     </script>
     {% endraw %}
