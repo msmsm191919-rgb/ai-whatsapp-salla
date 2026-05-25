@@ -1,78 +1,90 @@
 {% extends 'admin/layout.html' %}
 
 {% block content %}
-<div class="space-y-6">
+<div class="space-y-5">
 
-    <!-- Financial Stats -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div class="bg-gray-800 text-white rounded-xl p-6 relative overflow-hidden">
+    <!-- Stats -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <!-- Total Revenue -->
+        <div class="rounded-2xl p-6 text-white relative overflow-hidden" style="background:linear-gradient(135deg,#0f172a,#1e293b);">
+            <div class="absolute -top-10 -left-10 w-40 h-40 rounded-full opacity-20" style="background:#14b8a6;filter:blur(50px);"></div>
+            <i class="fa-solid fa-chart-line absolute -bottom-4 right-3 text-8xl opacity-5 text-white"></i>
             <div class="relative z-10">
-                <p class="text-gray-400 text-xs mb-1">إجمالي الإيرادات (Total Revenue)</p>
-                <h3 class="text-3xl font-bold">45,200 <span class="text-sm font-normal text-gray-400">ر.س</span></h3>
+                <p class="text-xs font-bold uppercase tracking-wider mb-2" style="color:#64748b;">إجمالي الإيرادات</p>
+                <h3 class="font-black" style="font-size:32px;font-family:Inter,sans-serif;">{{ totalRevenue or 0 }} <span class="text-base font-normal" style="color:#475569;">ر.س</span></h3>
+                <span class="text-xs font-bold mt-1 block" style="color:#34d399;">من العمليات المكتملة</span>
             </div>
-            <i class="fa-solid fa-chart-line absolute -bottom-4 right-2 text-8xl text-white opacity-5"></i>
         </div>
-        <div class="bg-white border border-gray-200 rounded-xl p-6">
-            <p class="text-gray-500 text-xs mb-1">عمليات الشهر الحالي</p>
-            <h3 class="text-3xl font-bold text-gray-900">14</h3>
-            <span class="text-green-500 text-xs font-bold"><i class="fa-solid fa-arrow-up"></i> 2 عن الشهر الماضي</span>
+        <div class="kpi-card">
+            <div class="kpi-icon" style="background:#f0fdf4;color:#16a34a;"><i class="fa-solid fa-circle-check"></i></div>
+            <div>
+                <p class="text-xs font-bold uppercase tracking-wider" style="color:#94a3b8;">عمليات الشهر</p>
+                <p class="text-3xl font-black text-slate-800 mt-0.5" style="font-family:Inter,sans-serif;">{{ monthOps or 0 }}</p>
+                <span class="text-xs font-bold" style="color:#16a34a;"><i class="fa-solid fa-arrow-up"></i> +2 عن الشهر الماضي</span>
+            </div>
         </div>
-        <div class="bg-white border border-gray-200 rounded-xl p-6">
-            <p class="text-gray-500 text-xs mb-1">عمليات فاشلة / مستردة</p>
-            <h3 class="text-3xl font-bold text-red-500">1</h3>
-            <span class="text-xs text-gray-400">تحتاج مراجعة</span>
+        <div class="kpi-card">
+            <div class="kpi-icon" style="background:#fef2f2;color:#dc2626;"><i class="fa-solid fa-triangle-exclamation"></i></div>
+            <div>
+                <p class="text-xs font-bold uppercase tracking-wider" style="color:#94a3b8;">عمليات فاشلة</p>
+                <p class="text-3xl font-black" style="color:#dc2626;font-family:Inter,sans-serif;margin-top:2px;">1</p>
+                <span class="text-xs" style="color:#94a3b8;">تحتاج مراجعة</span>
+            </div>
         </div>
     </div>
 
     <!-- Transactions Table -->
-    <div class="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
-        <div class="p-4 border-b border-gray-200">
-            <h3 class="font-bold text-gray-800">سجل العمليات (Transactions)</h3>
+    <div style="background:#fff;border:1px solid #e2e8f0;border-radius:16px;overflow:hidden;">
+        <div style="padding:16px 20px;border-bottom:1px solid #f1f5f9;background:#f8fafc;">
+            <h3 class="font-bold text-slate-800" style="font-size:14px;">سجل العمليات</h3>
         </div>
-        <table class="w-full text-right text-sm text-gray-600">
-            <thead class="bg-gray-50 text-gray-500 uppercase font-bold text-xs border-b border-gray-200">
-                <tr>
-                    <th class="px-6 py-4">رقم العملية (Ref)</th>
-                    <th class="px-6 py-4">المتجر</th>
-                    <th class="px-6 py-4">الباقة</th>
-                    <th class="px-6 py-4">المبلغ</th>
-                    <th class="px-6 py-4">الحالة</th>
-                    <th class="px-6 py-4">التاريخ</th>
-                    <th class="px-6 py-4 text-center">الفاتورة</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-100">
-                <!-- Mock Data Logic in View for specific rows if not passed -->
-                {% for txn in transactions %}
-                <tr class="hover:bg-gray-50 transition">
-                    <td class="px-6 py-4 font-mono text-xs">#INV-{{ txn.id }}</td>
-                    <td class="px-6 py-4 font-bold">{{ txn.Tenant.store_name }}</td>
-                    <td class="px-6 py-4 text-xs">{{ txn.Plan.name }}</td>
-                    <td class="px-6 py-4 font-bold text-gray-900">{{ txn.amount }} ر.س</td>
-                    <td class="px-6 py-4">
-                        {% if txn.status == 'paid' %}
-                        <span class="text-green-600 font-bold text-xs"><i class="fa-solid fa-check-circle"></i>
-                            مدفوعة</span>
-                        {% else %}
-                        <span class="text-red-500 font-bold text-xs"><i class="fa-solid fa-times-circle"></i>
-                            فاشلة</span>
-                        {% endif %}
-                    </td>
-                    <td class="px-6 py-4 text-xs text-gray-500 font-mono">{{ txn.date }}</td>
-                    <td class="px-6 py-4 text-center">
-                        <button class="text-gray-400 hover:text-blue-600"><i class="fa-solid fa-file-pdf"></i></button>
-                    </td>
-                </tr>
-                {% else %}
-                <tr class="bg-gray-50">
-                    <td colspan="7" class="px-6 py-12 text-center text-gray-400">
-                        <i class="fa-solid fa-receipt text-3xl mb-2 block"></i>
-                        لا توجد عمليات دفع مسجلة حتى الآن
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        <div class="overflow-x-auto">
+            <table class="w-full text-right admin-table">
+                <thead>
+                    <tr>
+                        <th>رقم العملية</th>
+                        <th>المتجر</th>
+                        <th>الباقة</th>
+                        <th>المبلغ</th>
+                        <th>الحالة</th>
+                        <th>التاريخ</th>
+                        <th class="text-center">الفاتورة</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for txn in transactions %}
+                    <tr>
+                        <td style="font-family:Inter,monospace;color:#94a3b8;font-size:11px;">#INV-{{ txn.id }}</td>
+                        <td class="font-bold text-slate-800">{{ txn.Tenant.store_name }}</td>
+                        <td style="color:#64748b;">{{ txn.Plan.name }}</td>
+                        <td class="font-bold text-slate-800" style="font-family:Inter,sans-serif;">{{ txn.amount }} <span style="color:#94a3b8;font-weight:400;font-size:11px;">ر.س</span></td>
+                        <td>
+                            {% if txn.status == 'paid' %}
+                            <span style="background:#f0fdf4;color:#16a34a;padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700;border:1px solid #bbf7d0;display:inline-flex;align-items:center;gap:4px;">
+                                <i class="fa-solid fa-check-double"></i> مدفوعة
+                            </span>
+                            {% else %}
+                            <span style="background:#fef2f2;color:#dc2626;padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700;border:1px solid #fecaca;display:inline-flex;align-items:center;gap:4px;">
+                                <i class="fa-solid fa-circle-exclamation"></i> فاشلة
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td style="font-family:Inter,monospace;color:#94a3b8;font-size:11px;" dir="ltr">{{ txn.date }}</td>
+                        <td class="text-center">
+                            <span style="font-family:Inter,monospace;font-size:11px;color:#94a3b8;" title="مرجع العملية">{{ txn.reference or txn.id }}</span>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center py-16" style="color:#94a3b8;">
+                            <i class="fa-solid fa-receipt text-3xl block mb-3" style="color:#e2e8f0;"></i>
+                            لا توجد عمليات دفع مسجلة حتى الآن
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
 
 </div>

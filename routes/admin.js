@@ -152,7 +152,16 @@ router.get('/billing', async (req, res) => {
     const transactions = db.models.Payment
       ? await db.models.Payment.findAll({ include: ['Tenant', 'Plan'], order: [['created_at', 'DESC']] })
       : [];
-    res.render('admin/billing.html', { page: 'billing', transactions });
+    // إحصائيات حقيقية من العمليات
+    const period = new Date().toISOString().slice(0, 7);
+    let totalRevenue = 0, monthOps = 0;
+    for (const t of transactions) {
+      const ok = (t.status === 'completed' || t.status === 'success' || t.status === 'paid');
+      if (ok) totalRevenue += Number(t.amount || 0);
+      const d = t.created_at ? new Date(t.created_at).toISOString().slice(0, 7) : '';
+      if (ok && d === period) monthOps++;
+    }
+    res.render('admin/billing.html', { page: 'billing', transactions, totalRevenue, monthOps, txCount: transactions.length });
   } catch (e) {
     res.status(500).send('Error: ' + e.message);
   }
