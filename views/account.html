@@ -1,22 +1,127 @@
-{% extends 'layout.html' %} {% block content %}
+{% extends 'layouts/dashboard_master.html' %}
+{% block title %}حسابي{% endblock %}
 
-<p>
-  <div> User's Data:</div>
-  <div>
-    <span>Name : <span style="font-weight:bold">{{user.name}}</span></span>
-  </div>
-  <div>
-    <span>ID : <span style="font-weight:bold">{{user.id}}</span></span>
-  </div>
-  <div>
-    <span>Email : <span style="font-weight:bold">{{user.email}}</span></span>
-  </div>
-  <div>
-    <span>Mobile : <span style="font-weight:bold">{{user.mobile}}</span></span>
-  </div>
-  <div>
-    <span>Store Name : <span style="font-weight:bold">{{user.store.name}}</span></span>
-  </div>
+{% block content %}
+<div class="space-y-5">
 
-</p>
+    <!-- Header -->
+    <div class="card" style="padding:20px 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+        <div>
+            <h2 style="font-size:18px;font-weight:900;color:#0f172a;">حسابي</h2>
+            <p style="font-size:12px;color:#94a3b8;margin-top:2px;">بياناتك الأساسية تُدار من حساب سلة</p>
+        </div>
+        <span style="display:inline-flex;align-items:center;gap:6px;background:#f0fdfa;color:#0d9488;border:1px solid #99f6e4;border-radius:10px;padding:8px 14px;font-size:12px;font-weight:700;">
+            <i class="fa-solid fa-circle-check"></i> متصل عبر سلة
+        </span>
+    </div>
+
+    <div style="display:grid;grid-template-columns:280px 1fr;gap:20px;">
+
+        <!-- Profile Card -->
+        <div class="card" style="padding:28px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:16px;height:fit-content;">
+            <div style="position:relative;">
+                <div style="width:88px;height:88px;border-radius:24px;background:linear-gradient(135deg,#0d9488,#0ea5e9);display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:900;color:#fff;box-shadow:0 8px 24px rgba(13,148,136,0.25);">
+                    {{ user.name[0] if user.name else 'م' }}
+                </div>
+            </div>
+            <div>
+                <h3 style="font-size:15px;font-weight:900;color:#0f172a;">{{ user.name or 'اسم المستخدم' }}</h3>
+                <p style="font-size:11px;color:#94a3b8;margin-top:3px;">{{ user.email or 'البريد الإلكتروني' }}</p>
+            </div>
+            <div style="background:linear-gradient(135deg,rgba(13,148,136,0.08),rgba(14,165,233,0.08));border:1px solid rgba(13,148,136,0.18);border-radius:12px;padding:10px 18px;width:100%;">
+                <p style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;">الباقة الحالية</p>
+                <p style="font-size:14px;font-weight:900;color:#0d9488;margin-top:3px;">{{ user.plan or 'النمو' }}</p>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%;">
+                <div style="background:#f8fafc;border-radius:12px;padding:12px;text-align:center;">
+                    <p style="font-size:18px;font-weight:900;color:#0f172a;font-family:Inter,sans-serif;">{{ user.messages_sent or '0' }}</p>
+                    <p style="font-size:10px;color:#94a3b8;margin-top:2px;">رسائل</p>
+                </div>
+                <div style="background:#f8fafc;border-radius:12px;padding:12px;text-align:center;">
+                    <p style="font-size:18px;font-weight:900;color:#0d9488;font-family:Inter,sans-serif;">{{ user.ai_replies or '0' }}</p>
+                    <p style="font-size:10px;color:#94a3b8;margin-top:2px;">ردود AI</p>
+                </div>
+            </div>
+            <p style="font-size:11px;color:#cbd5e1;border-top:1px solid #f1f5f9;padding-top:14px;width:100%;">
+                <i class="fa-solid fa-calendar-check" style="color:#94a3b8;margin-left:4px;"></i>
+                عضو منذ {{ user.created_at or '2026' }}
+            </p>
+        </div>
+
+        <!-- Info Forms -->
+        <div style="display:flex;flex-direction:column;gap:16px;">
+
+            <!-- Personal Info -->
+            <div class="card" style="padding:24px;">
+                <h3 style="font-size:13px;font-weight:800;color:#0f172a;padding-bottom:14px;border-bottom:1px solid #f1f5f9;margin-bottom:18px;display:flex;align-items:center;gap:8px;">
+                    <span style="width:28px;height:28px;background:#f0fdfa;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;">
+                        <i class="fa-solid fa-user" style="color:#0d9488;font-size:12px;"></i>
+                    </span> المعلومات الشخصية
+                </h3>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                    <div>
+                        <label style="display:block;font-size:11px;font-weight:700;color:#374151;margin-bottom:6px;">الاسم الكامل</label>
+                        <input type="text" value="{{ user.name or '' }}" placeholder="اسمك الكامل" class="input-field" style="width:100%;">
+                    </div>
+                    <div>
+                        <label style="display:block;font-size:11px;font-weight:700;color:#374151;margin-bottom:6px;">البريد الإلكتروني</label>
+                        <input type="email" value="{{ user.email or '' }}" placeholder="email@example.com" dir="ltr" class="input-field" style="width:100%;font-family:Inter,monospace;">
+                    </div>
+                    <div>
+                        <label style="display:block;font-size:11px;font-weight:700;color:#374151;margin-bottom:6px;">رقم الجوال</label>
+                        <input type="tel" value="{{ user.mobile or '' }}" placeholder="+966 5X XXX XXXX" dir="ltr" class="input-field" style="width:100%;font-family:Inter,monospace;">
+                    </div>
+                    <div>
+                        <label style="display:block;font-size:11px;font-weight:700;color:#374151;margin-bottom:6px;">معرف المستخدم</label>
+                        <input type="text" value="{{ user.id or '' }}" readonly class="input-field" style="width:100%;font-family:Inter,monospace;background:#f8fafc;color:#94a3b8;cursor:not-allowed;">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Store Info -->
+            <div class="card" style="padding:24px;">
+                <h3 style="font-size:13px;font-weight:800;color:#0f172a;padding-bottom:14px;border-bottom:1px solid #f1f5f9;margin-bottom:18px;display:flex;align-items:center;gap:8px;">
+                    <span style="width:28px;height:28px;background:#eff6ff;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;">
+                        <i class="fa-solid fa-store" style="color:#0ea5e9;font-size:12px;"></i>
+                    </span> بيانات المتجر
+                </h3>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                    <div>
+                        <label style="display:block;font-size:11px;font-weight:700;color:#374151;margin-bottom:6px;">اسم المتجر</label>
+                        <input type="text" value="{{ user.store.name if user.store else '' }}" placeholder="اسم متجرك على سلة" class="input-field" style="width:100%;">
+                    </div>
+                    <div>
+                        <label style="display:block;font-size:11px;font-weight:700;color:#374151;margin-bottom:6px;">رابط المتجر</label>
+                        <input type="url" value="{{ user.store.url if user.store else '' }}" placeholder="https://store.salla.sa" dir="ltr" class="input-field" style="width:100%;font-family:Inter,monospace;">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Security -->
+            <div class="card" style="padding:24px;">
+                <h3 style="font-size:13px;font-weight:800;color:#0f172a;padding-bottom:14px;border-bottom:1px solid #f1f5f9;margin-bottom:18px;display:flex;align-items:center;gap:8px;">
+                    <span style="width:28px;height:28px;background:#f5f3ff;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;">
+                        <i class="fa-solid fa-shield-halved" style="color:#7c3aed;font-size:12px;"></i>
+                    </span> الأمان
+                </h3>
+                <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:#f8fafc;border-radius:12px;border:1px solid #e2e8f0;">
+                    <div style="display:flex;align-items:center;gap:12px;">
+                        <div style="width:38px;height:38px;background:#f5f3ff;border-radius:10px;display:flex;align-items:center;justify-content:center;">
+                            <i class="fa-solid fa-lock" style="color:#7c3aed;font-size:14px;"></i>
+                        </div>
+                        <div>
+                            <p style="font-size:13px;font-weight:700;color:#0f172a;">تسجيل الدخول والأمان</p>
+                            <p style="font-size:11px;color:#94a3b8;">يُدار عبر حساب سلة (دخول موحّد)</p>
+                        </div>
+                    </div>
+                    <span style="background:#f8fafc;border:1px solid #e2e8f0;color:#94a3b8;border-radius:10px;padding:8px 16px;font-size:12px;font-weight:700;">
+                        <i class="fa-solid fa-shield-halved" style="margin-left:4px;"></i> محمي بسلة
+                    </span>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+</div>
 {% endblock %}
