@@ -2012,6 +2012,34 @@ app.get("/customers", async (req, res) => {
   }
 });
 
+// ═══════════════════════════════════════════════════════════════════
+// 📱 ربط واتساب عبر QR (whatsapp-web.js) — للتجربة
+// ═══════════════════════════════════════════════════════════════════
+const waWeb = require('./services/waWeb');
+
+// صفحة الربط (QR)
+app.get("/whatsapp-web", (req, res) => {
+  if (!req.user) req.user = { merchant: { id: 123456789, name: 'Demo Merchant' } };
+  res.render("whatsapp_web.html", { user: req.user, activePage: 'settings' });
+});
+
+// بدء الجلسة (يقلع المتصفح ويولّد QR)
+app.post("/api/wa-web/start", (req, res) => {
+  try { res.json({ ok: true, ...waWeb.start() }); }
+  catch (e) { res.status(500).json({ ok: false, error: e.message }); }
+});
+
+// حالة الجلسة + QR (للـ polling)
+app.get("/api/wa-web/status", (req, res) => {
+  res.json({ ok: true, ...waWeb.getState() });
+});
+
+// تسجيل الخروج
+app.post("/api/wa-web/logout", async (req, res) => {
+  try { await waWeb.logout(); res.json({ ok: true }); }
+  catch (e) { res.status(500).json({ ok: false, error: e.message }); }
+});
+
 // 📞 توحيد رقم الجوال السعودي → صيغة E.164 بدون +
 function _normalizePhone(p) {
   let s = String(p == null ? '' : p).replace(/[^\d]/g, '');
@@ -2194,8 +2222,11 @@ app.post("/api/campaigns/send", async (req, res) => {
       console.log(`[Campaign] Starting sending to ${customers.length} customers...`);
 
       const metaConfig = await db.models.WhatsAppConfig.findOne({ where: { tenant_id: tenant.id } });
+      // 📱 الأولوية لقناة QR (whatsapp-web) إذا كانت متصلة، ثم Meta الرسمي
+      const useWaWeb = waWeb.isReady();
       // ✅ إصلاح: نقبل 'api' و'whatsapp_api' (الواجهة ترسل whatsapp_api)
-      const canSendApi = ((type === 'api' || type === 'whatsapp_api') && metaConfig && metaConfig.access_token);
+      const canSendApi = (!useWaWeb && (type === 'api' || type === 'whatsapp_api') && metaConfig && metaConfig.access_token);
+      if (useWaWeb) console.log('[Campaign] 📱 الإرسال عبر قناة QR (whatsapp-web)');
 
       // 🖼️ رفع الصورة مرة واحدة للحصول على media_id يُعاد استخدامه لكل العملاء (أوفر وأسرع)
       let mediaId = null;
@@ -2234,9 +2265,17 @@ app.post("/api/campaigns/send", async (req, res) => {
             .replace(/{{name}}/g, customer.name || 'عميلنا العزيز')
             .replace(/{{discount_code}}/g, 'SALE20');
 
-          // B. Send (Real or Mock)
+          // B. Send (QR / Meta / Mock)
           let sent = false;
-          if (canSendApi) {
+          if (useWaWeb) {
+            // 📱 إرسال عبر واتساب الجوال (QR)
+            if (campaignImage) {
+              await waWeb.sendImage(customer.phone, campaignImage, personalMsg);
+            } else {
+              await waWeb.sendMessage(customer.phone, personalMsg);
+            }
+            sent = true;
+          } else if (canSendApi) {
             if (mediaId) {
               // إرسال كرسالة صورة + النص كتعليق (caption)
               await sendMetaImage(metaConfig, customer.phone, mediaId, personalMsg);

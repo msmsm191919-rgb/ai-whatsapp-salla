@@ -1,0 +1,130 @@
+{% extends "layouts/dashboard_master.html" %}
+
+{% block title %}ربط واتساب (QR) | مبهر AI{% endblock %}
+{% block header_title %}ربط واتساب عبر QR 📱{% endblock %}
+{% block header_subtitle %}اربط رقم واتساب جوالك لإرسال الحملات مباشرة منه{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+
+    <div class="card p-8 text-center">
+        <!-- الحالة -->
+        <div id="statusBadge" class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold mb-6"
+            style="background:#fef3c7; color:#b45309;">
+            <span class="w-2 h-2 rounded-full bg-amber-500 inline-block"></span>
+            <span id="statusText">غير متصل</span>
+        </div>
+
+        <!-- منطقة QR / التعليمات -->
+        <div id="qrArea" class="mb-6">
+            <div class="w-64 h-64 mx-auto rounded-2xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-slate-400 bg-slate-50" id="qrPlaceholder">
+                <i class="fa-brands fa-whatsapp text-5xl text-green-400 mb-3"></i>
+                <p class="text-sm font-bold">اضغط "ابدأ الربط" لعرض رمز QR</p>
+            </div>
+            <img id="qrImage" class="w-64 h-64 mx-auto rounded-2xl border border-slate-200 hidden" alt="QR">
+        </div>
+
+        <!-- نجاح الاتصال -->
+        <div id="connectedBox" class="hidden mb-6">
+            <div class="w-20 h-20 mx-auto rounded-full bg-green-100 flex items-center justify-center mb-4">
+                <i class="fa-solid fa-check text-green-600 text-3xl"></i>
+            </div>
+            <h3 class="text-xl font-black text-slate-800">واتساب متصل! ✅</h3>
+            <p class="text-sm text-slate-500 mt-2">صار جاهز لإرسال الحملات من رقم جوالك.</p>
+            <a href="/campaigns/create" class="inline-flex items-center gap-2 mt-5 px-6 py-3 rounded-xl text-white font-bold shadow-lg" style="background:linear-gradient(135deg,#0d9488,#0ea5e9);">
+                أنشئ حملة الآن <i class="fa-solid fa-arrow-left"></i>
+            </a>
+        </div>
+
+        <!-- خطوات المسح -->
+        <div id="scanSteps" class="hidden text-right bg-slate-50 rounded-xl p-4 mb-6 text-sm text-slate-600 leading-relaxed">
+            <p class="font-bold text-slate-700 mb-2">📲 كيف تمسح:</p>
+            1. افتح واتساب في جوالك<br>
+            2. الإعدادات ← الأجهزة المرتبطة<br>
+            3. اضغط "ربط جهاز" وامسح الرمز فوق
+        </div>
+
+        <!-- أزرار -->
+        <div class="flex gap-3 justify-center">
+            <button id="startBtn" onclick="startWa()" class="px-6 py-3 rounded-xl text-white font-bold shadow-lg" style="background:linear-gradient(135deg,#0d9488,#0ea5e9);">
+                <i class="fa-solid fa-qrcode ml-1"></i> ابدأ الربط
+            </button>
+            <button id="logoutBtn" onclick="logoutWa()" class="hidden px-6 py-3 rounded-xl font-bold border border-red-200 text-red-500 hover:bg-red-50 transition">
+                <i class="fa-solid fa-link-slash ml-1"></i> فصل
+            </button>
+        </div>
+
+        <p class="text-[11px] text-slate-400 mt-6 leading-relaxed">
+            ⚠️ هذه قناة غير رسمية (للتجربة). للإنتاج الجاد يُفضّل WhatsApp Business API الرسمي.
+        </p>
+    </div>
+
+</div>
+
+<script>
+    let pollTimer = null;
+
+    function setStatus(state) {
+        const badge = document.getElementById('statusBadge');
+        const text = document.getElementById('statusText');
+        const qrImage = document.getElementById('qrImage');
+        const qrPlaceholder = document.getElementById('qrPlaceholder');
+        const connectedBox = document.getElementById('connectedBox');
+        const scanSteps = document.getElementById('scanSteps');
+        const qrArea = document.getElementById('qrArea');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const startBtn = document.getElementById('startBtn');
+
+        const map = {
+            disconnected: ['#fef3c7', '#b45309', 'غير متصل'],
+            starting: ['#dbeafe', '#1d4ed8', 'جاري الإقلاع...'],
+            qr: ['#dbeafe', '#1d4ed8', 'امسح الرمز من جوالك'],
+            authenticated: ['#dbeafe', '#1d4ed8', 'جاري المصادقة...'],
+            ready: ['#dcfce7', '#16a34a', 'متصل ✅'],
+            error: ['#fee2e2', '#dc2626', 'خطأ في الاتصال']
+        };
+        const [bg, color, label] = map[state.status] || map.disconnected;
+        badge.style.background = bg; badge.style.color = color;
+        text.textContent = label;
+
+        if (state.status === 'qr' && state.qr) {
+            qrImage.src = state.qr; qrImage.classList.remove('hidden');
+            qrPlaceholder.classList.add('hidden'); scanSteps.classList.remove('hidden');
+            connectedBox.classList.add('hidden'); qrArea.classList.remove('hidden');
+            startBtn.classList.add('hidden'); logoutBtn.classList.remove('hidden');
+        } else if (state.status === 'ready') {
+            qrArea.classList.add('hidden'); scanSteps.classList.add('hidden');
+            connectedBox.classList.remove('hidden');
+            startBtn.classList.add('hidden'); logoutBtn.classList.remove('hidden');
+            if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+        } else if (['starting', 'authenticated'].includes(state.status)) {
+            startBtn.classList.add('hidden');
+        }
+    }
+
+    async function poll() {
+        try {
+            const r = await fetch('/api/wa-web/status');
+            const s = await r.json();
+            setStatus(s);
+        } catch (e) { /* ignore */ }
+    }
+
+    async function startWa() {
+        document.getElementById('startBtn').innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري الإقلاع...';
+        await fetch('/api/wa-web/start', { method: 'POST' });
+        if (!pollTimer) pollTimer = setInterval(poll, 2500);
+        poll();
+    }
+
+    async function logoutWa() {
+        await fetch('/api/wa-web/logout', { method: 'POST' });
+        if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+        location.reload();
+    }
+
+    // فحص أولي عند فتح الصفحة (لو فيه جلسة سابقة)
+    poll();
+    pollTimer = setInterval(poll, 3000);
+</script>
+{% endblock %}
