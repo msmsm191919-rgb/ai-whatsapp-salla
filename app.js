@@ -961,6 +961,31 @@ app.get("/logs", async (req, res) => {
   }
 });
 
+// 📤 تصدير سجل الرسائل CSV
+app.get("/logs/export", async (req, res) => {
+  try {
+    if (!req.user) req.user = { merchant: { id: 123456789, name: 'Demo Merchant' } };
+    const db = SallaDatabase.connection;
+    const tenant = await db.models.Tenant.findOne({ where: { salla_merchant_id: req.user.merchant.id } });
+    if (!tenant) return res.status(404).send('Tenant not found');
+    const logs = await db.models.MessageLog.findAll({
+      where: { tenant_id: tenant.id }, order: [['created_at', 'DESC']], limit: 5000
+    });
+    const esc = (v) => `"${String(v == null ? '' : v).replace(/"/g, '""')}"`;
+    let csv = 'التاريخ,الاتجاه,الرقم,المحتوى,الحالة\n';
+    for (const l of logs) {
+      const date = l.created_at ? new Date(l.created_at).toISOString().slice(0, 16).replace('T', ' ') : '';
+      const dir = l.direction === 'in' ? 'وارد' : 'صادر';
+      csv += [esc(date), esc(dir), esc(l.to_phone), esc(l.content), esc(l.status)].join(',') + '\n';
+    }
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', 'attachment; filename="message_logs.csv"');
+    res.send('﻿' + csv);
+  } catch (e) {
+    res.status(500).send('Error: ' + e.message);
+  }
+});
+
 // ---------------------------------------------------------
 // WHATSAPP SETTINGS ROUTES
 // ---------------------------------------------------------
