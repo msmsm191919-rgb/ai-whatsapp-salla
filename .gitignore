@@ -18,6 +18,7 @@
 database/*.sqlite
 database/*.sqlite-journal
 database/backups/
+database/platform_settings.json
 
 # ═══════════════════════════════════════════════════
 # 📱 WhatsApp Session — بيانات دخول وكوكيز (سرّية!)

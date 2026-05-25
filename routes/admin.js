@@ -78,6 +78,21 @@ router.get('/subscriptions', async (req, res) => {
   }
 });
 
+// 🔄 تجديد اشتراك يدوياً (تمديد 30 يوماً)
+router.post('/subscriptions/:id/renew', async (req, res) => {
+  try {
+    const db = SallaDatabase.connection;
+    const sub = await db.models.Subscription.findByPk(req.params.id);
+    if (!sub) return res.status(404).json({ ok: false, error: 'الاشتراك غير موجود' });
+    const base = (sub.end_date && new Date(sub.end_date) > new Date()) ? new Date(sub.end_date) : new Date();
+    base.setDate(base.getDate() + 30);
+    await sub.update({ end_date: base, status: 'active' });
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
 router.get('/logs', async (req, res) => {
   try {
     const db = SallaDatabase.connection;
@@ -222,17 +237,59 @@ router.get('/reports/export', async (req, res) => {
 
 router.get('/usage', async (req, res) => {
   try {
-    res.render('admin/usage.html', { page: 'usage', now_date: new Date().toLocaleDateString('ar-SA') });
+    const db = SallaDatabase.connection;
+    const period = new Date().toISOString().slice(0, 7); // YYYY-MM
+    const counters = await db.models.UsageCounter.findAll({ where: { period_key: period } });
+    const tenants = await db.models.Tenant.findAll({
+      include: [{ model: db.models.Subscription, as: 'Subscription', include: [{ model: db.models.Plan, as: 'Plan' }] }]
+    });
+    let totalMsgs = 0, totalAI = 0, overCount = 0;
+    const rows = [];
+    for (const t of tenants) {
+      const c = counters.find(x => String(x.tenant_id) === String(t.id));
+      const sent = c ? c.messages_sent : 0;
+      const ai = c ? c.ai_requests : 0;
+      totalMsgs += sent; totalAI += ai;
+      const limit = t.Subscription?.Plan?.msg_limit_monthly || 0;
+      const over = limit > 0 && sent > limit;
+      if (over) overCount++;
+      const pct = limit > 0 ? Math.min(Math.round((sent / limit) * 100), 100) : 0;
+      rows.push({ name: t.store_name, plan: t.Subscription?.Plan?.name || '—', sent, ai, limit, over, pct });
+    }
+    rows.sort((a, b) => b.sent - a.sent);
+    res.render('admin/usage.html', { page: 'usage', now_date: new Date().toLocaleDateString('ar-SA'), totalMsgs, totalAI, overCount, rows });
   } catch (e) {
     res.status(500).send('Error: ' + e.message);
   }
 });
 
+// إعدادات المنصة تُحفظ في ملف JSON بسيط
+const _settingsPath = require('path').join(process.cwd(), 'database', 'platform_settings.json');
+function _loadSettings() {
+  try { return JSON.parse(require('fs').readFileSync(_settingsPath, 'utf8')); }
+  catch (e) { return { system_name: 'مبهر AI', support_email: 'support@mobhir.ai', maintenance: false, footer: 'جميع الحقوق محفوظة © 2026 مبهر AI' }; }
+}
+
 router.get('/settings', async (req, res) => {
   try {
-    res.render('admin/settings.html', { page: 'settings', now_date: new Date().toLocaleDateString('ar-SA') });
+    res.render('admin/settings.html', { page: 'settings', now_date: new Date().toLocaleDateString('ar-SA'), settings: _loadSettings() });
   } catch (e) {
     res.status(500).send('Error: ' + e.message);
+  }
+});
+
+router.post('/settings/save', async (req, res) => {
+  try {
+    const s = {
+      system_name: (req.body.system_name || '').toString().trim() || 'مبهر AI',
+      support_email: (req.body.support_email || '').toString().trim(),
+      maintenance: req.body.maintenance === true || req.body.maintenance === 'true',
+      footer: (req.body.footer || '').toString()
+    };
+    require('fs').writeFileSync(_settingsPath, JSON.stringify(s, null, 2), 'utf8');
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
   }
 });
 

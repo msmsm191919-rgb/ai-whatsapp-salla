@@ -1,78 +1,48 @@
 {% extends 'admin/layout.html' %}
 
 {% block content %}
-<div class="space-y-6">
-    <div class="flex justify-between items-end">
-        <div>
-            <h2 class="text-2xl font-bold text-gray-900">تذاكر الدعم الفني</h2>
-            <p class="text-gray-500 text-sm">إدارة شكاوى واقتراحات العملاء والرد عليها.</p>
+<div class="space-y-5 max-w-3xl">
+
+    <!-- Header -->
+    <div style="background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:20px 24px;">
+        <h2 class="font-black text-slate-800" style="font-size:18px;">الدعم الفني</h2>
+        <p class="text-xs mt-1" style="color:#94a3b8;">قنوات تواصل التجار معك، وحالة تذاكر الدعم</p>
+    </div>
+
+    <!-- Empty state (no ticket system yet) -->
+    <div style="background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:40px 24px;text-align:center;">
+        <div style="width:64px;height:64px;border-radius:18px;background:#f0fdfa;color:#0d9488;display:flex;align-items:center;justify-content:center;font-size:26px;margin:0 auto 16px;">
+            <i class="fa-solid fa-headset"></i>
         </div>
-        <div class="flex gap-2">
-            <span class="bg-red-100 text-red-600 px-3 py-1 rounded-full text-xs font-bold shadow-sm">
-                <i class="fa-solid fa-fire ml-1"></i> 5 عاجلة
-            </span>
-            <span class="bg-blue-100 text-blue-600 px-3 py-1 rounded-full text-xs font-bold shadow-sm">
-                <i class="fa-solid fa-clock ml-1"></i> 12 قيد الانتظار
-            </span>
+        <h3 class="font-black text-slate-800" style="font-size:15px;">لا توجد تذاكر دعم حالياً</h3>
+        <p class="text-xs mt-2 leading-relaxed" style="color:#94a3b8;max-width:420px;margin:8px auto 0;">
+            حالياً يتواصل معك التجار عبر القنوات أدناه. نظام التذاكر المدمج (استقبال + رد داخل اللوحة) ميزة قادمة.
+        </p>
+    </div>
+
+    <!-- Support channels -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div style="background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:20px;display:flex;align-items:center;gap:14px;">
+            <div style="width:44px;height:44px;border-radius:12px;background:#dcfce7;color:#16a34a;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">
+                <i class="fa-brands fa-whatsapp"></i>
+            </div>
+            <div>
+                <p class="text-xs font-bold" style="color:#94a3b8;">واتساب الدعم</p>
+                <p class="text-sm font-black text-slate-800" dir="ltr">+966 50 000 0000</p>
+            </div>
+        </div>
+        <div style="background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:20px;display:flex;align-items:center;gap:14px;">
+            <div style="width:44px;height:44px;border-radius:12px;background:#eff6ff;color:#2563eb;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">
+                <i class="fa-solid fa-envelope"></i>
+            </div>
+            <div>
+                <p class="text-xs font-bold" style="color:#94a3b8;">بريد الدعم</p>
+                <p class="text-sm font-black text-slate-800" dir="ltr">support@mobhir.ai</p>
+            </div>
         </div>
     </div>
 
-    <!-- Tickets List -->
-    <div class="space-y-4">
+    <p class="text-xs text-center" style="color:#cbd5e1;">💡 لتغيير قنوات الدعم، عدّلها من <a href="/admin/settings" style="color:#0d9488;font-weight:700;">إعدادات المنصة</a>.</p>
 
-        <!-- Ticket 1 (Urgent) -->
-        <div
-            class="bg-white rounded-xl border border-red-200 p-5 shadow-sm hover:translate-x-1 transition-transform border-r-4 border-r-red-500 cursor-pointer group">
-            <div class="flex justify-between items-start">
-                <div>
-                    <h3
-                        class="font-bold text-lg text-gray-800 flex items-center gap-2 group-hover:text-red-700 transition">
-                        مشكلة في استلام الرسائل
-                        <span class="text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-bold">عاجل
-                            جداً</span>
-                    </h3>
-                    <p class="text-sm text-gray-500 mt-1">متجر الأناقة (ID: 55122) - يواجه مشكلة منذ 3 ساعات</p>
-                </div>
-                <span class="text-xs text-gray-400 font-bold">منذ 15 دقيقة</span>
-            </div>
-
-            <p class="text-gray-600 mt-3 text-sm line-clamp-2">الرسائل لا تصل للعملاء وتظهر علامة "فشل الإرسال" في
-                الداشبورد. قمنا بتجديد الـ Token ولكن المشكلة مستمرة. الرجاء التدخل فوراً.</p>
-
-            <div class="mt-4 flex gap-3 text-xs border-t border-gray-100 pt-3">
-                <button class="text-teal-600 font-bold hover:underline"><i class="fa-solid fa-reply ml-1"></i> الرد
-                    (سريع)</button>
-                <button class="text-gray-500 font-bold hover:text-gray-800"><i class="fa-solid fa-eye ml-1"></i> عرض
-                    التفاصيل</button>
-            </div>
-        </div>
-
-        <!-- Ticket 2 (Normal) -->
-        <div
-            class="bg-white rounded-xl border border-gray-200 p-5 shadow-sm hover:translate-x-1 transition-transform border-r-4 border-r-gray-300 cursor-pointer">
-            <div class="flex justify-between items-start">
-                <div>
-                    <h3 class="font-bold text-lg text-gray-800 flex items-center gap-2">
-                        كيف أفعل الرد الآلي؟
-                        <span
-                            class="text-[10px] bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full font-bold">استفسار</span>
-                    </h3>
-                    <p class="text-sm text-gray-500 mt-1">قهوة الصباح (ID: 11029)</p>
-                </div>
-                <span class="text-xs text-gray-400 font-bold">منذ ساعتين</span>
-            </div>
-
-            <p class="text-gray-600 mt-3 text-sm line-clamp-2">حاولت تفعيل الخاصية من الاعدادات لكن ما يظهر لي الخيار.
-                هل يحتاج باقة أعلى؟</p>
-
-            <div class="mt-4 flex gap-3 text-xs border-t border-gray-100 pt-3">
-                <button class="text-teal-600 font-bold hover:underline"><i class="fa-solid fa-reply ml-1"></i>
-                    الرد</button>
-                <button class="text-gray-500 font-bold hover:text-gray-800"><i class="fa-solid fa-eye ml-1"></i> عرض
-                    التفاصيل</button>
-            </div>
-        </div>
-
-    </div>
 </div>
 {% endblock %}

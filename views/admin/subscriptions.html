@@ -1,92 +1,108 @@
 {% extends 'admin/layout.html' %}
 
 {% block content %}
-<div class="space-y-6">
+<div class="space-y-5">
 
-    <!-- Header & Filters -->
-    <div class="flex justify-between items-center bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+    <!-- Header -->
+    <div style="background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:20px 24px;" class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-            <h2 class="text-xl font-bold text-gray-900">الاشتراكات (Subscriptions)</h2>
-            <p class="text-xs text-gray-500 mt-1">إدارة اشتراكات العملاء وحالات التجديد.</p>
+            <h2 class="font-black text-slate-800" style="font-size:18px;">الاشتراكات</h2>
+            <p class="text-xs mt-1" style="color:#94a3b8;">إدارة اشتراكات العملاء وحالات التجديد</p>
         </div>
-        <div class="flex gap-3">
-            <div class="flex bg-gray-100 rounded-lg p-1">
-                <button class="px-3 py-1 text-xs font-bold bg-white shadow rounded-md text-gray-800">الكل</button>
-                <button class="px-3 py-1 text-xs font-bold text-gray-500 hover:text-gray-700">Active</button>
-                <button class="px-3 py-1 text-xs font-bold text-gray-500 hover:text-gray-700">Trial</button>
-                <button class="px-3 py-1 text-xs font-bold text-gray-500 hover:text-gray-700">Expired</button>
-            </div>
+        <div style="display:flex;gap:8px;background:#f1f5f9;border-radius:10px;padding:4px;">
+            <button onclick="filterSubs('all', this)" class="sub-filter" data-active="1" style="padding:6px 14px;font-size:12px;font-weight:700;border-radius:7px;border:none;background:#fff;color:#0f172a;box-shadow:0 1px 3px rgba(0,0,0,0.08);cursor:pointer;font-family:Cairo,sans-serif;">الكل</button>
+            <button onclick="filterSubs('active', this)" class="sub-filter" style="padding:6px 14px;font-size:12px;font-weight:700;border-radius:7px;border:none;background:transparent;color:#94a3b8;cursor:pointer;font-family:Cairo,sans-serif;">نشط</button>
+            <button onclick="filterSubs('trial', this)" class="sub-filter" style="padding:6px 14px;font-size:12px;font-weight:700;border-radius:7px;border:none;background:transparent;color:#94a3b8;cursor:pointer;font-family:Cairo,sans-serif;">تجريبي</button>
+            <button onclick="filterSubs('expired', this)" class="sub-filter" style="padding:6px 14px;font-size:12px;font-weight:700;border-radius:7px;border:none;background:transparent;color:#94a3b8;cursor:pointer;font-family:Cairo,sans-serif;">منتهي</button>
         </div>
     </div>
 
-    <!-- Subscriptions Table -->
-    <div class="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
-        <table class="w-full text-right text-sm text-gray-600">
-            <thead class="bg-gray-50 text-gray-500 uppercase font-bold text-xs border-b border-gray-200">
-                <tr>
-                    <th class="px-6 py-4">المتجر</th>
-                    <th class="px-6 py-4">الباقة</th>
-                    <th class="px-6 py-4">نوع الدفع</th>
-                    <th class="px-6 py-4">الحالة</th>
-                    <th class="px-6 py-4">تاريخ البداية</th>
-                    <th class="px-6 py-4">تاريخ النهاية</th>
-                    <th class="px-6 py-4 text-center">إجراءات</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-100">
-                {% for sub in subscriptions %}
-                <tr class="hover:bg-gray-50 transition">
-                    <td class="px-6 py-4 font-bold text-gray-900">{{ sub.Tenant.store_name }}</td>
-                    <td class="px-6 py-4">
-                        <span
-                            class="bg-blue-50 text-blue-700 px-2 py-0.5 rounded text-xs font-bold border border-blue-100">
-                            {{ sub.Plan.name }}
-                        </span>
-                    </td>
-                    <td class="px-6 py-4 text-xs font-mono">
-                        {% if sub.is_yearly %} سنوي (Annual) {% else %} شهري (Monthly) {% endif %}
-                    </td>
-                    <td class="px-6 py-4">
-                        {% if sub.status == 'active' %}
-                        <span
-                            class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
-                            Active ✅
-                        </span>
-                        {% elif sub.status == 'trial' %}
-                        <span
-                            class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-800">
-                            Trial ⏳
-                        </span>
-                        {% else %}
-                        <span
-                            class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
-                            Expired ❌
-                        </span>
-                        {% endif %}
-                    </td>
-                    <td class="px-6 py-4 text-xs text-gray-500 font-mono">{{ sub.start_date }}</td>
-                    <td class="px-6 py-4 text-xs text-gray-500 font-mono">
-                        {% if sub.days_left < 7 %} <span class="text-red-500 font-bold">{{ sub.end_date }} ({{
-                            sub.days_left }} يوم)</span>
+    <!-- Table -->
+    <div style="background:#fff;border:1px solid #e2e8f0;border-radius:16px;overflow:hidden;">
+        <div class="overflow-x-auto">
+            <table class="w-full text-right admin-table">
+                <thead>
+                    <tr>
+                        <th>المتجر</th>
+                        <th>الباقة</th>
+                        <th>نوع الدفع</th>
+                        <th>الحالة</th>
+                        <th>تاريخ البداية</th>
+                        <th>تاريخ النهاية</th>
+                        <th class="text-center">إجراءات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for sub in subscriptions %}
+                    <tr class="hover:bg-slate-50 transition sub-row" data-status="{{ 'active' if sub.status == 'active' else ('trial' if sub.status == 'trial' else 'expired') }}">
+                        <td class="font-bold text-slate-800">{{ sub.Tenant.store_name }}</td>
+                        <td>
+                            <span style="background:#eff6ff;color:#1d4ed8;padding:3px 10px;border-radius:8px;font-size:11px;font-weight:700;">
+                                {{ sub.Plan.name }}
+                            </span>
+                        </td>
+                        <td style="font-family:Inter,monospace;color:#64748b;">
+                            {% if sub.is_yearly %}سنوي{% else %}شهري{% endif %}
+                        </td>
+                        <td>
+                            {% if sub.status == 'active' %}
+                            <span style="display:inline-flex;align-items:center;gap:5px;background:#f0fdf4;color:#16a34a;padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700;border:1px solid #bbf7d0;">
+                                <span style="width:6px;height:6px;border-radius:50%;background:#16a34a;display:inline-block;"></span> نشط
+                            </span>
+                            {% elif sub.status == 'trial' %}
+                            <span style="display:inline-flex;align-items:center;gap:5px;background:#fffbeb;color:#d97706;padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700;border:1px solid #fde68a;">
+                                <span style="width:6px;height:6px;border-radius:50%;background:#d97706;display:inline-block;animation:pulse 2s infinite;"></span> تجريبي
+                            </span>
                             {% else %}
-                            {{ sub.end_date }}
+                            <span style="display:inline-flex;align-items:center;gap:5px;background:#fef2f2;color:#dc2626;padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700;border:1px solid #fecaca;">
+                                <span style="width:6px;height:6px;border-radius:50%;background:#dc2626;display:inline-block;"></span> منتهي
+                            </span>
                             {% endif %}
-                    </td>
-                    <td class="px-6 py-4 text-center">
-                        <button class="text-teal-600 hover:text-teal-800 text-xs font-bold underline">تجديد
-                            يدوي</button>
-                        <span class="text-gray-300 mx-2">|</span>
-                        <button class="text-gray-500 hover:text-gray-800 text-xs">تعديل</button>
-                    </td>
-                </tr>
-                {% else %}
-                <tr>
-                    <td colspan="7" class="px-6 py-12 text-center text-gray-400">لا توجد اشتراكات مسجلة</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+                        </td>
+                        <td style="font-family:Inter,monospace;color:#94a3b8;font-size:12px;" dir="ltr">{{ sub.start_date }}</td>
+                        <td style="font-family:Inter,monospace;font-size:12px;" dir="ltr">
+                            {% if sub.days_left < 7 %}
+                            <span style="color:#dc2626;font-weight:700;">{{ sub.end_date }} <span style="font-size:10px;">({{ sub.days_left }} يوم)</span></span>
+                            {% else %}
+                            <span style="color:#94a3b8;">{{ sub.end_date }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            <button onclick="renewSub({{ sub.id }}, this)" style="color:#0d9488;font-size:11px;font-weight:700;background:none;border:none;cursor:pointer;text-decoration:underline;font-family:Cairo,sans-serif;">تجديد 30 يوم</button>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center py-14" style="color:#94a3b8;">
+                            <i class="fa-solid fa-file-invoice text-3xl block mb-3" style="color:#e2e8f0;"></i>
+                            لا توجد اشتراكات مسجلة
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
 
 </div>
+
+<script>
+    function filterSubs(status, btn) {
+        document.querySelectorAll('.sub-filter').forEach(b => { b.style.background = 'transparent'; b.style.color = '#94a3b8'; b.style.boxShadow = 'none'; });
+        btn.style.background = '#fff'; btn.style.color = '#0f172a'; btn.style.boxShadow = '0 1px 3px rgba(0,0,0,0.08)';
+        document.querySelectorAll('.sub-row').forEach(row => {
+            row.style.display = (status === 'all' || row.dataset.status === status) ? '' : 'none';
+        });
+    }
+    async function renewSub(id, btn) {
+        if (!confirm('تجديد هذا الاشتراك 30 يوماً إضافية؟')) return;
+        const orig = btn.textContent; btn.textContent = 'جاري...'; btn.disabled = true;
+        try {
+            const r = await fetch('/admin/subscriptions/' + id + '/renew', { method: 'POST' });
+            const d = await r.json();
+            if (d.ok) { location.reload(); }
+            else { alert('❌ ' + (d.error || 'فشل')); btn.textContent = orig; btn.disabled = false; }
+        } catch (e) { alert('❌ ' + e.message); btn.textContent = orig; btn.disabled = false; }
+    }
+</script>
 {% endblock %}

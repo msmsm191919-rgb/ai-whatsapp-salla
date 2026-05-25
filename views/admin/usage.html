@@ -1,123 +1,78 @@
 {% extends 'admin/layout.html' %}
 
 {% block content %}
-<div class="space-y-6">
-    <div class="flex justify-between items-end">
+<div class="space-y-5">
+
+    <!-- Header -->
+    <div style="background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:20px 24px;" class="flex items-center justify-between flex-wrap gap-3">
         <div>
-            <h2 class="text-2xl font-bold text-gray-900">استهلاك الموارد</h2>
-            <p class="text-gray-500 text-sm">مراقبة تفصيلية لاستهلاك المتاجر وحدود الـ API والذكاء الاصطناعي.</p>
-        </div>
-        <div class="flex gap-2">
-            <span class="bg-blue-100 text-blue-700 font-bold px-3 py-1 rounded-full text-xs">
-                خوادم Meta API: <span class="bg-green-500 rounded-full w-2 h-2 inline-block mx-1"></span> متصلة
-            </span>
-            <span class="bg-purple-100 text-purple-700 font-bold px-3 py-1 rounded-full text-xs">
-                OpenAI: <span class="bg-green-500 rounded-full w-2 h-2 inline-block mx-1"></span> مستقر
-            </span>
+            <h2 class="font-black text-slate-800" style="font-size:18px;">استهلاك الموارد</h2>
+            <p class="text-xs mt-1" style="color:#94a3b8;">استهلاك المتاجر هذا الشهر — {{ now_date }}</p>
         </div>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <!-- Message Quota -->
-        <div class="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-            <div class="flex justify-between items-start mb-4">
-                <div>
-                    <p class="text-xs font-bold text-gray-400 mb-1">إجمالي الرسائل (شهر)</p>
-                    <h3 class="text-2xl font-bold text-gray-900">142,500</h3>
-                </div>
-                <div class="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-lg flex items-center justify-center">
-                    <i class="fa-solid fa-paper-plane"></i>
-                </div>
-            </div>
-            <div class="w-full bg-gray-100 rounded-full h-1.5 mb-2">
-                <div class="bg-indigo-500 h-1.5 rounded-full" style="width: 75%"></div>
-            </div>
-            <p class="text-[10px] text-gray-500">75% من الحد الكلي للإرسال</p>
+    <!-- KPI Cards (حقيقية) -->
+    <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+        <div class="kpi-card">
+            <div class="kpi-icon" style="background:#eef2ff;color:#4f46e5;"><i class="fa-solid fa-paper-plane"></i></div>
+            <div><p class="text-xs font-bold uppercase" style="color:#94a3b8;">إجمالي الرسائل (الشهر)</p><p class="text-2xl font-black text-slate-800" style="font-family:Inter,sans-serif;">{{ totalMsgs }}</p></div>
         </div>
-
-        <!-- AI Tokens -->
-        <div class="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-            <div class="flex justify-between items-start mb-4">
-                <div>
-                    <p class="text-xs font-bold text-gray-400 mb-1">استهلاك AI Tokens</p>
-                    <h3 class="text-2xl font-bold text-gray-900">24.5M</h3>
-                </div>
-                <div class="w-10 h-10 bg-purple-50 text-purple-600 rounded-lg flex items-center justify-center">
-                    <i class="fa-solid fa-brain"></i>
-                </div>
-            </div>
-            <div class="w-full bg-gray-100 rounded-full h-1.5 mb-2">
-                <div class="bg-purple-500 h-1.5 rounded-full" style="width: 45%"></div>
-            </div>
-            <p class="text-[10px] text-gray-500">معدل طبيعي (أعلى 5% هذا الشهر)</p>
+        <div class="kpi-card">
+            <div class="kpi-icon" style="background:#f5f3ff;color:#7c3aed;"><i class="fa-solid fa-brain"></i></div>
+            <div><p class="text-xs font-bold uppercase" style="color:#94a3b8;">طلبات الذكاء (AI)</p><p class="text-2xl font-black text-slate-800" style="font-family:Inter,sans-serif;">{{ totalAI }}</p></div>
         </div>
-
-        <!-- Costs -->
-        <div class="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-            <div class="flex justify-between items-start mb-4">
-                <div>
-                    <p class="text-xs font-bold text-gray-400 mb-1">تكلفة API التقديرية</p>
-                    <h3 class="text-2xl font-bold text-gray-900">$420</h3>
-                </div>
-                <div class="w-10 h-10 bg-green-50 text-green-600 rounded-lg flex items-center justify-center">
-                    <i class="fa-solid fa-file-invoice-dollar"></i>
-                </div>
-            </div>
-            <p class="text-[10px] text-red-500 font-bold mt-2"><i class="fa-solid fa-arrow-trend-up"></i> +$50 عن الشهر
-                الماضي</p>
-        </div>
-
-        <!-- Errors -->
-        <div class="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-            <div class="flex justify-between items-start mb-4">
-                <div>
-                    <p class="text-xs font-bold text-gray-400 mb-1">نسبة الفشل</p>
-                    <h3 class="text-2xl font-bold text-gray-900">0.05%</h3>
-                </div>
-                <div class="w-10 h-10 bg-red-50 text-red-600 rounded-lg flex items-center justify-center">
-                    <i class="fa-solid fa-triangle-exclamation"></i>
-                </div>
-            </div>
-            <p class="text-[10px] text-green-500 font-bold mt-2">ممتاز (هدف < 1%)</p>
+        <div class="kpi-card">
+            <div class="kpi-icon" style="background:{{ '#fef2f2' if overCount > 0 else '#f0fdf4' }};color:{{ '#dc2626' if overCount > 0 else '#16a34a' }};"><i class="fa-solid fa-gauge-high"></i></div>
+            <div><p class="text-xs font-bold uppercase" style="color:#94a3b8;">متاجر تجاوزت الحد</p><p class="text-2xl font-black" style="color:{{ '#dc2626' if overCount > 0 else '#16a34a' }};font-family:Inter,sans-serif;">{{ overCount }}</p></div>
         </div>
     </div>
 
-    <!-- Usage By Tenant Table -->
-    <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-        <div class="px-6 py-4 border-b border-gray-100 bg-gray-50">
-            <h3 class="font-bold text-gray-800">تفاصيل استهلاك المتاجر</h3>
+    <!-- Usage Table (حقيقية) -->
+    <div style="background:#fff;border:1px solid #e2e8f0;border-radius:16px;overflow:hidden;">
+        <div style="padding:16px 20px;border-bottom:1px solid #f1f5f9;background:#f8fafc;">
+            <h3 class="font-bold text-slate-800" style="font-size:14px;">تفاصيل استهلاك المتاجر</h3>
         </div>
-        <table class="w-full text-right">
-            <thead class="bg-gray-50 text-gray-500 text-xs font-medium border-b border-gray-200">
-                <tr>
-                    <th class="px-6 py-3">المتجر</th>
-                    <th class="px-6 py-3">عدد الرسائل</th>
-                    <th class="px-6 py-3">AI Requests</th>
-                    <th class="px-6 py-3">حالة الحد</th>
-                    <th class="px-6 py-3">إجراء</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-100">
-                <!-- Mock Rows -->
-                {% for i in range(1, 6) %}
-                <tr class="hover:bg-gray-50 transition">
-                    <td class="px-6 py-4 font-bold text-gray-700">متجر تجريبي {{ i }}</td>
-                    <td class="px-6 py-4">{{ i * 1250 }}</td>
-                    <td class="px-6 py-4">{{ i * 800 }}</td>
-                    <td class="px-6 py-4">
-                        {% if i == 4 %}
-                        <span class="bg-red-100 text-red-700 px-2 py-1 rounded text-xs font-bold">تجاوز الحد</span>
-                        {% else %}
-                        <span class="bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-bold">طبيعي</span>
-                        {% endif %}
-                    </td>
-                    <td class="px-6 py-4">
-                        <button class="text-teal-600 hover:underline text-xs font-bold">التفاصيل</button>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        <div class="overflow-x-auto">
+            <table class="w-full text-right admin-table">
+                <thead>
+                    <tr><th>المتجر</th><th>الباقة</th><th>الرسائل</th><th>طلبات AI</th><th>نسبة الاستهلاك</th><th>الحالة</th></tr>
+                </thead>
+                <tbody>
+                    {% if rows and rows.length > 0 %}
+                    {% for r in rows %}
+                    <tr>
+                        <td>
+                            <div style="display:flex;align-items:center;gap:10px;">
+                                <div style="width:32px;height:32px;border-radius:10px;background:linear-gradient(135deg,#0d9488,#3b82f6);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:12px;flex-shrink:0;">{{ r.name|slice(0,1) }}</div>
+                                <span style="font-weight:700;color:#0f172a;">{{ r.name }}</span>
+                            </div>
+                        </td>
+                        <td><span style="background:#eff6ff;color:#1d4ed8;padding:3px 10px;border-radius:8px;font-size:10px;font-weight:700;">{{ r.plan }}</span></td>
+                        <td style="font-family:Inter,sans-serif;font-weight:700;color:#374151;">{{ r.sent }}{% if r.limit > 0 %} <span style="color:#cbd5e1;font-weight:400;">/ {{ r.limit }}</span>{% endif %}</td>
+                        <td style="font-family:Inter,sans-serif;color:#64748b;">{{ r.ai }}</td>
+                        <td style="min-width:120px;">
+                            {% if r.limit > 0 %}
+                            <div style="width:100px;background:#f1f5f9;border-radius:6px;height:6px;overflow:hidden;">
+                                <div style="width:{{ r.pct }}%;background:{{ '#dc2626' if r.over else ('#f59e0b' if r.pct > 80 else '#0d9488') }};height:100%;border-radius:6px;"></div>
+                            </div>
+                            <span style="font-size:10px;color:#94a3b8;">{{ r.pct }}%</span>
+                            {% else %}<span style="font-size:11px;color:#cbd5e1;">—</span>{% endif %}
+                        </td>
+                        <td>
+                            {% if r.over %}
+                            <span style="background:#fef2f2;color:#dc2626;padding:3px 10px;border-radius:8px;font-size:10px;font-weight:700;border:1px solid #fecaca;">تجاوز الحد</span>
+                            {% else %}
+                            <span style="background:#f0fdf4;color:#16a34a;padding:3px 10px;border-radius:8px;font-size:10px;font-weight:700;border:1px solid #bbf7d0;">طبيعي</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    {% else %}
+                    <tr><td colspan="6" class="text-center py-12" style="color:#94a3b8;">لا يوجد استهلاك مسجّل هذا الشهر</td></tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
     </div>
 
 </div>
