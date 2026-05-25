@@ -46,7 +46,7 @@ SallaWebhook.on("all", (eventBody, userArgs) => {
   // console.log("Event Received:", eventBody.event);
 });
 
-const { sendMetaMessage } = require('./helpers/metaProvider');
+const { sendMetaMessage, uploadMetaMedia, sendMetaImage } = require('./helpers/metaProvider');
 const { checkLimit, incrementUsage } = require('./helpers/limitsEngine');
 const AIService = require('./services/AIService');
 const ScenarioService = require('./services/ScenarioService');
@@ -233,8 +233,8 @@ nunjucksEnv.addGlobal('range', function (start, end, step) {
 app.use(express.static(__dirname + "/public"));
 
 // Body Parsers - MUST be before any verify middleware
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '12mb' }));            // 12mb لاستقبال صور الحملات (base64)
+app.use(express.urlencoded({ extended: true, limit: '12mb' }));
 
 // DEV ONLY Mock Auth Middleware REMOVED for Production
 // app.use((req, res, next) => { ... });
@@ -2057,6 +2057,7 @@ app.post("/api/campaigns/send", async (req, res) => {
     // ---------------------------
 
     const { name, audience, type, message } = req.body;
+    const campaignImage = req.body.image || null;   // صورة الحملة (base64 data URL) — اختياري
 
     // ⏱️ التأخير بين كل رسالة (بالثواني) — ثابت آمن لحماية رقم التاجر من الحظر
     // مخفي عن الواجهة عمداً (إعداد احترافي آمن افتراضياً). الحدود 1-300 لو مُرّر عبر API.
@@ -2070,7 +2071,7 @@ app.post("/api/campaigns/send", async (req, res) => {
       target_group: audience,
       message_body: message,
       status: 'processing',
-      media_url: req.body.image || null, // Optional
+      media_url: campaignImage ? 'image_attached' : null, // علامة فقط (لا نخزّن base64 الضخم)
       stats_total: 0,
       stats_sent: 0
     });
@@ -2108,7 +2109,19 @@ app.post("/api/campaigns/send", async (req, res) => {
       console.log(`[Campaign] Starting sending to ${customers.length} customers...`);
 
       const metaConfig = await db.models.WhatsAppConfig.findOne({ where: { tenant_id: tenant.id } });
-      const canSendApi = (type === 'api' && metaConfig && metaConfig.access_token);
+      // ✅ إصلاح: نقبل 'api' و'whatsapp_api' (الواجهة ترسل whatsapp_api)
+      const canSendApi = ((type === 'api' || type === 'whatsapp_api') && metaConfig && metaConfig.access_token);
+
+      // 🖼️ رفع الصورة مرة واحدة للحصول على media_id يُعاد استخدامه لكل العملاء (أوفر وأسرع)
+      let mediaId = null;
+      if (canSendApi && campaignImage) {
+        try {
+          mediaId = await uploadMetaMedia(metaConfig, campaignImage);
+          console.log(`[Campaign] 🖼️ Image uploaded to Meta (media_id: ${mediaId})`);
+        } catch (e) {
+          console.error('[Campaign] ⚠️ Image upload failed — sending text only:', e.message);
+        }
+      }
 
       // ─── Rate Limit Configuration ───
       // WhatsApp Cloud API limits: ~80 messages/second for Business API
@@ -2139,7 +2152,12 @@ app.post("/api/campaigns/send", async (req, res) => {
           // B. Send (Real or Mock)
           let sent = false;
           if (canSendApi) {
-            await sendMetaMessage(metaConfig, customer.phone, personalMsg);
+            if (mediaId) {
+              // إرسال كرسالة صورة + النص كتعليق (caption)
+              await sendMetaImage(metaConfig, customer.phone, mediaId, personalMsg);
+            } else {
+              await sendMetaMessage(metaConfig, customer.phone, personalMsg);
+            }
             sent = true;
           } else {
             // Mock Send

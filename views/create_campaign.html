@@ -686,6 +686,9 @@
                 const audience = document.getElementById('audience').value;
                 let message = document.getElementById('campaignMessage').value;
                 const url = document.getElementById('campaignUrl').value;
+                // صورة الحملة (base64) — تُقرأ من المعاينة المصغّرة عند رفع صورة مخصّصة
+                const thumb = document.getElementById('imagePreviewThumbnail');
+                const image = (thumb && thumb.src && thumb.src.startsWith('data:')) ? thumb.src : null;
 
                 if (!name || !message) {
                     Swal.fire({
@@ -714,6 +717,7 @@
                             audience,
                             type: 'whatsapp_api',
                             message,
+                            image,
                         })
                     });
 
