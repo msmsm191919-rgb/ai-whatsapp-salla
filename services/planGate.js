@@ -37,7 +37,9 @@ const PLANS = {
             priority_support: false,      // دعم عادي عبر الشات
             digital_products: false,      // ❌ تسليم منتجات رقمية (النمو فقط)
             customers_import: false,      // ❌ استيراد العملاء Excel
-            ai_cart_negotiator: false     // ❌ مفاوض AI ذكي
+            ai_cart_negotiator: false,    // ❌ مفاوض AI ذكي
+            whatsapp_qr: true,            // ✅ ربط QR (الطريقة الأساسية المجانية لكل الباقات)
+            whatsapp_api: false           // ❌ WhatsApp Business API (النمو فأعلى فقط)
         },
         limits: {
             whatsapp_numbers: 1,
@@ -79,7 +81,9 @@ const PLANS = {
             api_access: false,            // ❌ (الشركات فقط)
             custom_ai_training: false,
             white_label: false,
-            priority_support: true
+            priority_support: true,
+            whatsapp_qr: true,            // ✅ ربط QR
+            whatsapp_api: true            // ✅ WhatsApp Business API (متاح من النمو)
         },
         limits: {
             whatsapp_numbers: 3,
@@ -121,7 +125,9 @@ const PLANS = {
             api_access: true,             // ✅
             custom_ai_training: true,     // ✅
             white_label: true,            // ✅
-            priority_support: true
+            priority_support: true,
+            whatsapp_qr: true,            // ✅ ربط QR
+            whatsapp_api: true            // ✅ WhatsApp Business API
         },
         limits: {
             whatsapp_numbers: -1,

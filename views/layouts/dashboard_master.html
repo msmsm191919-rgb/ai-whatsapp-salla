@@ -325,6 +325,9 @@
             <a href="/settings/whatsapp" class="sidebar-link {{ 'active' if activePage == 'settings' else '' }}">
                 <i class="fa-solid fa-gear w-4 text-center nav-icon"></i>
                 <span>واتساب API (متقدم)</span>
+                {% if not (planContext and planContext.can and planContext.can.whatsapp_api) %}
+                <i class="fa-solid fa-lock text-[9px] mr-auto" style="color:#cbd5e1;" title="متاح في باقة النمو فأعلى"></i>
+                {% endif %}
             </a>
             <a href="/billing" class="sidebar-link {{ 'active' if activePage == 'billing' else '' }}">
                 <i class="fa-solid fa-receipt w-4 text-center nav-icon"></i>
