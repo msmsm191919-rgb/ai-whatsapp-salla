@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const SallaDatabase = require('../database/db_instance');
+const waWeb = require('../services/waWeb');
 
 router.get('/', async (req, res) => {
   try {
@@ -55,7 +56,11 @@ router.get('/tenants', async (req, res) => {
       include: ['WhatsAppConfig', 'Subscription'],
       order: [['createdAt', 'DESC']]
     });
-    res.render('admin/tenants.html', { page: 'tenants', now_date: new Date().toLocaleDateString('ar-SA'), tenants });
+    // 📱 حالة جلسة واتساب QR لكل تاجر
+    const waStatus = {};
+    tenants.forEach(t => { waStatus[t.id] = waWeb.getState(t.id).status; });
+    const waConnected = Object.values(waStatus).filter(s => s === 'ready').length;
+    res.render('admin/tenants.html', { page: 'tenants', now_date: new Date().toLocaleDateString('ar-SA'), tenants, waStatus, waConnected });
   } catch (e) {
     res.status(500).send(e.message);
   }
