@@ -41,6 +41,11 @@ function start() {
 
     client = new Client({
         authStrategy: new LocalAuth({ clientId: 'mobhir' }),
+        // 🔧 تثبيت إصدار WhatsApp Web معروف-التوافق (يحل عَلَق "authenticated" بدون "ready")
+        webVersionCache: {
+            type: 'remote',
+            remotePath: 'https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.3000.1040093096-alpha.html'
+        },
         puppeteer: {
             headless: true,
             args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu', '--no-zygote', '--no-first-run']
@@ -52,6 +57,8 @@ function start() {
         qrcode.toDataURL(qr, (err, url) => { if (!err) qrDataUrl = url; });
         console.log('📱 [waWeb] QR جاهز — امسحه من الصفحة');
     });
+    client.on('loading_screen', (pct, msg) => console.log(`⏳ [waWeb] تحميل ${pct}% ${msg || ''}`));
+    client.on('change_state', (s) => console.log(`🔄 [waWeb] الحالة: ${s}`));
     client.on('authenticated', () => { status = 'authenticated'; qrDataUrl = ''; console.log('🔑 [waWeb] تمت المصادقة'); });
     client.on('ready', () => { status = 'ready'; qrDataUrl = ''; console.log('✅ [waWeb] واتساب متصل وجاهز'); });
     client.on('auth_failure', (m) => { status = 'error'; lastError = String(m); console.error('❌ [waWeb] فشل المصادقة', m); });
