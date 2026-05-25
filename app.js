@@ -2096,6 +2096,21 @@ app.post("/api/customers", async (req, res) => {
   }
 });
 
+// 🗑️ حذف عميل (مقصور على عملاء التاجر نفسه)
+app.delete("/api/customers/:id", async (req, res) => {
+  try {
+    const { db, tenant } = await _getCustomerTenant(req);
+    if (!tenant) return res.status(404).json({ ok: false, error: 'Tenant not found' });
+    const deleted = await db.models.Customer.destroy({
+      where: { id: req.params.id, tenant_id: tenant.id }   // 🔒 يمنع حذف عملاء تاجر آخر
+    });
+    if (!deleted) return res.status(404).json({ ok: false, error: 'العميل غير موجود' });
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
 // 📥 استيراد عملاء دفعة واحدة (من CSV/Excel — تُرسل كمصفوفة JSON من المتصفح)
 app.post("/api/customers/import", async (req, res) => {
   try {

@@ -124,9 +124,16 @@
                             </div>
                         </td>
                         <td class="px-6 py-4 text-left">
-                            <button class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-300 hover:text-teal-600 hover:bg-teal-50 transition">
-                                <i class="fa-solid fa-ellipsis-vertical text-sm"></i>
-                            </button>
+                            <div class="relative inline-block">
+                                <button onclick="toggleRowMenu(event, {{ customer.id }})" class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-teal-600 hover:bg-teal-50 transition">
+                                    <i class="fa-solid fa-ellipsis-vertical text-sm"></i>
+                                </button>
+                                <div id="menu-{{ customer.id }}" class="row-menu hidden absolute left-0 mt-1 w-40 bg-white rounded-xl shadow-lg border border-slate-100 py-1 z-20">
+                                    <button onclick="deleteCustomer({{ customer.id }}, '{{ customer.name|replace("'", "") }}')" class="w-full text-right px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 transition">
+                                        <i class="fa-solid fa-trash-can text-xs"></i> حذف العميل
+                                    </button>
+                                </div>
+                            </div>
                         </td>
                     </tr>
                     {% else %}
@@ -221,6 +228,28 @@
             if (data.ok) { location.reload(); }
             else { alert('❌ ' + (data.error || 'فشل الحفظ')); btn.disabled = false; btn.textContent = 'حفظ العميل'; }
         } catch (e) { alert('❌ خطأ: ' + e.message); btn.disabled = false; btn.textContent = 'حفظ العميل'; }
+    }
+
+    // ⋮ قائمة الصف (حذف)
+    function toggleRowMenu(event, id) {
+        event.stopPropagation();
+        const menu = document.getElementById('menu-' + id);
+        const isOpen = !menu.classList.contains('hidden');
+        document.querySelectorAll('.row-menu').forEach(m => m.classList.add('hidden'));
+        if (!isOpen) menu.classList.remove('hidden');
+    }
+    document.addEventListener('click', () => {
+        document.querySelectorAll('.row-menu').forEach(m => m.classList.add('hidden'));
+    });
+
+    async function deleteCustomer(id, name) {
+        if (!confirm('حذف العميل "' + name + '"؟ لا يمكن التراجع.')) return;
+        try {
+            const r = await fetch('/api/customers/' + id, { method: 'DELETE' });
+            const data = await r.json();
+            if (data.ok) { location.reload(); }
+            else { alert('❌ ' + (data.error || 'فشل الحذف')); }
+        } catch (e) { alert('❌ خطأ: ' + e.message); }
     }
 
     // 📥 استيراد CSV/Excel — يُقرأ في المتصفح ويُرسل كمصفوفة JSON
