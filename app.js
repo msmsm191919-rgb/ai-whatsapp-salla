@@ -46,7 +46,7 @@ SallaWebhook.on("all", (eventBody, userArgs) => {
   // console.log("Event Received:", eventBody.event);
 });
 
-const { sendMetaMessage, uploadMetaMedia, sendMetaImage } = require('./helpers/metaProvider');
+const { sendMetaMessage, uploadMetaMedia, sendMetaImage, sendMetaTemplate } = require('./helpers/metaProvider');
 const { checkLimit, incrementUsage } = require('./helpers/limitsEngine');
 const AIService = require('./services/AIService');
 const ScenarioService = require('./services/ScenarioService');
@@ -1969,6 +1969,18 @@ app.get("/campaigns/create", require('./services/planGate').requirePage('campaig
     // Contacts count
     const contactsCount = await db.models.Customer.count({ where: { tenant_id: tenant?.id } });
 
+    // 📡 تحديد قناة الإرسال: QR (نص حر) أو API (قوالب معتمدة)
+    const useWaWeb = tenant ? waWeb.isReady(tenant.id) : false;
+    const metaConfig = tenant ? await db.models.WhatsAppConfig.findOne({ where: { tenant_id: tenant.id } }) : null;
+    const apiReady = !useWaWeb && metaConfig && metaConfig.access_token; // API فقط (مو QR)
+    let channelMode = 'qr';       // الافتراضي: نص حر (QR)
+    let templates = [];
+    if (apiReady) {
+      channelMode = 'api';
+      try { templates = await require('./helpers/metaProvider').fetchMetaTemplates(metaConfig); }
+      catch (e) { templates = []; }
+    }
+
     res.render("create_campaign.html", {
       user: req.user,
       activePage: 'campaigns',
@@ -1977,7 +1989,9 @@ app.get("/campaigns/create", require('./services/planGate').requirePage('campaig
       msg_limit: msgLimit,
       messages_remaining: messagesRemaining,
       contacts_count: contactsCount,
-      plan_features: planFeatures
+      plan_features: planFeatures,
+      channel_mode: channelMode,   // 'qr' | 'api'
+      templates: templates
     });
   } catch (e) {
     console.error(e);
@@ -2196,6 +2210,10 @@ async function dispatchCampaign(campaignId, campaignImage = null) {
   const audience = campaign.target_group;
   const message = campaign.message_body || '';
 
+  // 📋 هل هذه حملة قالب (API)؟
+  let tmpl = null;
+  try { const p = JSON.parse(message); if (p && p.template) tmpl = p; } catch (e) { /* نص حر */ }
+
   // جلب الجمهور المستهدف
   let customers = [];
   if (audience === 'vip') {
@@ -2235,17 +2253,26 @@ async function dispatchCampaign(campaignId, campaignImage = null) {
   for (const customer of customers) {
     if (!customer.phone) continue;
     try {
-      const personalMsg = message.replace(/{{name}}/g, customer.name || 'عميلنا العزيز').replace(/{{discount_code}}/g, 'SALE20');
-      if (useWaWeb) {
-        if (campaignImage) await waWeb.sendImage(tenant.id, customer.phone, campaignImage, personalMsg);
-        else await waWeb.sendMessage(tenant.id, customer.phone, personalMsg);
-      } else if (canSendApi) {
-        if (mediaId) await sendMetaImage(metaConfig, customer.phone, mediaId, personalMsg);
-        else await sendMetaMessage(metaConfig, customer.phone, personalMsg);
+      let logContent;
+      if (tmpl && canSendApi) {
+        // 📋 حملة قالب معتمد عبر API — {{1}} = اسم العميل
+        await sendMetaTemplate(metaConfig, customer.phone, tmpl.template, tmpl.lang || 'ar',
+          [{ type: 'body', parameters: [{ type: 'text', text: customer.name || 'عميلنا العزيز' }] }]);
+        logContent = `[قالب: ${tmpl.template}]`;
+      } else {
+        const personalMsg = message.replace(/{{name}}/g, customer.name || 'عميلنا العزيز').replace(/{{discount_code}}/g, 'SALE20');
+        if (useWaWeb) {
+          if (campaignImage) await waWeb.sendImage(tenant.id, customer.phone, campaignImage, personalMsg);
+          else await waWeb.sendMessage(tenant.id, customer.phone, personalMsg);
+        } else if (canSendApi) {
+          if (mediaId) await sendMetaImage(metaConfig, customer.phone, mediaId, personalMsg);
+          else await sendMetaMessage(metaConfig, customer.phone, personalMsg);
+        }
+        logContent = personalMsg;
       }
       await campaign.increment('stats_sent');
       totalSent++; sentInBatch++;
-      await db.models.MessageLog.create({ tenant_id: tenant.id, direction: 'out', content: personalMsg, status: 'sent', to_phone: customer.phone, metadata: { campaign_id: campaign.id } });
+      await db.models.MessageLog.create({ tenant_id: tenant.id, direction: 'out', content: logContent, status: 'sent', to_phone: customer.phone, metadata: { campaign_id: campaign.id } });
       await incrementUsage(tenant.id, db.models, 1);
     } catch (err) {
       console.error(`[Campaign] Failed ${customer.phone}:`, err.message);
@@ -2329,6 +2356,13 @@ app.post("/api/campaigns/send", async (req, res) => {
     const { name, audience, message } = req.body;
     const campaignImage = req.body.image || null;   // صورة الحملة (base64) — للإرسال الفوري فقط
 
+    // 📋 وضع API: لو اختار التاجر قالباً معتمداً، نخزّنه بدل النص الحر
+    const templateName = req.body.template_name || null;
+    const templateLang = req.body.template_lang || 'ar';
+    const messageBody = templateName
+      ? JSON.stringify({ template: templateName, lang: templateLang })
+      : message;
+
     // 📅 الجدولة: لو مُرّر وقت مستقبلي → نحفظ الحملة كمجدولة (يرسلها الـ cron)
     let scheduledAt = null;
     if (req.body.scheduled_at) {
@@ -2341,7 +2375,7 @@ app.post("/api/campaigns/send", async (req, res) => {
       tenant_id: tenant.id,
       name: name || 'بدون اسم',
       target_group: audience,
-      message_body: message,
+      message_body: messageBody,
       status: scheduledAt ? 'scheduled' : 'processing',
       scheduled_at: scheduledAt,
       media_url: campaignImage ? 'image_attached' : null,

@@ -149,6 +149,12 @@ async function sendMetaTemplate(config, to, templateName, language = 'en_US', co
         throw new Error("Missing Meta Configuration (Phone ID or Token)");
     }
 
+    // --- MOCK MODE FOR DEMO ---
+    if (config.access_token === 'mock_access_token') {
+        console.log(`[MOCK MODE] Sending TEMPLATE "${templateName}" (${language}) to ${to}`);
+        return { message_id: 'mock_tmpl_12345' };
+    }
+
     try {
         const url = `https://graph.facebook.com/${META_GRAPH_VERSION}/${config.phone_number_id}/messages`;
 
@@ -182,9 +188,40 @@ async function sendMetaTemplate(config, to, templateName, language = 'en_US', co
     }
 }
 
+/**
+ * جلب القوالب المعتمدة (APPROVED) من Meta — للحملات الإعلانية عبر API
+ * @returns {Promise<Array<{name,language,status,body}>>}
+ */
+async function fetchMetaTemplates(config) {
+    if (!config || !config.waba_id || !config.access_token) return [];
+    // --- MOCK MODE: قوالب تجريبية للعرض ---
+    if (config.access_token === 'mock_access_token') {
+        return [
+            { name: 'special_offer', language: 'ar', status: 'APPROVED', body: 'عرض خاص لك {{1}}! 🎁 خصم حصري باستخدام الكود MOBHIR. لا تفوّت الفرصة!' },
+            { name: 'order_update', language: 'ar', status: 'APPROVED', body: 'مرحباً {{1}}، لدينا تحديث بخصوص طلبك. تواصل معنا لمزيد من التفاصيل.' }
+        ];
+    }
+    try {
+        const url = `https://graph.facebook.com/${META_GRAPH_VERSION}/${config.waba_id}/message_templates?limit=100&access_token=${config.access_token}`;
+        const res = await fetch(url);
+        const data = await res.json();
+        if (!Array.isArray(data.data)) return [];
+        return data.data
+            .filter(t => t.status === 'APPROVED')
+            .map(t => {
+                const body = (t.components || []).find(c => c.type === 'BODY');
+                return { name: t.name, language: t.language, status: t.status, body: body?.text || '' };
+            });
+    } catch (e) {
+        console.error('[Meta] fetchTemplates error:', e.message);
+        return [];
+    }
+}
+
 module.exports = {
     sendMetaMessage,
     sendMetaTemplate,
     uploadMetaMedia,
-    sendMetaImage
+    sendMetaImage,
+    fetchMetaTemplates
 };

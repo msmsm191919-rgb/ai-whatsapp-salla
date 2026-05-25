@@ -383,6 +383,32 @@
                             <h3 class="font-bold text-gray-800 text-lg">محتوى الرسالة</h3>
                         </div>
 
+                        {% if channel_mode == 'api' %}
+                        <!-- وضع WhatsApp API: قوالب معتمدة من Meta -->
+                        <div class="mb-4 flex items-start gap-2 p-3 rounded-xl text-xs" style="background:#eff6ff;border:1px solid #bfdbfe;color:#1d4ed8;">
+                            <i class="fa-solid fa-circle-info mt-0.5"></i>
+                            <span>أنت متصل عبر <strong>WhatsApp API</strong>. حسب قواعد Meta، الحملات الإعلانية تُرسَل عبر <strong>قالب معتمد مسبقاً</strong> (مو نص حر).</span>
+                        </div>
+                        <div class="mb-3">
+                            <label class="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wide">اختر القالب المعتمد</label>
+                            {% if templates and templates.length > 0 %}
+                            <select id="templateSelect" onchange="previewTemplate()" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3.5 text-sm focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition">
+                                <option value="">— اختر قالباً —</option>
+                                {% for t in templates %}
+                                <option value="{{ t.name }}" data-lang="{{ t.language }}" data-body="{{ t.body }}">{{ t.name }} ({{ t.language }})</option>
+                                {% endfor %}
+                            </select>
+                            <div id="templatePreview" class="hidden mt-3 p-3 rounded-xl text-sm text-gray-700 whitespace-pre-line" style="background:#d9fdd3;border:1px solid #b6e8ad;"></div>
+                            <p class="text-[11px] text-gray-400 mt-2">💡 {{1}} في القالب يُستبدل تلقائياً باسم العميل عند الإرسال.</p>
+                            {% else %}
+                            <div class="p-4 rounded-xl text-center text-sm" style="background:#fffbeb;border:1px solid #fde68a;color:#b45309;">
+                                ما فيه قوالب معتمدة في حساب Meta. أنشئ قالباً واعتمده من
+                                <a href="https://business.facebook.com" target="_blank" class="underline font-bold">Meta Business</a> ليظهر هنا.
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% else %}
+
                         <!-- Image Upload -->
                         <div class="mb-5">
                             <label class="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wide">صورة
@@ -448,6 +474,7 @@
                                     class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 pl-10 text-sm focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition font-mono">
                             </div>
                         </div>
+                        {% endif %}
                     </div>
 
                     <!-- Step 3: Plan Summary -->
@@ -597,6 +624,7 @@
 
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>window.CHANNEL_MODE = "{{ channel_mode }}";</script>
     {% raw %}
     <script>
         (function () {
@@ -711,25 +739,56 @@
             textarea.dispatchEvent(new Event('input'));
         }
 
+        // معاينة القالب المختار (وضع API)
+        function previewTemplate() {
+            const sel = document.getElementById('templateSelect');
+            const prev = document.getElementById('templatePreview');
+            if (!sel || !prev) return;
+            const opt = sel.options[sel.selectedIndex];
+            const body = opt ? (opt.getAttribute('data-body') || '') : '';
+            if (sel.value && body) {
+                prev.textContent = body.replace(/\{\{1\}\}/g, 'عبدالله');
+                prev.classList.remove('hidden');
+            } else { prev.classList.add('hidden'); }
+        }
+
         // دالة مشتركة: إرسال فوري (scheduledAt=null) أو مجدول (ISO string)
         async function submitCampaign(scheduledAt) {
             const name = document.getElementById('campaignName').value;
             const audience = document.getElementById('audience').value;
-            let message = document.getElementById('campaignMessage').value;
-            const url = document.getElementById('campaignUrl').value;
-            const thumb = document.getElementById('imagePreviewThumbnail');
-            const image = (thumb && thumb.src && thumb.src.startsWith('data:')) ? thumb.src : null;
+            const isApi = window.CHANNEL_MODE === 'api';
 
-            if (!name || !message) {
-                Swal.fire({ icon: 'error', title: 'بيانات ناقصة', text: 'يرجى إدخال اسم الحملة ومحتوى الرسالة', confirmButtonColor: '#0d9488' });
+            if (!name) {
+                Swal.fire({ icon: 'error', title: 'بيانات ناقصة', text: 'يرجى إدخال اسم الحملة', confirmButtonColor: '#0d9488' });
                 return;
             }
-            if (url) message += `\n\n${url}`;
 
-            // الحملة المجدولة لا تدعم الصور حالياً
-            const payload = { name, audience, type: 'whatsapp_api', message };
+            const payload = { name, audience, type: 'whatsapp_api' };
             if (scheduledAt) payload.scheduled_at = scheduledAt;
-            else if (image) payload.image = image;
+
+            if (isApi) {
+                // وضع API: لازم قالب معتمد
+                const sel = document.getElementById('templateSelect');
+                if (!sel || !sel.value) {
+                    Swal.fire({ icon: 'error', title: 'اختر قالباً', text: 'الحملات عبر WhatsApp API تتطلب اختيار قالب معتمد من Meta', confirmButtonColor: '#0d9488' });
+                    return;
+                }
+                payload.template_name = sel.value;
+                payload.template_lang = sel.options[sel.selectedIndex].getAttribute('data-lang') || 'ar';
+            } else {
+                // وضع QR: نص حر
+                let message = document.getElementById('campaignMessage').value;
+                const url = document.getElementById('campaignUrl').value;
+                const thumb = document.getElementById('imagePreviewThumbnail');
+                const image = (thumb && thumb.src && thumb.src.startsWith('data:')) ? thumb.src : null;
+                if (!message) {
+                    Swal.fire({ icon: 'error', title: 'بيانات ناقصة', text: 'يرجى إدخال نص الرسالة', confirmButtonColor: '#0d9488' });
+                    return;
+                }
+                if (url) message += `\n\n${url}`;
+                payload.message = message;
+                if (!scheduledAt && image) payload.image = image;  // الصور للإرسال الفوري فقط
+            }
 
             const sendBtn = document.getElementById('sendBtn');
             const scheduleBtn = document.getElementById('scheduleBtn');
