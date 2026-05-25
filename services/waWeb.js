@@ -21,6 +21,26 @@ function isReady() {
     return status === 'ready';
 }
 
+// 🔁 فحص احتياطي: حدث 'ready' متقلّب — نتأكد عبر client.getState()
+// إذا رجّع CONNECTED نعتبره جاهزاً حتى لو ما أطلق الحدث
+let readyPoller = null;
+function startReadyPoller() {
+    if (readyPoller) return;
+    let tries = 0;
+    readyPoller = setInterval(async () => {
+        tries++;
+        if (status === 'ready' || tries > 40) { clearInterval(readyPoller); readyPoller = null; return; }
+        try {
+            const st = await client.getState();
+            if (st === 'CONNECTED') {
+                status = 'ready'; qrDataUrl = '';
+                console.log('✅ [waWeb] جاهز (عبر getState fallback)');
+                clearInterval(readyPoller); readyPoller = null;
+            }
+        } catch (e) { /* الصفحة لسّا تحمّل */ }
+    }, 3000);
+}
+
 // توحيد الرقم السعودي → chatId
 function _chatId(phone) {
     let s = String(phone == null ? '' : phone).replace(/\D/g, '');
@@ -38,6 +58,17 @@ function start() {
     status = 'starting';
     qrDataUrl = '';
     lastError = '';
+
+    // 🧹 تنظيف ملفات القفل العالقة (تحل "browser already running" بعد توقف مفاجئ)
+    try {
+        const fs = require('fs');
+        const path = require('path');
+        const sessDir = path.join(process.cwd(), '.wwebjs_auth', 'session-mobhir');
+        for (const f of ['SingletonLock', 'SingletonCookie', 'SingletonSocket']) {
+            const p = path.join(sessDir, f);
+            if (fs.existsSync(p)) { try { fs.rmSync(p, { force: true }); } catch (e) {} }
+        }
+    } catch (e) { /* تجاهل */ }
 
     client = new Client({
         authStrategy: new LocalAuth({ clientId: 'mobhir' }),
@@ -59,7 +90,7 @@ function start() {
     });
     client.on('loading_screen', (pct, msg) => console.log(`⏳ [waWeb] تحميل ${pct}% ${msg || ''}`));
     client.on('change_state', (s) => console.log(`🔄 [waWeb] الحالة: ${s}`));
-    client.on('authenticated', () => { status = 'authenticated'; qrDataUrl = ''; console.log('🔑 [waWeb] تمت المصادقة'); });
+    client.on('authenticated', () => { status = 'authenticated'; qrDataUrl = ''; console.log('🔑 [waWeb] تمت المصادقة'); startReadyPoller(); });
     client.on('ready', () => { status = 'ready'; qrDataUrl = ''; console.log('✅ [waWeb] واتساب متصل وجاهز'); });
     client.on('auth_failure', (m) => { status = 'error'; lastError = String(m); console.error('❌ [waWeb] فشل المصادقة', m); });
     client.on('disconnected', (r) => { status = 'disconnected'; qrDataUrl = ''; client = null; console.warn('⚠️ [waWeb] انقطع الاتصال', r); });
