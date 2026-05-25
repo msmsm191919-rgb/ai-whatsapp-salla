@@ -2883,6 +2883,13 @@ SallaDatabase.connect().then(async (connection) => {
     console.error('⚠️ Scheduler failed to start:', e.message);
   }
 
+  // ── 🔄 استعادة جلسات واتساب (QR) المحفوظة للتجار المتصلين سابقاً
+  try {
+    waWeb.restoreAll();
+  } catch (e) {
+    console.error('⚠️ waWeb restore failed:', e.message);
+  }
+
   const startServer = (retryPort) => {
     const serverInstance = server.listen(retryPort, () => {
       console.log(`🚀 SaaS System Ready on http://localhost:${retryPort}`);

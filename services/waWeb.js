@@ -131,4 +131,29 @@ async function logout(tenantId) {
     s.client = null;
 }
 
-module.exports = { start, getState, isReady, sendMessage, sendImage, logout };
+// 🔄 استعادة كل الجلسات المحفوظة عند إقلاع الخادم
+// يفحص مجلدات .wwebjs_auth/session-<id> ويعيد تشغيل كل تاجر متصل سابقاً
+// (مُوزّع زمنياً لتجنّب إقلاع عدّة متصفحات دفعة واحدة)
+function restoreAll() {
+    try {
+        const fs = require('fs');
+        const path = require('path');
+        const authDir = path.join(process.cwd(), '.wwebjs_auth');
+        if (!fs.existsSync(authDir)) return [];
+        const ids = fs.readdirSync(authDir)
+            .filter(d => d.startsWith('session-'))
+            .map(d => d.replace('session-', ''))
+            .filter(Boolean);
+        if (!ids.length) return [];
+        console.log(`🔄 [waWeb] استعادة ${ids.length} جلسة محفوظة: ${ids.join(', ')}`);
+        ids.forEach((id, i) => setTimeout(() => {
+            try { start(id); } catch (e) { console.error(`[waWeb] فشل استعادة ${id}:`, e.message); }
+        }, i * 4000)); // 4 ثوانٍ بين كل جلسة لتخفيف الحمل
+        return ids;
+    } catch (e) {
+        console.error('[waWeb] restoreAll error:', e.message);
+        return [];
+    }
+}
+
+module.exports = { start, getState, isReady, sendMessage, sendImage, logout, restoreAll };
