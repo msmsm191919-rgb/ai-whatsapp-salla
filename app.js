@@ -2728,7 +2728,7 @@ SallaDatabase.connect().then(async (connection) => {
           name: 'النمو',
           price_monthly: 149,
           price_yearly: 1430,
-          msg_limit_monthly: 15000,
+          msg_limit_monthly: 35000,
           ai_model_config: { model: 'gpt-4o' },
           is_active: true,
           features: {
@@ -2744,7 +2744,7 @@ SallaDatabase.connect().then(async (connection) => {
             remove_branding: false,
             scenarios: 'advanced',
             messages_overage_price: 0.02,
-            messages_hard_limit: 30000,
+            messages_hard_limit: 50000,
             fair_use: true
           }
         },
@@ -2752,7 +2752,7 @@ SallaDatabase.connect().then(async (connection) => {
           name: 'الشركات',
           price_monthly: 299,
           price_yearly: 2850,
-          msg_limit_monthly: 30000,
+          msg_limit_monthly: 100000,
           ai_model_config: { model: 'gpt-4o' },
           is_active: true,
           features: {
@@ -2770,7 +2770,7 @@ SallaDatabase.connect().then(async (connection) => {
             ai_custom: true,
             priority_support: true,
             messages_overage_price: 0.015,
-            messages_hard_limit: 60000,
+            messages_hard_limit: 150000,
             fair_use: true
           }
         }

@@ -90,10 +90,10 @@ const PLANS = {
             whatsapp_numbers: 3,
             team_members: 5,
             knowledge_docs: 10,
-            // 🛡️ سياسة الاستخدام العادل: "غير محدود" = 15,000 رسالة، بعدها overage
-            messages_monthly: 15000,           // الحد الناعم (Fair Use)
+            // 🛡️ حد شهري واضح: 35,000 رسالة، بعدها رسوم زيادة بشفافية
+            messages_monthly: 35000,           // الحد المعلن
             messages_overage_price: 0.02,      // ر.س لكل رسالة إضافية
-            messages_hard_limit: 30000,        // الحد الصارم — يتوقف الإرسال بعده
+            messages_hard_limit: 50000,        // الحد الصارم
             fair_use: true,
             ai_model: 'GPT-4o'
         },
@@ -134,10 +134,10 @@ const PLANS = {
             whatsapp_numbers: -1,
             team_members: -1,
             knowledge_docs: -1,
-            // 🛡️ سياسة الاستخدام العادل: حد ناعم أعلى للشركات + overage مخفّض
-            messages_monthly: 30000,           // الحد الناعم (Fair Use)
+            // 🛡️ حد شهري واضح للشركات + رسوم زيادة مخفّضة
+            messages_monthly: 100000,          // الحد المعلن
             messages_overage_price: 0.015,     // ر.س لكل رسالة إضافية (مخفّض)
-            messages_hard_limit: 60000,        // الحد الصارم
+            messages_hard_limit: 150000,       // الحد الصارم
             fair_use: true,
             ai_model: 'GPT-4o (Custom)'
         },

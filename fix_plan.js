@@ -41,13 +41,15 @@ const SallaDatabase = require("./database/db_instance");
                 name: 'النمو',
                 price_monthly: 149,
                 price_yearly: 1430,
-                msg_limit_monthly: 15000,        // 🛡️ Fair Use: حد ناعم بدل "غير محدود"
+                msg_limit_monthly: 35000,        // الحد المعلن
                 is_active: true,
                 features: {
                     whatsapp_count: 3,
-                    messages_overage_price: 0.02,  // ر.س لكل رسالة بعد الحد الناعم
-                    messages_hard_limit: 30000,    // الحد الصارم
+                    messages_overage_price: 0.02,  // ر.س لكل رسالة بعد الحد
+                    messages_hard_limit: 50000,    // الحد الصارم
                     fair_use: true,
+                    whatsapp_qr: true,
+                    whatsapp_api: true,
                     campaigns: true,
                     automation: true,
                     automation_carts: true,
@@ -71,13 +73,15 @@ const SallaDatabase = require("./database/db_instance");
                 name: 'الشركات',
                 price_monthly: 299,
                 price_yearly: 2850,
-                msg_limit_monthly: 30000,        // 🛡️ Fair Use: حد ناعم أعلى
+                msg_limit_monthly: 100000,       // الحد المعلن
                 is_active: true,
                 features: {
                     whatsapp_count: 'unlimited',
                     messages_overage_price: 0.015, // ر.س لكل رسالة (مخفّض)
-                    messages_hard_limit: 60000,    // الحد الصارم
+                    messages_hard_limit: 150000,   // الحد الصارم
                     fair_use: true,
+                    whatsapp_qr: true,
+                    whatsapp_api: true,
                     campaigns: true,
                     automation: true,
                     automation_carts: true,
