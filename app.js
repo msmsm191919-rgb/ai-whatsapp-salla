@@ -2219,8 +2219,18 @@ async function dispatchCampaign(campaignId, campaignImage = null) {
   }
   console.log(`[Campaign] Dispatching #${campaign.id} to ${customers.length} (${useWaWeb ? 'QR' : (canSendApi ? 'API' : 'Mock')})`);
 
-  const BATCH_SIZE = 10, DELAY_MSG = 7000, DELAY_BATCH = 30000, DELAY_ERR = 60000;
-  let sentInBatch = 0, totalSent = 0, totalFailed = 0;
+  // ─── حماية ذكية من الحظر (تأخير تكيّفي + تبريد دوري) ───
+  // التأخير يبدأ معتدلاً ويزيد تدريجياً كل ما أُرسلت رسائل أكثر،
+  // مع عشوائية بشرية + تبريد أطول كل دفعة — يقلّل خطر كشف "الإرسال الآلي".
+  const BATCH_SIZE = 10, DELAY_ERR = 60000;
+  const rand = (min, max) => min + Math.floor(Math.random() * (max - min));
+  const nextMsgDelay = (sentSoFar) => {
+    const base = 6000 + Math.floor(sentSoFar / 50) * 1000;   // +1 ثانية كل 50 رسالة
+    return Math.min(base, 20000) + rand(0, 5000);            // سقف 20 ثانية + عشوائية 0-5 ث
+  };
+  const batchCooldown = (batchNum) => Math.min(30000 + batchNum * 5000, 90000) + rand(0, 15000); // يزيد كل دفعة حتى 90+ ث
+
+  let sentInBatch = 0, totalSent = 0, totalFailed = 0, batchNum = 0;
 
   for (const customer of customers) {
     if (!customer.phone) continue;
@@ -2242,8 +2252,15 @@ async function dispatchCampaign(campaignId, campaignImage = null) {
       await campaign.increment('stats_failed'); totalFailed++;
       if (err.response && (err.response.status === 429 || err.response.status === 503)) await new Promise(r => setTimeout(r, DELAY_ERR));
     }
-    if (sentInBatch >= BATCH_SIZE) { sentInBatch = 0; await new Promise(r => setTimeout(r, DELAY_BATCH)); }
-    else await new Promise(r => setTimeout(r, DELAY_MSG));
+    // تبريد دوري كل دفعة، وإلا تأخير تكيّفي متزايد بين الرسائل
+    if (sentInBatch >= BATCH_SIZE) {
+      batchNum++; sentInBatch = 0;
+      const cd = batchCooldown(batchNum);
+      console.log(`[Campaign] 📦 دفعة ${batchNum} (${totalSent}/${customers.length}) — تبريد ${Math.round(cd/1000)}ث`);
+      await new Promise(r => setTimeout(r, cd));
+    } else {
+      await new Promise(r => setTimeout(r, nextMsgDelay(totalSent)));
+    }
   }
   await campaign.update({ status: 'completed' });
   console.log(`[Campaign] ✅ #${campaign.id} done. Sent: ${totalSent}, Failed: ${totalFailed}`);
