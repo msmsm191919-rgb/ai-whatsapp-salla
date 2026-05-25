@@ -1,44 +1,65 @@
 // services/waWeb.js
 // ═══════════════════════════════════════════════════════════════════
-// 📱 ربط واتساب عبر whatsapp-web.js (مسح QR) — للتجربة
+// 📱 ربط واتساب عبر whatsapp-web.js (مسح QR) — جلسة مستقلة لكل تاجر
 // ───────────────────────────────────────────────────────────────────
-// قناة غير رسمية: الرسائل تطلع من واتساب الجوال الشخصي بعد مسح QR.
-// ⚠️ خطر حظر أعلى من Meta الرسمي — مناسبة للتجربة لا للإنتاج الثقيل.
-// تعمل عبر HTTP polling (بدون socket.io) لتبسيط التكامل.
+// قناة غير رسمية: الرسائل تطلع من واتساب جوال التاجر بعد مسح QR.
+// كل تاجر له جلسة منفصلة (clientId = معرّف التاجر) — مناسب لـ SaaS.
+// تعمل عبر HTTP polling (بدون socket.io).
 // ═══════════════════════════════════════════════════════════════════
 const { Client, LocalAuth, MessageMedia } = require('whatsapp-web.js');
 const qrcode = require('qrcode');
 
-let client = null;
-let status = 'disconnected'; // disconnected | starting | qr | authenticated | ready | error
-let qrDataUrl = '';
-let lastError = '';
+const WEB_VERSION = 'https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.3000.1040093096-alpha.html';
 
-function getState() {
-    return { status, qr: qrDataUrl, error: lastError };
+// خريطة الجلسات: المفتاح = معرّف التاجر، القيمة = حالة جلسته
+// { client, status, qr, error, poller }
+const sessions = new Map();
+
+function _session(tenantId) {
+    const k = String(tenantId);
+    if (!sessions.has(k)) {
+        sessions.set(k, { client: null, status: 'disconnected', qr: '', error: '', poller: null });
+    }
+    return sessions.get(k);
 }
-function isReady() {
-    return status === 'ready';
+
+function getState(tenantId) {
+    const s = _session(tenantId);
+    return { status: s.status, qr: s.qr, error: s.error };
+}
+function isReady(tenantId) {
+    return _session(tenantId).status === 'ready';
 }
 
 // 🔁 فحص احتياطي: حدث 'ready' متقلّب — نتأكد عبر client.getState()
-// إذا رجّع CONNECTED نعتبره جاهزاً حتى لو ما أطلق الحدث
-let readyPoller = null;
-function startReadyPoller() {
-    if (readyPoller) return;
+function _startReadyPoller(tenantId) {
+    const s = _session(tenantId);
+    if (s.poller) return;
     let tries = 0;
-    readyPoller = setInterval(async () => {
+    s.poller = setInterval(async () => {
         tries++;
-        if (status === 'ready' || tries > 40) { clearInterval(readyPoller); readyPoller = null; return; }
+        if (s.status === 'ready' || tries > 40 || !s.client) { clearInterval(s.poller); s.poller = null; return; }
         try {
-            const st = await client.getState();
-            if (st === 'CONNECTED') {
-                status = 'ready'; qrDataUrl = '';
-                console.log('✅ [waWeb] جاهز (عبر getState fallback)');
-                clearInterval(readyPoller); readyPoller = null;
+            if (await s.client.getState() === 'CONNECTED') {
+                s.status = 'ready'; s.qr = '';
+                console.log(`✅ [waWeb:${tenantId}] جاهز (عبر getState fallback)`);
+                clearInterval(s.poller); s.poller = null;
             }
         } catch (e) { /* الصفحة لسّا تحمّل */ }
     }, 3000);
+}
+
+// 🧹 تنظيف ملفات القفل العالقة لجلسة تاجر معيّن
+function _cleanLocks(clientId) {
+    try {
+        const fs = require('fs');
+        const path = require('path');
+        const sessDir = path.join(process.cwd(), '.wwebjs_auth', 'session-' + clientId);
+        for (const f of ['SingletonLock', 'SingletonCookie', 'SingletonSocket']) {
+            const p = path.join(sessDir, f);
+            if (fs.existsSync(p)) { try { fs.rmSync(p, { force: true }); } catch (e) {} }
+        }
+    } catch (e) { /* تجاهل */ }
 }
 
 // توحيد الرقم السعودي → chatId
@@ -50,73 +71,64 @@ function _chatId(phone) {
     return s + '@c.us';
 }
 
-function start() {
-    // إذا فيه جلسة شغّالة أو قيد الإقلاع، لا نعيد التهيئة
-    if (client && ['starting', 'qr', 'authenticated', 'ready'].includes(status)) {
-        return getState();
+function start(tenantId) {
+    const k = String(tenantId);
+    const s = _session(k);
+    // جلسة شغّالة أو قيد الإقلاع → لا نعيد التهيئة
+    if (s.client && ['starting', 'qr', 'authenticated', 'ready'].includes(s.status)) {
+        return getState(k);
     }
-    status = 'starting';
-    qrDataUrl = '';
-    lastError = '';
+    s.status = 'starting';
+    s.qr = '';
+    s.error = '';
+    _cleanLocks(k);
 
-    // 🧹 تنظيف ملفات القفل العالقة (تحل "browser already running" بعد توقف مفاجئ)
-    try {
-        const fs = require('fs');
-        const path = require('path');
-        const sessDir = path.join(process.cwd(), '.wwebjs_auth', 'session-mobhir');
-        for (const f of ['SingletonLock', 'SingletonCookie', 'SingletonSocket']) {
-            const p = path.join(sessDir, f);
-            if (fs.existsSync(p)) { try { fs.rmSync(p, { force: true }); } catch (e) {} }
-        }
-    } catch (e) { /* تجاهل */ }
-
-    client = new Client({
-        authStrategy: new LocalAuth({ clientId: 'mobhir' }),
-        // 🔧 تثبيت إصدار WhatsApp Web معروف-التوافق (يحل عَلَق "authenticated" بدون "ready")
-        webVersionCache: {
-            type: 'remote',
-            remotePath: 'https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.3000.1040093096-alpha.html'
-        },
+    s.client = new Client({
+        authStrategy: new LocalAuth({ clientId: k }),   // 🔑 جلسة منفصلة لكل تاجر
+        webVersionCache: { type: 'remote', remotePath: WEB_VERSION },
         puppeteer: {
             headless: true,
             args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu', '--no-zygote', '--no-first-run']
         }
     });
 
-    client.on('qr', (qr) => {
-        status = 'qr';
-        qrcode.toDataURL(qr, (err, url) => { if (!err) qrDataUrl = url; });
-        console.log('📱 [waWeb] QR جاهز — امسحه من الصفحة');
+    s.client.on('qr', (qr) => {
+        s.status = 'qr';
+        qrcode.toDataURL(qr, (err, url) => { if (!err) s.qr = url; });
+        console.log(`📱 [waWeb:${k}] QR جاهز`);
     });
-    client.on('loading_screen', (pct, msg) => console.log(`⏳ [waWeb] تحميل ${pct}% ${msg || ''}`));
-    client.on('change_state', (s) => console.log(`🔄 [waWeb] الحالة: ${s}`));
-    client.on('authenticated', () => { status = 'authenticated'; qrDataUrl = ''; console.log('🔑 [waWeb] تمت المصادقة'); startReadyPoller(); });
-    client.on('ready', () => { status = 'ready'; qrDataUrl = ''; console.log('✅ [waWeb] واتساب متصل وجاهز'); });
-    client.on('auth_failure', (m) => { status = 'error'; lastError = String(m); console.error('❌ [waWeb] فشل المصادقة', m); });
-    client.on('disconnected', (r) => { status = 'disconnected'; qrDataUrl = ''; client = null; console.warn('⚠️ [waWeb] انقطع الاتصال', r); });
+    s.client.on('loading_screen', (pct, msg) => console.log(`⏳ [waWeb:${k}] تحميل ${pct}% ${msg || ''}`));
+    s.client.on('authenticated', () => { s.status = 'authenticated'; s.qr = ''; console.log(`🔑 [waWeb:${k}] تمت المصادقة`); _startReadyPoller(k); });
+    s.client.on('ready', () => { s.status = 'ready'; s.qr = ''; console.log(`✅ [waWeb:${k}] متصل وجاهز`); });
+    s.client.on('auth_failure', (m) => { s.status = 'error'; s.error = String(m); console.error(`❌ [waWeb:${k}] فشل المصادقة`, m); });
+    s.client.on('disconnected', (r) => { s.status = 'disconnected'; s.qr = ''; s.client = null; console.warn(`⚠️ [waWeb:${k}] انقطع`, r); });
 
-    client.initialize().catch((e) => { status = 'error'; lastError = e.message; console.error('❌ [waWeb] فشل الإقلاع:', e.message); });
-    return getState();
+    s.client.initialize().catch((e) => { s.status = 'error'; s.error = e.message; console.error(`❌ [waWeb:${k}] فشل الإقلاع:`, e.message); });
+    return getState(k);
 }
 
-async function sendMessage(phone, text) {
-    if (!isReady()) throw new Error('WhatsApp Web غير متصل');
-    return client.sendMessage(_chatId(phone), text);
+async function sendMessage(tenantId, phone, text) {
+    const s = _session(tenantId);
+    if (s.status !== 'ready' || !s.client) throw new Error('WhatsApp Web غير متصل لهذا التاجر');
+    return s.client.sendMessage(_chatId(phone), text);
 }
 
-async function sendImage(phone, dataUrl, caption = '') {
-    if (!isReady()) throw new Error('WhatsApp Web غير متصل');
+async function sendImage(tenantId, phone, dataUrl, caption = '') {
+    const s = _session(tenantId);
+    if (s.status !== 'ready' || !s.client) throw new Error('WhatsApp Web غير متصل لهذا التاجر');
     const m = /^data:(.+);base64,(.+)$/.exec(dataUrl || '');
-    if (!m) return sendMessage(phone, caption);     // لو الصورة غير صالحة، أرسل النص فقط
+    if (!m) return sendMessage(tenantId, phone, caption);
     const media = new MessageMedia(m[1], m[2], 'image.' + (m[1].split('/')[1] || 'jpg'));
-    return client.sendMessage(_chatId(phone), media, caption ? { caption } : {});
+    return s.client.sendMessage(_chatId(phone), media, caption ? { caption } : {});
 }
 
-async function logout() {
-    try { if (client) await client.logout(); } catch (e) { /* ignore */ }
-    status = 'disconnected';
-    qrDataUrl = '';
-    client = null;
+async function logout(tenantId) {
+    const s = _session(tenantId);
+    try { if (s.client) await s.client.logout(); } catch (e) { /* ignore */ }
+    if (s.poller) { clearInterval(s.poller); s.poller = null; }
+    s.status = 'disconnected';
+    s.qr = '';
+    s.client = null;
 }
 
 module.exports = { start, getState, isReady, sendMessage, sendImage, logout };

@@ -2017,27 +2017,45 @@ app.get("/customers", async (req, res) => {
 // ═══════════════════════════════════════════════════════════════════
 const waWeb = require('./services/waWeb');
 
+// يحلّ معرّف التاجر الحالي (للجلسة المنفصلة)
+async function _waTenantId(req) {
+  if (!req.user) req.user = { merchant: { id: 123456789, name: 'Demo Merchant' } };
+  const db = SallaDatabase.connection;
+  const tenant = await db.models.Tenant.findOne({ where: { salla_merchant_id: req.user.merchant.id } });
+  return tenant ? tenant.id : null;
+}
+
 // صفحة الربط (QR)
 app.get("/whatsapp-web", (req, res) => {
   if (!req.user) req.user = { merchant: { id: 123456789, name: 'Demo Merchant' } };
-  res.render("whatsapp_web.html", { user: req.user, activePage: 'settings' });
+  res.render("whatsapp_web.html", { user: req.user, activePage: 'wa_web' });
 });
 
-// بدء الجلسة (يقلع المتصفح ويولّد QR)
-app.post("/api/wa-web/start", (req, res) => {
-  try { res.json({ ok: true, ...waWeb.start() }); }
-  catch (e) { res.status(500).json({ ok: false, error: e.message }); }
+// بدء الجلسة (يقلع المتصفح ويولّد QR) — لجلسة التاجر الحالي
+app.post("/api/wa-web/start", async (req, res) => {
+  try {
+    const tid = await _waTenantId(req);
+    if (!tid) return res.status(404).json({ ok: false, error: 'Tenant not found' });
+    res.json({ ok: true, ...waWeb.start(tid) });
+  } catch (e) { res.status(500).json({ ok: false, error: e.message }); }
 });
 
-// حالة الجلسة + QR (للـ polling)
-app.get("/api/wa-web/status", (req, res) => {
-  res.json({ ok: true, ...waWeb.getState() });
+// حالة جلسة التاجر الحالي + QR (للـ polling)
+app.get("/api/wa-web/status", async (req, res) => {
+  try {
+    const tid = await _waTenantId(req);
+    if (!tid) return res.json({ ok: true, status: 'disconnected', qr: '', error: 'Tenant not found' });
+    res.json({ ok: true, ...waWeb.getState(tid) });
+  } catch (e) { res.status(500).json({ ok: false, error: e.message }); }
 });
 
-// تسجيل الخروج
+// تسجيل الخروج لجلسة التاجر الحالي
 app.post("/api/wa-web/logout", async (req, res) => {
-  try { await waWeb.logout(); res.json({ ok: true }); }
-  catch (e) { res.status(500).json({ ok: false, error: e.message }); }
+  try {
+    const tid = await _waTenantId(req);
+    if (tid) await waWeb.logout(tid);
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ ok: false, error: e.message }); }
 });
 
 // 📞 توحيد رقم الجوال السعودي → صيغة E.164 بدون +
@@ -2222,8 +2240,8 @@ app.post("/api/campaigns/send", async (req, res) => {
       console.log(`[Campaign] Starting sending to ${customers.length} customers...`);
 
       const metaConfig = await db.models.WhatsAppConfig.findOne({ where: { tenant_id: tenant.id } });
-      // 📱 الأولوية لقناة QR (whatsapp-web) إذا كانت متصلة، ثم Meta الرسمي
-      const useWaWeb = waWeb.isReady();
+      // 📱 الأولوية لقناة QR (whatsapp-web) الخاصة بهذا التاجر إذا كانت متصلة، ثم Meta الرسمي
+      const useWaWeb = waWeb.isReady(tenant.id);
       // ✅ إصلاح: نقبل 'api' و'whatsapp_api' (الواجهة ترسل whatsapp_api)
       const canSendApi = (!useWaWeb && (type === 'api' || type === 'whatsapp_api') && metaConfig && metaConfig.access_token);
       if (useWaWeb) console.log('[Campaign] 📱 الإرسال عبر قناة QR (whatsapp-web)');
@@ -2268,11 +2286,11 @@ app.post("/api/campaigns/send", async (req, res) => {
           // B. Send (QR / Meta / Mock)
           let sent = false;
           if (useWaWeb) {
-            // 📱 إرسال عبر واتساب الجوال (QR)
+            // 📱 إرسال عبر واتساب الجوال (QR) — جلسة هذا التاجر
             if (campaignImage) {
-              await waWeb.sendImage(customer.phone, campaignImage, personalMsg);
+              await waWeb.sendImage(tenant.id, customer.phone, campaignImage, personalMsg);
             } else {
-              await waWeb.sendMessage(customer.phone, personalMsg);
+              await waWeb.sendMessage(tenant.id, customer.phone, personalMsg);
             }
             sent = true;
           } else if (canSendApi) {
