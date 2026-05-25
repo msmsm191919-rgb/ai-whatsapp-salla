@@ -159,15 +159,12 @@
                             </div>
                         </td>
                         <td>
-                            <div class="flex items-center justify-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button title="تفاصيل" class="w-8 h-8 rounded-lg flex items-center justify-center transition" style="color:#94a3b8;" onmouseover="this.style.background='#eff6ff';this.style.color='#2563eb'" onmouseout="this.style.background='transparent';this.style.color='#94a3b8'">
-                                    <i class="fa-solid fa-eye text-xs"></i>
+                            <div class="flex items-center justify-center gap-1.5">
+                                <button onclick="waAction({{ t.id }}, 'restart', this)" title="إعادة تشغيل واتساب (إصلاح)" class="w-8 h-8 rounded-lg flex items-center justify-center transition" style="color:#0d9488; background:#f0fdfa;" onmouseover="this.style.background='#ccfbf1'" onmouseout="this.style.background='#f0fdfa'">
+                                    <i class="fa-solid fa-rotate text-xs"></i>
                                 </button>
-                                <button title="Impersonate" class="w-8 h-8 rounded-lg flex items-center justify-center transition" style="color:#94a3b8;" onmouseover="this.style.background='#f5f3ff';this.style.color='#7c3aed'" onmouseout="this.style.background='transparent';this.style.color='#94a3b8'">
-                                    <i class="fa-solid fa-user-secret text-xs"></i>
-                                </button>
-                                <button title="إعدادات" class="w-8 h-8 rounded-lg flex items-center justify-center transition" style="color:#94a3b8;" onmouseover="this.style.background='#f8fafc';this.style.color='#374151'" onmouseout="this.style.background='transparent';this.style.color='#94a3b8'">
-                                    <i class="fa-solid fa-gear text-xs"></i>
+                                <button onclick="waAction({{ t.id }}, 'logout', this)" title="فصل واتساب (يحتاج مسح QR جديد)" class="w-8 h-8 rounded-lg flex items-center justify-center transition" style="color:#dc2626; background:#fef2f2;" onmouseover="this.style.background='#fee2e2'" onmouseout="this.style.background='#fef2f2'">
+                                    <i class="fa-solid fa-link-slash text-xs"></i>
                                 </button>
                             </div>
                         </td>
@@ -199,6 +196,21 @@
 
 </div>
 
-<!-- تحديث تلقائي لحالة الاتصال كل 20 ثانية -->
-<script>setTimeout(() => location.reload(), 20000);</script>
+<script>
+    let _autoReload = setTimeout(() => location.reload(), 20000);
+    async function waAction(tenantId, action, btn) {
+        const labels = { restart: 'إعادة تشغيل واتساب لهذا التاجر؟', logout: 'فصل واتساب نهائياً؟ سيحتاج التاجر يمسح QR من جديد.' };
+        if (!confirm(labels[action])) return;
+        clearTimeout(_autoReload);
+        const orig = btn.innerHTML;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-xs"></i>';
+        btn.disabled = true;
+        try {
+            const r = await fetch('/admin/wa/' + tenantId + '/' + action, { method: 'POST' });
+            const d = await r.json();
+            if (d.ok) { setTimeout(() => location.reload(), action === 'restart' ? 6000 : 1500); }
+            else { alert('❌ ' + (d.error || 'فشل')); btn.innerHTML = orig; btn.disabled = false; }
+        } catch (e) { alert('❌ ' + e.message); btn.innerHTML = orig; btn.disabled = false; }
+    }
+</script>
 {% endblock %}

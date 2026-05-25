@@ -131,6 +131,17 @@ async function logout(tenantId) {
     s.client = null;
 }
 
+// 🔁 إعادة تشغيل الجلسة (إغلاق المتصفح ثم إقلاع) — تحتفظ بالربط، لإصلاح العالق
+async function restart(tenantId) {
+    const s = _session(tenantId);
+    try { if (s.client) await s.client.destroy(); } catch (e) { /* ignore */ }
+    if (s.poller) { clearInterval(s.poller); s.poller = null; }
+    s.client = null;
+    s.status = 'disconnected';
+    s.qr = '';
+    return start(tenantId);
+}
+
 // 🔄 استعادة كل الجلسات المحفوظة عند إقلاع الخادم
 // يفحص مجلدات .wwebjs_auth/session-<id> ويعيد تشغيل كل تاجر متصل سابقاً
 // (مُوزّع زمنياً لتجنّب إقلاع عدّة متصفحات دفعة واحدة)
@@ -156,4 +167,4 @@ function restoreAll() {
     }
 }
 
-module.exports = { start, getState, isReady, sendMessage, sendImage, logout, restoreAll };
+module.exports = { start, getState, isReady, sendMessage, sendImage, logout, restart, restoreAll };

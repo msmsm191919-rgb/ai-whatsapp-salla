@@ -175,6 +175,18 @@ router.get('/support', async (req, res) => {
   }
 });
 
+// 📱 تحكم إداري بجلسة واتساب لتاجر: إعادة تشغيل (إصلاح العالق، يحتفظ بالربط)
+router.post('/wa/:id/restart', async (req, res) => {
+  try { await waWeb.restart(req.params.id); res.json({ ok: true }); }
+  catch (e) { res.status(500).json({ ok: false, error: e.message }); }
+});
+
+// 📱 تحكم إداري: فصل نهائي (يحذف الربط — يحتاج التاجر يمسح QR من جديد)
+router.post('/wa/:id/logout', async (req, res) => {
+  try { await waWeb.logout(req.params.id); res.json({ ok: true }); }
+  catch (e) { res.status(500).json({ ok: false, error: e.message }); }
+});
+
 // 👥 عملاء جميع التجار (لمالك المنصة) — مع أرقامهم
 router.get('/customers', async (req, res) => {
   try {
