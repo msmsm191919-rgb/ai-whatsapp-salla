@@ -143,9 +143,78 @@ router.get('/billing', async (req, res) => {
   }
 });
 
+// 📊 تقارير حقيقية مجمّعة من قاعدة البيانات
+async function buildReportData() {
+  const db = SallaDatabase.connection;
+  const { fn, col, literal } = require('sequelize');
+
+  const tenants = await db.models.Tenant.findAll({
+    include: [{ model: db.models.Subscription, as: 'Subscription', include: [{ model: db.models.Plan, as: 'Plan' }] }]
+  });
+  const totalTenants = tenants.length;
+  const activeSubs = tenants.filter(t => t.Subscription && t.Subscription.status === 'active').length;
+  let mrr = 0;
+  const planDist = {};
+  tenants.forEach(t => {
+    const pname = t.Subscription?.Plan?.name || 'بدون باقة';
+    planDist[pname] = (planDist[pname] || 0) + 1;
+    if (t.Subscription && (t.Subscription.status === 'active' || t.Subscription.status === 'trial')) {
+      mrr += Number(t.Subscription.Plan?.price_monthly || 0);
+    }
+  });
+
+  const totalOut = await db.models.MessageLog.count({ where: { direction: 'out' } });
+  const totalIn = await db.models.MessageLog.count({ where: { direction: 'in' } });
+
+  // أعلى المتاجر نشاطاً (حسب الرسائل الصادرة)
+  let topTenants = [];
+  try {
+    const grouped = await db.models.MessageLog.findAll({
+      attributes: ['tenant_id', [fn('COUNT', col('id')), 'cnt']],
+      where: { direction: 'out' },
+      group: ['tenant_id'], order: [[literal('cnt'), 'DESC']], limit: 8, raw: true
+    });
+    for (const g of grouped) {
+      const t = tenants.find(x => String(x.id) === String(g.tenant_id));
+      if (t) topTenants.push({ name: t.store_name, plan: t.Subscription?.Plan?.name || '—', sent: Number(g.cnt) });
+    }
+  } catch (e) { /* تجاهل */ }
+
+  return { totalTenants, activeSubs, mrr, totalOut, totalIn, planDist, topTenants };
+}
+
 router.get('/reports', async (req, res) => {
   try {
-    res.render('admin/reports.html', { page: 'reports', now_date: new Date().toLocaleDateString('ar-SA') });
+    const data = await buildReportData();
+    res.render('admin/reports.html', {
+      page: 'reports', now_date: new Date().toLocaleDateString('ar-SA'),
+      ...data,
+      planLabels: JSON.stringify(Object.keys(data.planDist)),
+      planValues: JSON.stringify(Object.values(data.planDist))
+    });
+  } catch (e) {
+    res.status(500).send('Error: ' + e.message);
+  }
+});
+
+// 📥 تصدير التقرير CSV
+router.get('/reports/export', async (req, res) => {
+  try {
+    const d = await buildReportData();
+    const esc = (v) => `"${String(v == null ? '' : v).replace(/"/g, '""')}"`;
+    let csv = 'مؤشّر,القيمة\n';
+    csv += [esc('إجمالي المتاجر'), d.totalTenants].join(',') + '\n';
+    csv += [esc('اشتراكات نشطة'), d.activeSubs].join(',') + '\n';
+    csv += [esc('الإيراد الشهري المتكرر (MRR)'), d.mrr].join(',') + '\n';
+    csv += [esc('رسائل صادرة'), d.totalOut].join(',') + '\n';
+    csv += [esc('رسائل واردة'), d.totalIn].join(',') + '\n\n';
+    csv += 'توزيع الباقات,العدد\n';
+    for (const [k, v] of Object.entries(d.planDist)) csv += [esc(k), v].join(',') + '\n';
+    csv += '\nأعلى المتاجر,الباقة,رسائل صادرة\n';
+    for (const t of d.topTenants) csv += [esc(t.name), esc(t.plan), t.sent].join(',') + '\n';
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', 'attachment; filename="mobhir_report.csv"');
+    res.send('﻿' + csv);
   } catch (e) {
     res.status(500).send('Error: ' + e.message);
   }

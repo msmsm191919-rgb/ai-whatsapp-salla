@@ -1,234 +1,112 @@
 {% extends 'admin/layout.html' %}
 
 {% block content %}
-<div class="space-y-6">
+<div class="space-y-5">
 
-    <div class="flex justify-between items-end">
+    <!-- Header -->
+    <div style="background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:20px 24px;" class="flex items-center justify-between flex-wrap gap-3">
         <div>
-            <h2 class="text-2xl font-bold text-gray-900">تقارير النظام</h2>
-            <p class="text-gray-500 text-sm">تحليلات تفصيلية لأداء المنصة والعملاء.</p>
+            <h2 class="font-black text-slate-800" style="font-size:18px;">تقارير النظام</h2>
+            <p class="text-xs mt-1" style="color:#94a3b8;">تحليلات حقيقية لأداء المنصة — {{ now_date }}</p>
         </div>
-        <div class="flex gap-2">
-            <button
-                class="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-xs font-bold shadow-sm hover:bg-gray-50">
-                <i class="fa-solid fa-cloud-arrow-down ml-1"></i> تصدير PDF
-            </button>
-            <button class="bg-teal-600 text-white px-4 py-2 rounded-lg text-xs font-bold shadow-sm hover:bg-teal-700">
-                <i class="fa-solid fa-filter ml-1"></i> تصفية متقدمة
-            </button>
+        <a href="/admin/reports/export" style="background:linear-gradient(135deg,#0d9488,#0ea5e9);color:#fff;border:none;padding:9px 18px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px;text-decoration:none;font-family:Cairo,sans-serif;">
+            <i class="fa-solid fa-file-csv"></i> تصدير التقرير
+        </a>
+    </div>
+
+    <!-- KPI Cards (بيانات حقيقية) -->
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <div class="kpi-card">
+            <div class="kpi-icon" style="background:#eff6ff;color:#2563eb;"><i class="fa-solid fa-shop"></i></div>
+            <div><p class="text-xs font-bold uppercase" style="color:#94a3b8;">المتاجر</p><p class="text-2xl font-black text-slate-800" style="font-family:Inter,sans-serif;">{{ totalTenants }}</p></div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-icon" style="background:#f0fdf4;color:#16a34a;"><i class="fa-solid fa-circle-check"></i></div>
+            <div><p class="text-xs font-bold uppercase" style="color:#94a3b8;">اشتراكات نشطة</p><p class="text-2xl font-black text-slate-800" style="font-family:Inter,sans-serif;">{{ activeSubs }}</p></div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-icon" style="background:#f0fdfa;color:#0d9488;"><i class="fa-solid fa-money-bill-trend-up"></i></div>
+            <div><p class="text-xs font-bold uppercase" style="color:#94a3b8;">MRR (ر.س)</p><p class="text-2xl font-black" style="color:#0d9488;font-family:Inter,sans-serif;">{{ mrr }}</p></div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-icon" style="background:#f5f3ff;color:#7c3aed;"><i class="fa-solid fa-paper-plane"></i></div>
+            <div><p class="text-xs font-bold uppercase" style="color:#94a3b8;">رسائل صادرة</p><p class="text-2xl font-black text-slate-800" style="font-family:Inter,sans-serif;">{{ totalOut }}</p></div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-icon" style="background:#fffbeb;color:#d97706;"><i class="fa-solid fa-inbox"></i></div>
+            <div><p class="text-xs font-bold uppercase" style="color:#94a3b8;">رسائل واردة</p><p class="text-2xl font-black text-slate-800" style="font-family:Inter,sans-serif;">{{ totalIn }}</p></div>
         </div>
     </div>
 
-    <!-- Analytics Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <!-- New Tenants Growth -->
-        <div class="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-            <h3 class="text-gray-500 text-xs font-bold uppercase mb-4">نمو المتاجر الجديدة</h3>
-            <!-- FIXED: Added wrapper div with relative position and explicit height -->
-            <div class="relative h-60 w-full">
-                <canvas id="tenantsGrowthChart"></canvas>
-            </div>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <!-- Plan Distribution (real) -->
+        <div style="background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:20px;">
+            <h3 style="font-size:12px;font-weight:700;color:#475569;margin-bottom:16px;">توزيع الباقات</h3>
+            <div style="position:relative;height:200px;width:100%;"><canvas id="planChart"></canvas></div>
         </div>
-
-        <!-- System Msg Volume -->
-        <div class="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-            <h3 class="text-gray-500 text-xs font-bold uppercase mb-4">حجم الرسائل (آخر 30 يوم)</h3>
-            <!-- FIXED: Added wrapper div with relative position and explicit height -->
-            <div class="relative h-60 w-full">
-                <canvas id="msgVolumeChart"></canvas>
-            </div>
-        </div>
-
-        <!-- AI vs Rule-Based -->
-        <div class="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-            <h3 class="text-gray-500 text-xs font-bold uppercase mb-4">توزيع الردود (AI vs Rules)</h3>
-            <!-- FIXED: Ensure container layout controls size nicely -->
-            <div class="flex items-center justify-center p-2 relative h-60 w-full">
-                <canvas id="aiDistributionChart"></canvas>
+        <!-- Annual projection -->
+        <div style="background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:20px;" class="md:col-span-2">
+            <h3 style="font-size:12px;font-weight:700;color:#475569;margin-bottom:16px;">المؤشّرات المالية المتوقعة</h3>
+            <div class="grid grid-cols-2 gap-4">
+                <div style="background:#f8fafc;border-radius:12px;padding:16px;">
+                    <p class="text-xs" style="color:#94a3b8;">الإيراد الشهري (MRR)</p>
+                    <p class="text-xl font-black text-slate-800 mt-1" style="font-family:Inter,sans-serif;">{{ mrr }} <span class="text-xs" style="color:#94a3b8;">ر.س</span></p>
+                </div>
+                <div style="background:#f0fdfa;border-radius:12px;padding:16px;">
+                    <p class="text-xs" style="color:#0d9488;">الإيراد السنوي المتوقع (ARR)</p>
+                    <p class="text-xl font-black mt-1" style="color:#0d9488;font-family:Inter,sans-serif;">{{ mrr * 12 }} <span class="text-xs">ر.س</span></p>
+                </div>
+                <div style="background:#f8fafc;border-radius:12px;padding:16px;">
+                    <p class="text-xs" style="color:#94a3b8;">متوسط الإيراد لكل متجر</p>
+                    <p class="text-xl font-black text-slate-800 mt-1" style="font-family:Inter,sans-serif;">{{ (mrr / totalTenants) | round(0) if totalTenants > 0 else 0 }} <span class="text-xs" style="color:#94a3b8;">ر.س</span></p>
+                </div>
+                <div style="background:#f8fafc;border-radius:12px;padding:16px;">
+                    <p class="text-xs" style="color:#94a3b8;">إجمالي الرسائل</p>
+                    <p class="text-xl font-black text-slate-800 mt-1" style="font-family:Inter,sans-serif;">{{ totalOut + totalIn }}</p>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Detailed Reports Table -->
-    <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-        <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-            <h3 class="font-bold text-gray-800">أعلى المتاجر نشاطاً</h3>
-            <div class="flex gap-2 text-xs">
-                <button class="px-2 py-1 bg-white border rounded cursor-pointer hover:bg-gray-50">اليوم</button>
-                <button
-                    class="px-2 py-1 bg-white border rounded cursor-pointer hover:bg-gray-50 text-teal-600 font-bold border-teal-200">هذا
-                    الشهر</button>
-                <button class="px-2 py-1 bg-white border rounded cursor-pointer hover:bg-gray-50">الكل</button>
-            </div>
+    <!-- Top Tenants (real) -->
+    <div style="background:#fff;border:1px solid #e2e8f0;border-radius:16px;overflow:hidden;">
+        <div style="padding:16px 20px;border-bottom:1px solid #f1f5f9;background:#f8fafc;">
+            <h3 class="font-bold text-slate-800" style="font-size:14px;">أعلى المتاجر نشاطاً (حسب الرسائل الصادرة)</h3>
         </div>
-
         <div class="overflow-x-auto">
-            <table class="w-full text-right">
-                <thead class="bg-gray-50 text-gray-500 text-xs font-medium border-b border-gray-200">
+            <table class="w-full text-right admin-table">
+                <thead><tr><th>المتجر</th><th>الباقة</th><th>رسائل صادرة</th></tr></thead>
+                <tbody>
+                    {% if topTenants and topTenants.length > 0 %}
+                    {% for t in topTenants %}
                     <tr>
-                        <th class="px-6 py-3">المتجر</th>
-                        <th class="px-6 py-3">الباقة</th>
-                        <th class="px-6 py-3">رسائل مرسلة</th>
-                        <th class="px-6 py-3">رسائل مستقرة</th>
-                        <th class="px-6 py-3">AI Requests</th>
-                        <th class="px-6 py-3">نسبة النمو</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-100/50">
-                    <!-- Row 1 -->
-                    <tr class="hover:bg-gray-50/50 transition">
-                        <td class="px-6 py-4 flex items-center gap-3">
-                            <div
-                                class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-xs">
-                                M</div>
-                            <div>
-                                <p class="font-bold text-gray-900 text-sm">متجر مودرن هوم</p>
-                                <p class="text-[10px] text-gray-400">ID: #99231</p>
+                        <td>
+                            <div style="display:flex;align-items:center;gap:10px;">
+                                <div style="width:32px;height:32px;border-radius:10px;background:#eff6ff;color:#2563eb;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:12px;">{{ t.name|slice(0,1) }}</div>
+                                <p style="font-weight:700;color:#0f172a;font-size:13px;">{{ t.name }}</p>
                             </div>
                         </td>
-                        <td class="px-6 py-4"><span
-                                class="bg-purple-100 text-purple-700 text-[10px] font-bold px-2 py-1 rounded-full">Pro</span>
-                        </td>
-                        <td class="px-6 py-4 text-sm font-bold text-gray-700">14,203</td>
-                        <td class="px-6 py-4 text-sm text-gray-500">8,100</td>
-                        <td class="px-6 py-4 text-sm text-teal-600 font-bold">5,320</td>
-                        <td class="px-6 py-4 text-sm text-green-500 font-bold">
-                            <i class="fa-solid fa-arrow-trend-up"></i> 12%
-                        </td>
+                        <td><span style="background:#eff6ff;color:#1d4ed8;padding:3px 10px;border-radius:8px;font-size:10px;font-weight:700;">{{ t.plan }}</span></td>
+                        <td style="font-weight:700;color:#0f172a;font-family:Inter,sans-serif;">{{ t.sent }}</td>
                     </tr>
-                    <!-- Row 2 -->
-                    <tr class="hover:bg-gray-50/50 transition">
-                        <td class="px-6 py-4 flex items-center gap-3">
-                            <div
-                                class="w-8 h-8 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center font-bold text-xs">
-                                C</div>
-                            <div>
-                                <p class="font-bold text-gray-900 text-sm">قهوة كوفي</p>
-                                <p class="text-[10px] text-gray-400">ID: #11029</p>
-                            </div>
-                        </td>
-                        <td class="px-6 py-4"><span
-                                class="bg-gray-100 text-gray-700 text-[10px] font-bold px-2 py-1 rounded-full">Basic</span>
-                        </td>
-                        <td class="px-6 py-4 text-sm font-bold text-gray-700">2,100</td>
-                        <td class="px-6 py-4 text-sm text-gray-500">800</td>
-                        <td class="px-6 py-4 text-sm text-teal-600 font-bold">1,200</td>
-                        <td class="px-6 py-4 text-sm text-green-500 font-bold">
-                            <i class="fa-solid fa-arrow-trend-up"></i> 5%
-                        </td>
-                    </tr>
-                    <!-- Row 3 -->
-                    <tr class="hover:bg-gray-50/50 transition">
-                        <td class="px-6 py-4 flex items-center gap-3">
-                            <div
-                                class="w-8 h-8 rounded-full bg-pink-100 text-pink-600 flex items-center justify-center font-bold text-xs">
-                                B</div>
-                            <div>
-                                <p class="font-bold text-gray-900 text-sm">بيوتي شوب</p>
-                                <p class="text-[10px] text-gray-400">ID: #55122</p>
-                            </div>
-                        </td>
-                        <td class="px-6 py-4"><span
-                                class="bg-yellow-100 text-yellow-700 text-[10px] font-bold px-2 py-1 rounded-full">Enterprise</span>
-                        </td>
-                        <td class="px-6 py-4 text-sm font-bold text-gray-700">45,000</td>
-                        <td class="px-6 py-4 text-sm text-gray-500">22,000</td>
-                        <td class="px-6 py-4 text-sm text-teal-600 font-bold">18,500</td>
-                        <td class="px-6 py-4 text-sm text-red-400 font-bold">
-                            <i class="fa-solid fa-arrow-trend-down"></i> 2%
-                        </td>
-                    </tr>
+                    {% endfor %}
+                    {% else %}
+                    <tr><td colspan="3" class="text-center py-12" style="color:#94a3b8;">لا توجد رسائل مُرسلة بعد</td></tr>
+                    {% endif %}
                 </tbody>
             </table>
         </div>
-        <div class="px-6 py-4 border-t border-gray-100 flex justify-center">
-            <button class="text-xs text-gray-500 hover:text-gray-900 font-bold">عرض المزيد <i
-                    class="fa-solid fa-chevron-down mr-1"></i></button>
-        </div>
     </div>
+
 </div>
 
 <script>
-    // General Chart Options for Responsibility
-    const commonOptions = {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-            legend: { display: false }
-        },
-        scales: {
-            x: {
-                display: false,
-                grid: { display: false }
-            },
-            y: {
-                display: false,
-                grid: { display: false }
-            }
-        },
-        layout: {
-            padding: 0
-        }
-    };
-
-    // 1. Tenants Growth Chart
-    const ctx1 = document.getElementById('tenantsGrowthChart').getContext('2d');
-    new Chart(ctx1, {
-        type: 'line',
-        data: {
-            labels: ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو'],
-            datasets: [{
-                label: 'متاجر جديدة',
-                data: [12, 19, 3, 5, 2, 3],
-                borderColor: '#0d9488', // teal-600
-                backgroundColor: 'rgba(13, 148, 136, 0.1)',
-                fill: true,
-                tension: 0.4
-            }]
-        },
-        options: commonOptions
-    });
-
-    // 2. Msg Volume Chart
-    const ctx2 = document.getElementById('msgVolumeChart').getContext('2d');
-    new Chart(ctx2, {
-        type: 'bar',
-        data: {
-            labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
-            datasets: [{
-                label: 'الرسائل',
-                data: [5000, 7000, 4500, 9200],
-                backgroundColor: '#3b82f6', // blue-500
-                barPercentage: 0.6,
-                categoryPercentage: 0.8,
-                borderRadius: 4
-            }]
-        },
-        options: commonOptions
-    });
-
-    // 3. AI Distribution Chart
-    const ctx3 = document.getElementById('aiDistributionChart').getContext('2d');
-    new Chart(ctx3, {
+    const planLabels = {{ planLabels | safe }};
+    const planValues = {{ planValues | safe }};
+    new Chart(document.getElementById('planChart'), {
         type: 'doughnut',
-        data: {
-            labels: ['AI Smart Reply', 'Rule Based', 'Manual Override'],
-            datasets: [{
-                data: [65, 25, 10],
-                backgroundColor: ['#8b5cf6', '#f59e0b', '#ef4444'], // violet, amber, red
-                borderWidth: 0
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    position: 'right',
-                    labels: { boxWidth: 10, font: { size: 10, family: 'Tajawal' } }
-                }
-            }
-        }
+        data: { labels: planLabels, datasets: [{ data: planValues, backgroundColor: ['#0d9488','#3b82f6','#8b5cf6','#f59e0b','#ef4444','#94a3b8'], borderWidth: 0, hoverOffset: 4 }] },
+        options: { responsive: true, maintainAspectRatio: false, cutout: '62%', plugins: { legend: { position: 'right', labels: { boxWidth: 10, font: { family: 'Cairo, sans-serif', size: 11 } } } } }
     });
 </script>
 {% endblock %}
