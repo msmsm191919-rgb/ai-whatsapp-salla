@@ -739,17 +739,21 @@
             textarea.dispatchEvent(new Event('input'));
         }
 
-        // معاينة القالب المختار (وضع API)
+        // معاينة القالب المختار (وضع API) — تحدّث المعاينة الصغيرة + معاينة الجوال
         function previewTemplate() {
             const sel = document.getElementById('templateSelect');
             const prev = document.getElementById('templatePreview');
             if (!sel || !prev) return;
             const opt = sel.options[sel.selectedIndex];
             const body = opt ? (opt.getAttribute('data-body') || '') : '';
+            const personalized = body.replace(/\{\{1\}\}/g, 'عبدالله');
             if (sel.value && body) {
-                prev.textContent = body.replace(/\{\{1\}\}/g, 'عبدالله');
+                prev.textContent = personalized;
                 prev.classList.remove('hidden');
             } else { prev.classList.add('hidden'); }
+            // 📱 تحدّث معاينة الجوال الكبيرة على اليسار
+            const phonePrev = document.getElementById('previewText');
+            if (phonePrev) phonePrev.textContent = personalized || 'اختر قالباً لمعاينة الرسالة';
         }
 
         // دالة مشتركة: إرسال فوري (scheduledAt=null) أو مجدول (ISO string)

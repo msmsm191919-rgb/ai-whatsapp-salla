@@ -1993,7 +1993,8 @@ app.get("/campaigns/create", require('./services/planGate').requirePage('campaig
     // 📡 تحديد قناة الإرسال: QR (نص حر) أو API (قوالب معتمدة)
     const useWaWeb = tenant ? waWeb.isReady(tenant.id) : false;
     const metaConfig = tenant ? await db.models.WhatsAppConfig.findOne({ where: { tenant_id: tenant.id } }) : null;
-    const apiReady = !useWaWeb && metaConfig && metaConfig.access_token; // API فقط (مو QR)
+    // API "متصل" يعني توكن حقيقي (مو mock_access_token)
+    const apiReady = !useWaWeb && metaConfig && metaConfig.access_token && metaConfig.access_token !== 'mock_access_token';
     let channelMode = 'qr';       // الافتراضي: نص حر (QR)
     let templates = [];
     if (apiReady) {
