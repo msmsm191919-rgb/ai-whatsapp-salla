@@ -7,18 +7,32 @@
     <div style="background:#fff; border:1px solid #e2e8f0; border-radius:16px; padding:20px 24px;" class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
             <h2 class="font-black text-slate-800 flex items-center gap-2" style="font-size:18px;">
+                {% if selectedTenant %}
+                <i class="fa-solid fa-folder-open" style="color:#0d9488;"></i> ملف عملاء: <span style="color:#0d9488;">{{ selectedTenant.store_name }}</span>
+                {% else %}
                 <i class="fa-solid fa-address-book" style="color:#0d9488;"></i> عملاء جميع المتاجر
+                {% endif %}
             </h2>
-            <p class="text-xs mt-1" style="color:#94a3b8;">كل أرقام العملاء المسجّلين عبر كل التجار — محفوظة في قاعدة البيانات</p>
+            <p class="text-xs mt-1" style="color:#94a3b8;">
+                {% if selectedTenant %}عملاء هذا التاجر فقط — <a href="/admin/customers" style="color:#0d9488;font-weight:700;">عرض الكل</a>
+                {% else %}كل أرقام العملاء المسجّلين عبر كل التجار — محفوظة في قاعدة البيانات{% endif %}
+            </p>
         </div>
-        <div class="flex gap-3 flex-wrap">
+        <div class="flex gap-3 flex-wrap items-center">
+            <select onchange="if(this.value) location.href='/admin/customers?tenant='+this.value; else location.href='/admin/customers';"
+                style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:8px 12px; font-size:12px; font-weight:700; color:#0f172a; outline:none; font-family:Cairo,sans-serif; cursor:pointer; min-width:170px;">
+                <option value="">📋 كل التجار</option>
+                {% for t in allTenants %}
+                <option value="{{ t.id }}" {% if tenantFilter == t.id %}selected{% endif %}>📁 {{ t.store_name }}</option>
+                {% endfor %}
+            </select>
             <div class="relative">
                 <i class="fa-solid fa-search absolute right-3 top-1/2 -translate-y-1/2 text-xs" style="color:#cbd5e1;"></i>
-                <input id="custSearch" type="text" placeholder="بحث بالاسم أو الرقم أو المتجر..." onkeyup="filterCustomers()"
-                    style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:8px 34px 8px 14px; font-size:13px; width:240px; outline:none;"
+                <input id="custSearch" type="text" placeholder="بحث بالاسم أو الرقم..." onkeyup="filterCustomers()"
+                    style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:8px 34px 8px 14px; font-size:13px; width:200px; outline:none;"
                     onfocus="this.style.borderColor='#0d9488'" onblur="this.style.borderColor='#e2e8f0'">
             </div>
-            <a href="/admin/customers/export"
+            <a href="/admin/customers/export{% if tenantFilter %}?tenant={{ tenantFilter }}{% endif %}"
                 style="background:linear-gradient(135deg,#0d9488,#0ea5e9); color:#fff; border:none; border-radius:10px; padding:8px 18px; font-size:12px; font-weight:700; cursor:pointer; display:flex; align-items:center; gap:6px; text-decoration:none;">
                 <i class="fa-solid fa-file-csv"></i> تصدير Excel
             </a>

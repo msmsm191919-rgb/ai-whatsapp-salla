@@ -322,19 +322,25 @@ router.post('/wa/:id/logout', async (req, res) => {
   catch (e) { res.status(500).json({ ok: false, error: e.message }); }
 });
 
-// 👥 عملاء جميع التجار (لمالك المنصة) — مع أرقامهم
+// 👥 عملاء جميع التجار — مع فلتر اختياري حسب التاجر (?tenant=ID)
 router.get('/customers', async (req, res) => {
   try {
     const db = SallaDatabase.connection;
+    const tenantFilter = req.query.tenant ? parseInt(req.query.tenant, 10) : null;
+    const where = tenantFilter ? { tenant_id: tenantFilter } : {};
+
     const customers = await db.models.Customer.findAll({
-      include: ['Tenant'],
-      order: [['created_at', 'DESC']],
-      limit: 1000
+      where, include: ['Tenant'],
+      order: [['created_at', 'DESC']], limit: 1000
     });
-    const total = await db.models.Customer.count();
-    const tenantsCount = await db.models.Tenant.count();
+    const total = await db.models.Customer.count({ where });
+    const allTenants = await db.models.Tenant.findAll({ attributes: ['id', 'store_name'], order: [['store_name', 'ASC']] });
+    const selectedTenant = tenantFilter ? allTenants.find(t => t.id === tenantFilter) : null;
+
     res.render('admin/customers.html', {
-      page: 'customers', customers, total, tenantsCount,
+      page: 'customers', customers, total,
+      tenantsCount: allTenants.length, allTenants,
+      tenantFilter, selectedTenant,
       now_date: new Date().toLocaleDateString('ar-SA')
     });
   } catch (e) {
@@ -342,12 +348,14 @@ router.get('/customers', async (req, res) => {
   }
 });
 
-// 📥 تصدير كل العملاء كملف CSV (يفتح في Excel)
+// 📥 تصدير العملاء كملف CSV (يفتح في Excel) — يحترم فلتر التاجر
 router.get('/customers/export', async (req, res) => {
   try {
     const db = SallaDatabase.connection;
+    const tenantFilter = req.query.tenant ? parseInt(req.query.tenant, 10) : null;
+    const where = tenantFilter ? { tenant_id: tenantFilter } : {};
     const customers = await db.models.Customer.findAll({
-      include: ['Tenant'], order: [['created_at', 'DESC']]
+      where, include: ['Tenant'], order: [['created_at', 'DESC']]
     });
     const esc = (v) => `"${String(v == null ? '' : v).replace(/"/g, '""')}"`;
     let csv = 'المتجر,اسم العميل,رقم الجوال,البريد,عدد الطلبات,إجمالي الإنفاق,تاريخ الإضافة\n';

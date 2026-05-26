@@ -160,6 +160,9 @@
                         </td>
                         <td>
                             <div class="flex items-center justify-center gap-1.5">
+                                <a href="/admin/customers?tenant={{ t.id }}" title="ملف عملاء هذا التاجر" class="w-8 h-8 rounded-lg flex items-center justify-center transition" style="color:#2563eb; background:#eff6ff; text-decoration:none;" onmouseover="this.style.background='#dbeafe'" onmouseout="this.style.background='#eff6ff'">
+                                    <i class="fa-solid fa-folder-open text-xs"></i>
+                                </a>
                                 <button onclick="waAction({{ t.id }}, 'restart', this)" title="إعادة تشغيل واتساب (إصلاح)" class="w-8 h-8 rounded-lg flex items-center justify-center transition" style="color:#0d9488; background:#f0fdfa;" onmouseover="this.style.background='#ccfbf1'" onmouseout="this.style.background='#f0fdfa'">
                                     <i class="fa-solid fa-rotate text-xs"></i>
                                 </button>
