@@ -1,17 +1,12 @@
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ربط واتساب (QR) | مبهر AI</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <style> * { font-family: 'Cairo', sans-serif; } </style>
-</head>
-<body class="min-h-screen flex items-center justify-center p-4" style="background:linear-gradient(135deg,#0f172a,#0d9488);">
+{% extends "layouts/dashboard_master.html" %}
 
-    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden">
+{% block title %}ربط واتساب (QR) | مبهر AI{% endblock %}
+{% block header_title %}ربط واتساب{% endblock %}
+{% block header_subtitle %}اربط رقم جوالك وأرسل واستقبل رسائل عملائك بالذكاء{% endblock %}
+
+{% block content %}
+<div class="max-w-md mx-auto">
+    <div class="card overflow-hidden">
         <!-- Header -->
         <div class="px-6 py-5 text-center text-white" style="background:linear-gradient(135deg,#0d9488,#0ea5e9);">
             <span class="inline-block bg-white/20 text-[10px] font-bold px-3 py-1 rounded-full mb-2">⭐ الطريقة الأساسية — مجانية</span>
@@ -79,9 +74,6 @@
                 <button id="logoutBtn" onclick="logoutWa()" class="hidden px-5 py-2.5 rounded-xl text-sm font-bold border border-red-200 text-red-500 hover:bg-red-50 transition">
                     <i class="fa-solid fa-link-slash ml-1"></i> فصل
                 </button>
-                <a href="/dashboard" class="px-5 py-2.5 rounded-xl text-sm font-bold border border-slate-200 text-slate-500 hover:bg-slate-50 transition">
-                    رجوع
-                </a>
             </div>
 
             <div class="mt-5 pt-4 border-t border-slate-100">
@@ -94,10 +86,10 @@
             </div>
         </div>
     </div>
+</div>
 
 <script>
     let pollTimer = null;
-
     function setStatus(state) {
         const el = (id) => document.getElementById(id);
         const map = {
@@ -112,7 +104,6 @@
         el('statusBadge').style.background = bg;
         el('statusBadge').style.color = color;
         el('statusText').textContent = label;
-
         if (state.status === 'qr' && state.qr) {
             el('qrImage').src = state.qr; el('qrImage').classList.remove('hidden');
             el('qrPlaceholder').classList.add('hidden'); el('scanSteps').classList.remove('hidden');
@@ -127,7 +118,6 @@
             el('startBtn').classList.add('hidden');
         }
     }
-
     async function poll() {
         try { setStatus(await (await fetch('/api/wa-web/status')).json()); } catch (e) {}
     }
@@ -145,5 +135,4 @@
     poll();
     pollTimer = setInterval(poll, 3000);
 </script>
-</body>
-</html>
+{% endblock %}
