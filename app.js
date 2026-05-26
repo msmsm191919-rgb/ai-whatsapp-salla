@@ -2420,7 +2420,6 @@ app.post("/api/campaigns/send", async (req, res) => {
   }
 });
 
-// (Legacy whatsapp-simulator route removed - see proper route below)
 
 // ---------------------------------------------------------
 // AI SETTINGS ROUTES
@@ -2691,12 +2690,6 @@ app.post("/api/settings/save", async (req, res) => {
 });
 
 // ---------------------------------------------------------
-// WHATSAPP SIMULATOR (Official)
-// ---------------------------------------------------------
-app.get("/whatsapp-simulator", (req, res) => {
-  res.render("simulator.html", { user: req.user });
-});
-
 // ═══════════════════════════════════════════════════════════════════
 // 🎭 تجربة عامة للزوّار (Demo) — ردود ذكية مكتوبة مسبقاً (بدون OpenAI)
 // عام، بدون مصادقة، وصفر تكلفة — لتحفيز الزائر على الاشتراك
@@ -2709,37 +2702,6 @@ app.post("/api/demo/chat", (req, res) => {
     res.json({ ok: true, ...result });
   } catch (e) {
     res.json({ ok: true, reply: 'أهلاً فيك! 😊 كيف أقدر أخدمك؟', tag: 'error' });
-  }
-});
-
-// Simulator API to send message and get AI reply
-app.post("/api/simulator/send", async (req, res) => {
-  try {
-    const { message, phone } = req.body;
-
-    // Mock Tenant Identification (Demo Merchant)
-    // In prod, you'd use req.user or a selected tenant from admin panel
-    const SallaDatabase = require('./database/db_instance');
-    const db = SallaDatabase.connection;
-
-    const tenant = await db.models.Tenant.findOne({ where: { salla_merchant_id: 123456789 } });
-
-    if (!tenant) return res.status(404).json({ error: "Demo Tenant Not Found. Please restart server to seed it." });
-
-    const ChatService = require('./services/ChatService');
-
-    const response = await ChatService.handleIncomingMessage({
-      fromPhone: phone || '966500000000',
-      messageBody: message,
-      tenantId: tenant.id,
-      isSimulated: true
-    });
-
-    res.json(response);
-
-  } catch (e) {
-    console.error(e);
-    res.status(500).json({ error: e.message });
   }
 });
 
@@ -2951,7 +2913,6 @@ SallaDatabase.connect().then(async (connection) => {
     const serverInstance = server.listen(retryPort, () => {
       console.log(`🚀 SaaS System Ready on http://localhost:${retryPort}`);
       console.log(`💻 Dashboard: http://localhost:${retryPort}/dashboard`);
-      console.log(`💬 Simulator: http://localhost:${retryPort}/whatsapp-simulator`);
     });
 
     serverInstance.on('error', (e) => {
