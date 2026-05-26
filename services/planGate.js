@@ -20,7 +20,7 @@ const PLANS = {
         price_monthly: 79,
         pages: [
             'dashboard', 'customers', 'scenarios', 'knowledge_base',
-            'ai_settings', 'logs', 'settings', 'account', 'simulator',
+            'ai_settings', 'logs', 'settings', 'account',
             'automation_carts',   // ✅ مسموحة في الأساسية (استعادة السلات)
             'automation_orders',  // ✅ مسموحة في الأساسية (حالة الطلب)
             'campaigns'           // ✅ الحملات الجماعية مجانية للكل عبر QR (ميزتنا التنافسية)
@@ -65,7 +65,7 @@ const PLANS = {
         price_monthly: 149,
         pages: [
             'dashboard', 'customers', 'scenarios', 'knowledge_base',
-            'ai_settings', 'logs', 'settings', 'account', 'simulator',
+            'ai_settings', 'logs', 'settings', 'account',
             'automation_carts', 'automation_orders',
             'campaigns'                   // ✅ النمو يضيف الحملات
         ],
@@ -110,7 +110,7 @@ const PLANS = {
         price_monthly: 299,
         pages: [
             'dashboard', 'customers', 'scenarios', 'knowledge_base',
-            'ai_settings', 'logs', 'settings', 'account', 'simulator',
+            'ai_settings', 'logs', 'settings', 'account',
             'automation_carts', 'automation_orders', 'campaigns'
         ],
         features: {
