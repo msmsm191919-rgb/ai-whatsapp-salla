@@ -318,17 +318,22 @@
                 <i class="fa-solid fa-users w-4 text-center nav-icon"></i>
                 <span>العملاء</span>
             </a>
+            {# 📡 القائمة تتكيّف: لو ربط QR يختفي API، ولو ربط API يختفي QR #}
+            {% if activeChannel != 'api' %}
             <a href="/whatsapp-web" class="sidebar-link {{ 'active' if activePage == 'wa_web' else '' }}">
                 <i class="fa-brands fa-whatsapp w-4 text-center nav-icon"></i>
-                <span>ربط واتساب ⭐</span>
+                <span>ربط واتساب{% if activeChannel == 'qr' %} <span style="color:#16a34a;">✓</span>{% else %} ⭐{% endif %}</span>
             </a>
+            {% endif %}
+            {% if activeChannel != 'qr' %}
             <a href="/settings/whatsapp" class="sidebar-link {{ 'active' if activePage == 'settings' else '' }}">
                 <i class="fa-solid fa-gear w-4 text-center nav-icon"></i>
-                <span>واتساب API (متقدم)</span>
-                {% if not (planContext and planContext.can and planContext.can.whatsapp_api) %}
+                <span>واتساب API{% if activeChannel == 'api' %} <span style="color:#16a34a;">✓</span>{% else %} (متقدم){% endif %}</span>
+                {% if activeChannel != 'api' and not (planContext and planContext.can and planContext.can.whatsapp_api) %}
                 <i class="fa-solid fa-lock text-[9px] mr-auto" style="color:#cbd5e1;" title="متاح في باقة النمو فأعلى"></i>
                 {% endif %}
             </a>
+            {% endif %}
             <a href="/billing" class="sidebar-link {{ 'active' if activePage == 'billing' else '' }}">
                 <i class="fa-solid fa-receipt w-4 text-center nav-icon"></i>
                 <span>الفواتير والاشتراك</span>

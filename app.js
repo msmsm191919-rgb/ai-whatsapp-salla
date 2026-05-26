@@ -254,6 +254,27 @@ app.use((req, res, next) => {
   next();
 });
 
+// 📡 حقن قناة واتساب النشطة لكل تاجر — يتحكم في القائمة الجانبية
+// 'qr' = ربط QR متصل | 'api' = WhatsApp API مفعّل | 'none' = ما ربط شي بعد
+app.use(async (req, res, next) => {
+  try {
+    const merchantId = req.user?.merchant?.id || 123456789;
+    const db = SallaDatabase.connection;
+    if (!db || !db.models?.Tenant) { res.locals.activeChannel = 'none'; return next(); }
+    const tenant = await db.models.Tenant.findOne({ where: { salla_merchant_id: merchantId } });
+    if (!tenant) { res.locals.activeChannel = 'none'; return next(); }
+    const waWebMod = require('./services/waWeb');
+    if (waWebMod.isReady(tenant.id)) {
+      res.locals.activeChannel = 'qr';
+    } else {
+      const wa = await db.models.WhatsAppConfig.findOne({ where: { tenant_id: tenant.id } });
+      const tok = wa && wa.access_token;
+      res.locals.activeChannel = (tok && tok !== 'mock_access_token') ? 'api' : 'none';
+    }
+  } catch (e) { res.locals.activeChannel = 'none'; }
+  next();
+});
+
 // ⛔ حارس endpoints التطوير — يرجّع 404 في الإنتاج (يمنع تزوير الترقية/الدفع)
 const devOnly = (req, res, next) => {
   if (process.env.NODE_ENV === 'production') {
