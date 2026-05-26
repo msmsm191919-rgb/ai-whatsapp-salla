@@ -1,117 +1,132 @@
 {% extends "layouts/dashboard_master.html" %}
 
-{% block title %}حالة الطلبات | مبهر AI{% endblock %}
-{% block header_title %}تحديثات حالة الطلبات 📦{% endblock %}
+{% block title %}تحديثات الطلبات | مبهر AI{% endblock %}
+{% block header_title %}تحديثات حالة الطلبات{% endblock %}
 {% block header_subtitle %}سجل الرسائل الآلية المرسلة بناءً على تغيير حالة الطلب{% endblock %}
 
 {% block content %}
-<div class="space-y-6">
+<div class="max-w-6xl mx-auto space-y-5">
 
-    {% if not automation_enabled %}
-    <!-- Locked State -->
-    <div
-        class="bg-gradient-to-br from-blue-50 via-white to-indigo-50 border-2 border-blue-200 rounded-3xl p-10 text-center relative overflow-hidden">
-        <div class="absolute -top-20 -right-20 w-60 h-60 bg-blue-200 rounded-full blur-3xl opacity-30"></div>
-        <div class="relative z-10">
-            <div
-                class="w-20 h-20 mx-auto bg-blue-100 rounded-2xl flex items-center justify-center text-4xl text-blue-500 mb-6">
+{% if not automation_enabled %}
+    <!-- Locked -->
+    <div class="card p-10 text-center relative overflow-hidden">
+        <div class="absolute -top-20 -right-20 w-64 h-64 rounded-full opacity-20" style="background: #3b82f6; filter: blur(80px);"></div>
+        <div class="absolute -bottom-20 -left-20 w-64 h-64 rounded-full opacity-10" style="background: #6366f1; filter: blur(80px);"></div>
+        <div class="relative z-10 max-w-md mx-auto">
+            <div class="w-20 h-20 mx-auto rounded-2xl flex items-center justify-center text-4xl mb-6"
+                style="background: #eff6ff; color: #2563eb; box-shadow: 0 0 0 8px rgba(59,130,246,0.08);">
                 <i class="fa-solid fa-lock"></i>
             </div>
-            <h2 class="text-2xl font-black text-gray-800 mb-3">تنبيهات الطلبات غير متاحة في باقة {{ plan_name }}</h2>
-            <p class="text-gray-500 text-sm max-w-lg mx-auto mb-6">قم بترقية باقتك لتفعيل تنبيهات حالة الطلبات التلقائية
-                لعملائك.</p>
+            <h2 class="text-xl font-black text-slate-800 mb-3">تنبيهات الطلبات غير متاحة في باقة {{ plan_name }}</h2>
+            <p class="text-slate-500 text-sm mb-6 leading-relaxed">قم بترقية باقتك لتفعيل الإشعارات التلقائية لعملائك عند تغيير حالة طلباتهم.</p>
             <a href="/pricing"
-                class="bg-gradient-to-r from-blue-500 to-indigo-500 text-white px-8 py-3 rounded-xl font-bold inline-flex items-center gap-2 shadow-lg shadow-blue-500/30">
+                class="inline-flex items-center gap-2 px-7 py-3 rounded-xl text-sm font-bold text-white transition shadow-lg"
+                style="background: linear-gradient(135deg, #2563eb, #4f46e5); box-shadow: 0 4px 16px rgba(59,130,246,0.3);">
                 <i class="fa-solid fa-rocket"></i> ترقية الباقة
             </a>
         </div>
     </div>
-    {% else %}
 
-    <!-- Automation Active Banner -->
-    <div
-        class="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-5 flex items-center justify-between">
+{% else %}
+
+    <!-- Active Banner -->
+    <div class="flex items-center justify-between p-4 rounded-2xl" style="background: #eff6ff; border: 1px solid #bfdbfe;">
         <div class="flex items-center gap-3">
-            <div class="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center text-blue-600">
+            <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style="background: #dbeafe; color: #1d4ed8;">
                 <i class="fa-solid fa-bell"></i>
             </div>
             <div>
                 <h4 class="font-bold text-blue-800 text-sm">تنبيهات تلقائية مفعّلة</h4>
-                <p class="text-xs text-blue-600">يتم إرسال رسائل تلقائية للعميل عند تغير حالة الطلب (شحن، توصيل، إلخ).
-                </p>
+                <p class="text-xs text-blue-600">يُرسل إشعار واتساب للعميل فور تغيير حالة طلبه (شحن، توصيل، إلخ).</p>
             </div>
         </div>
-        <a href="/scenarios" class="text-sm text-blue-600 font-bold hover:underline flex items-center gap-1">
-            <i class="fa-solid fa-gear"></i> تخصيص الرسائل
+        <a href="/scenarios" class="flex items-center gap-1.5 text-sm text-blue-600 font-bold hover:underline">
+            <i class="fa-solid fa-gear text-xs"></i> تخصيص الرسائل
         </a>
     </div>
 
     <!-- Info Card -->
-    <div class="bg-white p-6 rounded-3xl border border-gray-200 shadow-sm">
+    <div class="card p-5">
         <div class="flex items-start gap-4">
-            <div
-                class="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-500 text-xl shrink-0">
+            <div class="w-11 h-11 rounded-xl flex items-center justify-center text-xl flex-shrink-0" style="background: #eff6ff; color: #2563eb;">
                 <i class="fa-solid fa-box-open"></i>
             </div>
             <div>
-                <h3 class="font-bold text-gray-800 mb-1">كيف تعمل تنبيهات الطلبات؟</h3>
-                <p class="text-sm text-gray-500 leading-relaxed">
-                    عند تغيير حالة طلب في متجرك (مثل: تم الشحن، جاري التوصيل، تم التوصيل)، يقوم النظام تلقائياً بإرسال
-                    رسالة واتساب للعميل.
-                    يمكنك تخصيص نص كل رسالة من <a href="/scenarios"
-                        class="text-teal-600 font-bold hover:underline">إعدادات السيناريوهات</a>.
+                <h3 class="font-bold text-slate-700 text-sm mb-1">كيف تعمل تنبيهات الطلبات؟</h3>
+                <p class="text-xs text-slate-500 leading-relaxed">
+                    عند تغيير حالة أي طلب في متجرك (تم الشحن، جاري التوصيل، تم التوصيل...)، يُرسل النظام تلقائياً رسالة واتساب للعميل.
+                    يمكنك تخصيص نص كل رسالة من <a href="/scenarios" class="text-teal-600 font-bold hover:underline">إعدادات السيناريوهات</a>.
                 </p>
             </div>
         </div>
     </div>
 
-    <!-- Recent Order Messages -->
-    <div class="bg-white rounded-3xl shadow-sm border border-gray-200 overflow-hidden">
-        <div class="p-6 border-b border-gray-100 flex justify-between items-center">
-            <h3 class="font-bold text-gray-800 flex items-center gap-2">
-                <i class="fa-solid fa-clock-rotate-left text-blue-500"></i> سجل التحديثات المرسلة
+    <!-- Status Types -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {% set statuses = [
+            { icon: 'fa-box', color: '#2563eb', bg: '#eff6ff', label: 'تم التأكيد' },
+            { icon: 'fa-truck', color: '#d97706', bg: '#fffbeb', label: 'جاري الشحن' },
+            { icon: 'fa-location-dot', color: '#7c3aed', bg: '#f5f3ff', label: 'خرج للتوصيل' },
+            { icon: 'fa-circle-check', color: '#16a34a', bg: '#f0fdf4', label: 'تم التوصيل' }
+        ] %}
+        {% for s in statuses %}
+        <div class="flex items-center gap-3 p-3.5 rounded-xl border border-slate-100 bg-slate-50/50">
+            <div class="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style="background: {{ s.bg }}; color: {{ s.color }};">
+                <i class="fa-solid {{ s.icon }} text-sm"></i>
+            </div>
+            <p class="text-xs font-bold text-slate-600">{{ s.label }}</p>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Messages Table -->
+    <div class="card overflow-hidden p-0">
+        <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+            <h3 class="font-bold text-slate-700 text-sm flex items-center gap-2">
+                <i class="fa-solid fa-clock-rotate-left text-blue-400"></i> سجل التحديثات المرسلة
             </h3>
-            <span class="text-xs text-gray-400 font-bold">باقة {{ plan_name }}</span>
+            <span class="text-xs text-slate-400 font-bold">{{ plan_name }}</span>
         </div>
         <div class="overflow-x-auto">
             <table class="w-full text-right">
                 <thead>
-                    <tr class="bg-gray-50/50 text-xs text-gray-400 uppercase tracking-wider">
-                        <th class="px-6 py-4 font-bold">الرقم</th>
-                        <th class="px-6 py-4 font-bold">المحتوى</th>
-                        <th class="px-6 py-4 font-bold">الحالة</th>
-                        <th class="px-6 py-4 font-bold">التاريخ</th>
+                    <tr class="bg-slate-50 border-b border-slate-100 text-xs text-slate-400 uppercase tracking-wider">
+                        <th class="px-6 py-3.5 font-bold">رقم العميل</th>
+                        <th class="px-6 py-3.5 font-bold w-2/5">محتوى الرسالة</th>
+                        <th class="px-6 py-3.5 font-bold">الحالة</th>
+                        <th class="px-6 py-3.5 font-bold">التاريخ</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-100">
+                <tbody class="divide-y divide-slate-100">
                     {% for msg in order_messages %}
-                    <tr class="hover:bg-gray-50/50 transition">
-                        <td class="px-6 py-4 font-mono text-sm text-gray-600">{{ msg.to_phone or '—' }}</td>
-                        <td class="px-6 py-4 text-sm text-gray-700 max-w-xs truncate">{{ msg.content | truncate(60) }}
+                    <tr class="hover:bg-slate-50/70 transition">
+                        <td class="px-6 py-4 font-mono text-sm text-slate-600" dir="ltr">{{ msg.to_phone or '—' }}</td>
+                        <td class="px-6 py-4">
+                            <p class="text-xs text-slate-600 line-clamp-2 leading-relaxed max-w-sm">{{ msg.content | truncate(80) }}</p>
                         </td>
                         <td class="px-6 py-4">
                             {% if msg.status == 'sent' %}
-                            <span class="px-2 py-1 rounded-full bg-green-100 text-green-600 text-[10px] font-bold">تم
-                                الإرسال</span>
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold" style="background: #f0fdf4; color: #16a34a;">
+                                <i class="fa-solid fa-check-double"></i> تم الإرسال
+                            </span>
                             {% elif msg.status == 'failed' %}
-                            <span
-                                class="px-2 py-1 rounded-full bg-red-100 text-red-600 text-[10px] font-bold">فشل</span>
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold" style="background: #fef2f2; color: #dc2626;">
+                                <i class="fa-solid fa-circle-exclamation"></i> فشل
+                            </span>
                             {% else %}
-                            <span class="px-2 py-1 rounded-full bg-gray-100 text-gray-500 text-[10px] font-bold">{{
-                                msg.status }}</span>
+                            <span class="text-[10px] font-bold text-slate-400 uppercase">{{ msg.status }}</span>
                             {% endif %}
                         </td>
-                        <td class="px-6 py-4 text-xs text-gray-500" dir="ltr">{{ msg.created_at | date }}</td>
+                        <td class="px-6 py-4 text-xs text-slate-400" dir="ltr">{{ msg.created_at | date }}</td>
                     </tr>
                     {% else %}
                     <tr>
-                        <td colspan="4" class="px-6 py-12 text-center">
-                            <div
-                                class="w-14 h-14 mx-auto bg-gray-50 rounded-full flex items-center justify-center text-2xl text-gray-300 mb-3">
+                        <td colspan="4" class="px-6 py-16 text-center">
+                            <div class="w-14 h-14 mx-auto bg-slate-50 rounded-2xl flex items-center justify-center text-2xl text-slate-300 mb-3">
                                 <i class="fa-solid fa-inbox"></i>
                             </div>
-                            <p class="text-gray-400 font-bold text-sm">لا توجد تحديثات مرسلة بعد</p>
-                            <p class="text-xs text-gray-400 mt-1">ستظهر هنا عندما يتم إرسال تنبيه لتغيير حالة طلب</p>
+                            <p class="text-slate-500 font-bold text-sm">لا توجد تحديثات مرسلة بعد</p>
+                            <p class="text-xs text-slate-400 mt-1">ستظهر هنا عند إرسال تنبيه لتغيير حالة طلب</p>
                         </td>
                     </tr>
                     {% endfor %}
@@ -120,6 +135,6 @@
         </div>
     </div>
 
-    {% endif %}
+{% endif %}
 </div>
 {% endblock %}

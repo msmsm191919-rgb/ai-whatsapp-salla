@@ -1,23 +1,78 @@
-{% extends 'layout.html' %} {% block content %}
+{% extends "layouts/dashboard_master.html" %}
 
-<div>
-  <div>Orders:</div>
+{% block title %}الطلبات | مبهر AI{% endblock %}
+{% block header_title %}الطلبات{% endblock %}
+{% block header_subtitle %}عرض وتتبع جميع طلبات متجرك{% endblock %}
 
-  {% for order in orders %}
-  <div>ID : <span style="font-weight: bold">{{order.reference_id}}</span></div>
-  <div>
-    total :
-    <span style="font-weight: bold"
-      >{{order.total.amount}} {{order.total.currency}}</span
-    >
-  </div>
-  <div>
-    status : <span style="font-weight: bold">{{order.status.name}}</span>
-  </div>
-  <div>Items :</div>
-  {% for item in order.items %}
-  <div>Name : <span style="font-weight: bold">{{item.name}}</span></div>
-  <div>Quantity : <span style="font-weight: bold">{{item.quantity}}</span></div>
-  ============= {% endfor %} {% endfor %}
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-5">
+
+    <!-- Orders Table -->
+    <div class="card overflow-hidden p-0">
+        <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+            <h3 class="font-bold text-slate-700 text-sm flex items-center gap-2">
+                <i class="fa-solid fa-box text-teal-500"></i> قائمة الطلبات
+            </h3>
+            <span class="text-xs font-bold text-slate-400">{{ orders | length }} طلب</span>
+        </div>
+
+        {% if orders and orders.length > 0 %}
+        <div class="divide-y divide-slate-100">
+            {% for order in orders %}
+            <div class="px-6 py-5 hover:bg-slate-50/70 transition group">
+                <div class="flex items-start justify-between gap-4">
+                    <div class="flex items-center gap-4">
+                        <div class="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
+                            style="background: #f0fdfa; color: #0d9488;">
+                            <i class="fa-solid fa-box-open text-base"></i>
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2 mb-1">
+                                <p class="font-black text-slate-800 text-sm" style="font-family: Inter, sans-serif;">#{{ order.reference_id }}</p>
+                                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full" style="background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0;">
+                                    {{ order.status.name }}
+                                </span>
+                            </div>
+                            <p class="text-xs text-slate-400">
+                                <i class="fa-solid fa-cube ml-1 text-slate-300"></i>
+                                {{ order.items | length }} منتج
+                            </p>
+                        </div>
+                    </div>
+                    <div class="text-left">
+                        <p class="font-black text-teal-600 text-base" style="font-family: Inter, sans-serif;">
+                            {{ order.total.amount }} <span class="text-xs text-slate-400 font-normal">{{ order.total.currency }}</span>
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Items -->
+                {% if order.items and order.items.length > 0 %}
+                <div class="mt-3 mr-15 pr-15 flex flex-wrap gap-2" style="padding-right: 60px;">
+                    {% for item in order.items %}
+                    <div class="flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-bold"
+                        style="background: #f8fafc; border: 1px solid #e2e8f0; color: #374151;">
+                        <span class="w-5 h-5 rounded-lg flex items-center justify-center text-[9px] font-black text-white flex-shrink-0"
+                            style="background: linear-gradient(135deg, #0d9488, #3b82f6);">{{ item.quantity }}</span>
+                        {{ item.name }}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+
+        {% else %}
+        <div class="px-6 py-20 text-center">
+            <div class="w-16 h-16 mx-auto bg-slate-50 rounded-2xl flex items-center justify-center text-3xl text-slate-300 mb-4">
+                <i class="fa-solid fa-box-open"></i>
+            </div>
+            <p class="font-bold text-slate-600 text-sm mb-1">لا توجد طلبات حتى الآن</p>
+            <p class="text-xs text-slate-400">ستظهر طلبات متجرك هنا تلقائياً عبر تكامل سلة</p>
+        </div>
+        {% endif %}
+    </div>
+
 </div>
 {% endblock %}

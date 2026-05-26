@@ -1,14 +1,173 @@
-{% extends 'layout.html' %} {% block content %}
+{% extends 'layouts/dashboard_master.html' %}
+{% block title %}رموز الوصول{% endblock %}
 
-<div>
-  <div>Token:</div>
-  <div>
-    New Access Token Token:
-    <span style="font-weight: bold">{{token.accessToken}}</span>
-  </div>
-  <div>
-    New Refresh Token :
-    <span style="font-weight: bold">{{token.newRefreshToken}}</span>
-  </div>
+{% block content %}
+<div class="space-y-5">
+
+    <!-- Header -->
+    <div class="card" style="padding:20px 24px;">
+        <div>
+            <h2 style="font-size:18px;font-weight:900;color:#0f172a;">رموز الوصول</h2>
+            <p style="font-size:12px;color:#94a3b8;margin-top:2px;">توكينات API الخاصة بمتجرك — احتفظ بها في مكان آمن</p>
+        </div>
+    </div>
+
+    <!-- Security Warning -->
+    <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:16px;padding:16px 20px;display:flex;align-items:center;gap:14px;">
+        <div style="width:38px;height:38px;background:#fef3c7;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <i class="fa-solid fa-triangle-exclamation" style="color:#d97706;"></i>
+        </div>
+        <div>
+            <p style="font-size:13px;font-weight:700;color:#92400e;">تحذير أمني مهم</p>
+            <p style="font-size:12px;color:#b45309;margin-top:2px;">لا تشارك هذه الرموز مع أي شخص. في حال تسرّبها، قم بتجديدها فوراً من إعدادات متجرك على سلة.</p>
+        </div>
+    </div>
+
+    <!-- Token Cards -->
+    <div style="display:flex;flex-direction:column;gap:16px;">
+
+        <!-- Access Token -->
+        <div class="card" style="padding:24px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+                <div style="display:flex;align-items:center;gap:12px;">
+                    <div style="width:42px;height:42px;background:linear-gradient(135deg,rgba(13,148,136,0.1),rgba(14,165,233,0.1));border:1px solid rgba(13,148,136,0.2);border-radius:12px;display:flex;align-items:center;justify-content:center;">
+                        <i class="fa-solid fa-key" style="color:#0d9488;"></i>
+                    </div>
+                    <div>
+                        <h3 style="font-size:14px;font-weight:800;color:#0f172a;">Access Token</h3>
+                        <p style="font-size:11px;color:#94a3b8;margin-top:2px;">رمز الوصول الجديد — صالح لفترة محدودة</p>
+                    </div>
+                </div>
+                <span style="background:#f0fdf4;color:#16a34a;padding:4px 12px;border-radius:20px;font-size:10px;font-weight:700;border:1px solid #bbf7d0;display:flex;align-items:center;gap:5px;">
+                    <span style="width:6px;height:6px;border-radius:50%;background:#16a34a;display:inline-block;"></span> نشط
+                </span>
+            </div>
+
+            <div style="position:relative;">
+                <div style="background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:12px;padding:14px 120px 14px 16px;font-family:Inter,monospace;font-size:12px;color:#374151;word-break:break-all;line-height:1.6;direction:ltr;text-align:left;min-height:52px;"
+                    id="accessTokenDisplay">
+                    {% if token.accessToken %}
+                        <span id="accessTokenText" style="display:none;">{{ token.accessToken }}</span>
+                        <span id="accessTokenMasked">{{ '•' * 32 }}...{{ token.accessToken[-8:] if token.accessToken|length > 8 else '' }}</span>
+                    {% else %}
+                        <span style="color:#94a3b8;">لا يوجد توكن متاح</span>
+                    {% endif %}
+                </div>
+                <div style="position:absolute;top:50%;transform:translateY(-50%);left:12px;display:flex;gap:6px;">
+                    <button onclick="toggleToken('accessToken')" title="إظهار/إخفاء"
+                        style="width:30px;height:30px;background:#fff;border:1px solid #e2e8f0;border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.15s;"
+                        onmouseover="this.style.borderColor='#0d9488'" onmouseout="this.style.borderColor='#e2e8f0'">
+                        <i class="fa-solid fa-eye" id="accessTokenIcon" style="font-size:11px;color:#64748b;"></i>
+                    </button>
+                    <button onclick="copyToken('accessToken')" title="نسخ"
+                        style="width:30px;height:30px;background:#fff;border:1px solid #e2e8f0;border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.15s;"
+                        onmouseover="this.style.borderColor='#0d9488'" onmouseout="this.style.borderColor='#e2e8f0'">
+                        <i class="fa-solid fa-copy" id="accessTokenCopyIcon" style="font-size:11px;color:#64748b;"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Refresh Token -->
+        <div class="card" style="padding:24px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+                <div style="display:flex;align-items:center;gap:12px;">
+                    <div style="width:42px;height:42px;background:linear-gradient(135deg,rgba(124,58,237,0.1),rgba(167,139,250,0.1));border:1px solid rgba(124,58,237,0.2);border-radius:12px;display:flex;align-items:center;justify-content:center;">
+                        <i class="fa-solid fa-rotate" style="color:#7c3aed;"></i>
+                    </div>
+                    <div>
+                        <h3 style="font-size:14px;font-weight:800;color:#0f172a;">Refresh Token</h3>
+                        <p style="font-size:11px;color:#94a3b8;margin-top:2px;">رمز التجديد — يستخدم لاستخراج توكن وصول جديد</p>
+                    </div>
+                </div>
+                <span style="background:#f5f3ff;color:#7c3aed;padding:4px 12px;border-radius:20px;font-size:10px;font-weight:700;border:1px solid #ddd6fe;display:flex;align-items:center;gap:5px;">
+                    <span style="width:6px;height:6px;border-radius:50%;background:#7c3aed;display:inline-block;"></span> طويل الأمد
+                </span>
+            </div>
+
+            <div style="position:relative;">
+                <div style="background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:12px;padding:14px 120px 14px 16px;font-family:Inter,monospace;font-size:12px;color:#374151;word-break:break-all;line-height:1.6;direction:ltr;text-align:left;min-height:52px;"
+                    id="refreshTokenDisplay">
+                    {% if token.newRefreshToken %}
+                        <span id="refreshTokenText" style="display:none;">{{ token.newRefreshToken }}</span>
+                        <span id="refreshTokenMasked">{{ '•' * 32 }}...{{ token.newRefreshToken[-8:] if token.newRefreshToken|length > 8 else '' }}</span>
+                    {% else %}
+                        <span style="color:#94a3b8;">لا يوجد توكن متاح</span>
+                    {% endif %}
+                </div>
+                <div style="position:absolute;top:50%;transform:translateY(-50%);left:12px;display:flex;gap:6px;">
+                    <button onclick="toggleToken('refreshToken')" title="إظهار/إخفاء"
+                        style="width:30px;height:30px;background:#fff;border:1px solid #e2e8f0;border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.15s;"
+                        onmouseover="this.style.borderColor='#7c3aed'" onmouseout="this.style.borderColor='#e2e8f0'">
+                        <i class="fa-solid fa-eye" id="refreshTokenIcon" style="font-size:11px;color:#64748b;"></i>
+                    </button>
+                    <button onclick="copyToken('refreshToken')" title="نسخ"
+                        style="width:30px;height:30px;background:#fff;border:1px solid #e2e8f0;border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.15s;"
+                        onmouseover="this.style.borderColor='#7c3aed'" onmouseout="this.style.borderColor='#e2e8f0'">
+                        <i class="fa-solid fa-copy" id="refreshTokenCopyIcon" style="font-size:11px;color:#64748b;"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Info Card -->
+    <div class="card" style="padding:20px 24px;">
+        <h3 style="font-size:13px;font-weight:800;color:#0f172a;margin-bottom:14px;display:flex;align-items:center;gap:8px;">
+            <i class="fa-solid fa-circle-info" style="color:#0ea5e9;"></i> معلومات مهمة عن التوكنات
+        </h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+            <div style="background:#f0fdfa;border:1px solid #ccfbf1;border-radius:12px;padding:14px;">
+                <i class="fa-solid fa-clock" style="color:#0d9488;margin-bottom:8px;display:block;"></i>
+                <p style="font-size:12px;font-weight:700;color:#0f172a;">صلاحية Access Token</p>
+                <p style="font-size:11px;color:#64748b;margin-top:4px;">صالح لمدة محدودة (عادة 2 ساعة)</p>
+            </div>
+            <div style="background:#f5f3ff;border:1px solid #ede9fe;border-radius:12px;padding:14px;">
+                <i class="fa-solid fa-rotate" style="color:#7c3aed;margin-bottom:8px;display:block;"></i>
+                <p style="font-size:12px;font-weight:700;color:#0f172a;">التجديد التلقائي</p>
+                <p style="font-size:11px;color:#64748b;margin-top:4px;">النظام يجدد التوكن تلقائياً قبل انتهائه</p>
+            </div>
+            <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:12px;padding:14px;">
+                <i class="fa-solid fa-shield" style="color:#dc2626;margin-bottom:8px;display:block;"></i>
+                <p style="font-size:12px;font-weight:700;color:#0f172a;">الحماية</p>
+                <p style="font-size:11px;color:#64748b;margin-top:4px;">لا تشارك هذه الرموز مع أي طرف ثالث</p>
+            </div>
+        </div>
+    </div>
+
 </div>
+
+<script>
+const tokenVisible = { accessToken: false, refreshToken: false };
+
+function toggleToken(key) {
+    tokenVisible[key] = !tokenVisible[key];
+    const textEl = document.getElementById(key + 'Text');
+    const maskedEl = document.getElementById(key + 'Masked');
+    const iconEl = document.getElementById(key + 'Icon');
+    if (!textEl) return;
+    if (tokenVisible[key]) {
+        textEl.style.display = 'inline';
+        if (maskedEl) maskedEl.style.display = 'none';
+        iconEl.className = 'fa-solid fa-eye-slash';
+    } else {
+        textEl.style.display = 'none';
+        if (maskedEl) maskedEl.style.display = 'inline';
+        iconEl.className = 'fa-solid fa-eye';
+    }
+}
+
+function copyToken(key) {
+    const textEl = document.getElementById(key + 'Text');
+    if (!textEl || !textEl.textContent.trim()) return;
+    navigator.clipboard.writeText(textEl.textContent.trim()).then(() => {
+        const iconEl = document.getElementById(key + 'CopyIcon');
+        const prev = iconEl.className;
+        iconEl.className = 'fa-solid fa-check';
+        iconEl.style.color = '#16a34a';
+        setTimeout(() => { iconEl.className = prev; iconEl.style.color = '#64748b'; }, 2000);
+    });
+}
+</script>
 {% endblock %}

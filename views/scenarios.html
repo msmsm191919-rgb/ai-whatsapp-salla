@@ -1,115 +1,288 @@
 {% extends "layouts/dashboard_master.html" %}
 
-{% block title %}السيناريوهات الذكية | Salla AI{% endblock %}
-
-{% block header_title %}السيناريوهات الذكية 🪄{% endblock %}
-{% block header_subtitle %}تفعيل الردود والمبادرات الآلية لزيادة المبيعات{% endblock %}
+{% block title %}السيناريوهات الذكية | مبهر AI{% endblock %}
+{% block header_title %}السيناريوهات الذكية{% endblock %}
+{% block header_subtitle %}فعّل الردود والمبادرات الآلية لزيادة المبيعات{% endblock %}
 
 {% block styles %}
 <style>
-    /* Custom Toggle Switch */
-    .toggle-checkbox:checked {
-        right: 0;
-        border-color: #0d9488;
+    .toggle-wrap {
+        position: relative;
+        width: 48px;
+        height: 26px;
+        flex-shrink: 0;
     }
+    .toggle-wrap input[type="checkbox"] {
+        position: absolute;
+        opacity: 0;
+        width: 100%;
+        height: 100%;
+        cursor: pointer;
+        z-index: 2;
+        margin: 0;
+    }
+    .toggle-track {
+        position: absolute;
+        inset: 0;
+        background: #e2e8f0;
+        border-radius: 999px;
+        transition: background 0.2s;
+    }
+    .toggle-thumb {
+        position: absolute;
+        top: 3px;
+        left: 3px;
+        width: 20px;
+        height: 20px;
+        background: #fff;
+        border-radius: 50%;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+        transition: transform 0.2s;
+    }
+    .toggle-wrap input:checked ~ .toggle-track { background: #0d9488; }
+    .toggle-wrap input:checked ~ .toggle-thumb { transform: translateX(22px); }
 
-    .toggle-checkbox:checked+.toggle-label {
-        background-color: #0d9488;
+    .scenario-card {
+        position: relative;
+        overflow: hidden;
+        transition: box-shadow 0.2s, border-color 0.2s;
     }
+    .scenario-card:hover { box-shadow: 0 8px 24px rgba(0,0,0,0.07); }
+    .scenario-card.active { border-color: #a7f3d0; }
+
+    /* 🔒 Locked scenario (غير متاح في الباقة) */
+    .scenario-card.locked {
+        opacity: 0.65;
+        filter: grayscale(0.3);
+        background: #fafbfc;
+        border-style: dashed !important;
+    }
+    .scenario-card.locked .toggle-wrap { pointer-events: none; opacity: 0.4; }
+    .lock-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: linear-gradient(135deg, #fef3c7, #fde68a);
+        color: #92400e;
+        padding: 4px 10px;
+        border-radius: 999px;
+        font-size: 10px;
+        font-weight: 800;
+        border: 1px solid #fcd34d;
+        white-space: nowrap;
+    }
+    .upgrade-cta {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        margin-top: 6px;
+        font-size: 11px;
+        font-weight: 700;
+        color: #0d9488;
+        text-decoration: none;
+    }
+    .upgrade-cta:hover { text-decoration: underline; }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="max-w-5xl mx-auto space-y-6">
+<div class="max-w-4xl mx-auto space-y-5">
+
+    <!-- Info Banner -->
+    <div class="flex items-start gap-4 p-5 rounded-2xl" style="background: #f0fdf4; border: 1px solid #bbf7d0;">
+        <div class="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style="background: #dcfce7; color: #16a34a;">
+            <i class="fa-solid fa-bolt text-sm"></i>
+        </div>
+        <div>
+            <p class="text-sm font-bold text-green-900">الأتمتة توفر وقتك وتزيد مبيعاتك</p>
+            <p class="text-xs text-green-700 mt-1 leading-relaxed">كل سيناريو يعمل بشكل مستقل في الخلفية. فعّل ما يناسب متجرك وسيتولى الذكاء التواصل مع عملائك تلقائياً.</p>
+        </div>
+    </div>
 
     <!-- Scenario 1: Abandoned Cart -->
-    <div
-        class="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm relative overflow-hidden transition hover:shadow-md group">
-        <div class="absolute top-0 right-0 w-1 h-full bg-orange-400"></div>
-        <div class="flex justify-between items-start">
-            <div class="flex gap-4">
-                <div
-                    class="w-12 h-12 rounded-2xl bg-orange-100 flex items-center justify-center text-orange-500 text-xl group-hover:scale-110 transition-transform">
+    {% set ac_locked = locked_scenarios and 'abandoned_cart' in locked_scenarios %}
+    <div class="card scenario-card p-6 {% if settings.abandoned_cart and not ac_locked %}active{% endif %} {% if ac_locked %}locked{% endif %}">
+        <div class="absolute top-0 right-0 w-1 h-full rounded-r-2xl" style="background: linear-gradient(to bottom, #f97316, #fb923c);"></div>
+        <div class="flex items-start justify-between gap-4">
+            <div class="flex gap-4 flex-1">
+                <div class="w-12 h-12 rounded-2xl flex items-center justify-center text-xl flex-shrink-0" style="background: #fff7ed; color: #ea580c;">
                     <i class="fa-solid fa-cart-shopping"></i>
                 </div>
-                <div>
-                    <h3 class="text-lg font-bold text-gray-900">استعادة السلات المتروكة 🛒</h3>
-                    <p class="text-sm text-gray-500 mt-1 max-w-lg leading-relaxed">إرسال رسالة تذكير ذكية
-                        وتلقائية للعميل الذي ترك سلة الشراء، لاقتراح المساعدة أو تقديم عرض خاص.</p>
+                <div class="flex-1">
+                    <div class="flex items-center gap-2 mb-1 flex-wrap">
+                        <h3 class="font-bold text-slate-800 text-sm">استعادة السلات المتروكة</h3>
+                        <span class="text-[10px] px-2 py-0.5 rounded-full font-bold" style="background: #fff7ed; color: #ea580c;">🛒 تجارة</span>
+                        {% if ac_locked %}<span class="lock-badge"><i class="fa-solid fa-lock"></i> ترقّى لتفعيلها</span>{% endif %}
+                    </div>
+                    <p class="text-xs text-slate-500 leading-relaxed max-w-lg">
+                        إرسال رسالة تذكير ذكية وتلقائية للعميل الذي ترك سلة الشراء دون إتمامها، لاقتراح المساعدة أو تقديم عرض خاص.
+                    </p>
+                    <div class="flex items-center gap-4 mt-3">
+                        <div class="flex items-center gap-1.5 text-[11px] text-slate-400">
+                            <i class="fa-solid fa-clock text-orange-400"></i>
+                            <span>يُرسل بعد ساعة من ترك السلة</span>
+                        </div>
+                        <div class="flex items-center gap-1.5 text-[11px] text-slate-400">
+                            <i class="fa-solid fa-chart-line text-orange-400"></i>
+                            <span>يرفع التحويل بنسبة 15-25%</span>
+                        </div>
+                    </div>
                 </div>
             </div>
-
-            <!-- Toggle -->
-            <div class="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in">
-                <input type="checkbox" name="abandoned_cart" id="toggle_cart"
-                    class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer border-gray-300 left-0 transition-all duration-200 shadow-sm"
-                    {% if settings.abandoned_cart %}checked{% endif %} onchange="saveScenarios()" />
-                <label for="toggle_cart"
-                    class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-200 cursor-pointer transition-colors duration-200"></label>
+            <div class="flex flex-col items-end gap-2 flex-shrink-0">
+                <label class="toggle-wrap" title="تفعيل / إيقاف">
+                    <input type="checkbox" name="abandoned_cart" id="toggle_cart"
+                        {% if settings.abandoned_cart %}checked{% endif %} onchange="saveScenarios()">
+                    <div class="toggle-track"></div>
+                    <div class="toggle-thumb"></div>
+                </label>
+                <span id="cart_status" class="text-[10px] font-bold {% if settings.abandoned_cart %}text-teal-600{% else %}text-slate-400{% endif %}">
+                    {% if settings.abandoned_cart %}مفعّل{% else %}معطّل{% endif %}
+                </span>
             </div>
         </div>
     </div>
 
     <!-- Scenario 2: Review Request -->
-    <div
-        class="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm relative overflow-hidden transition hover:shadow-md group">
-        <div class="absolute top-0 right-0 w-1 h-full bg-yellow-400"></div>
-        <div class="flex justify-between items-start">
-            <div class="flex gap-4">
-                <div
-                    class="w-12 h-12 rounded-2xl bg-yellow-100 flex items-center justify-center text-yellow-500 text-xl group-hover:scale-110 transition-transform">
+    {% set rr_locked = locked_scenarios and 'review_request' in locked_scenarios %}
+    <div class="card scenario-card p-6 {% if settings.review_request and not rr_locked %}active{% endif %} {% if rr_locked %}locked{% endif %}">
+        <div class="absolute top-0 right-0 w-1 h-full rounded-r-2xl" style="background: linear-gradient(to bottom, #eab308, #facc15);"></div>
+        <div class="flex items-start justify-between gap-4">
+            <div class="flex gap-4 flex-1">
+                <div class="w-12 h-12 rounded-2xl flex items-center justify-center text-xl flex-shrink-0" style="background: #fefce8; color: #ca8a04;">
                     <i class="fa-solid fa-star"></i>
                 </div>
-                <div>
-                    <h3 class="text-lg font-bold text-gray-900">طلب التقييم بعد الطلب ⭐</h3>
-                    <p class="text-sm text-gray-500 mt-1 leading-relaxed">إرسال رسالة شكر دافئة بعد اكتمال
-                        الطلب تطلب من العميل تقييم تجربته، مما يرفع ثقة العملاء الجدد.</p>
+                <div class="flex-1">
+                    <div class="flex items-center gap-2 mb-1 flex-wrap">
+                        <h3 class="font-bold text-slate-800 text-sm">طلب التقييم بعد الطلب</h3>
+                        <span class="text-[10px] px-2 py-0.5 rounded-full font-bold" style="background: #fefce8; color: #ca8a04;">⭐ سمعة</span>
+                        {% if rr_locked %}<span class="lock-badge"><i class="fa-solid fa-lock"></i> ترقّى لتفعيلها</span>{% endif %}
+                    </div>
+                    <p class="text-xs text-slate-500 leading-relaxed max-w-lg">
+                        إرسال رسالة شكر دافئة بعد اكتمال الطلب تطلب من العميل تقييم تجربته، مما يرفع ثقة العملاء الجدد في متجرك.
+                    </p>
+                    <div class="flex items-center gap-4 mt-3">
+                        <div class="flex items-center gap-1.5 text-[11px] text-slate-400">
+                            <i class="fa-solid fa-clock text-yellow-500"></i>
+                            <span>يُرسل بعد تسليم الطلب بيوم</span>
+                        </div>
+                        <div class="flex items-center gap-1.5 text-[11px] text-slate-400">
+                            <i class="fa-solid fa-thumbs-up text-yellow-500"></i>
+                            <span>يزيد التقييمات الإيجابية</span>
+                        </div>
+                    </div>
                 </div>
             </div>
-
-            <!-- Toggle -->
-            <div class="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in">
-                <input type="checkbox" name="review_request" id="toggle_review"
-                    class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer border-gray-300 left-0 transition-all duration-200 shadow-sm"
-                    {% if settings.review_request %}checked{% endif %} onchange="saveScenarios()" />
-                <label for="toggle_review"
-                    class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-200 cursor-pointer transition-colors duration-200"></label>
+            <div class="flex flex-col items-end gap-2 flex-shrink-0">
+                <label class="toggle-wrap" title="تفعيل / إيقاف">
+                    <input type="checkbox" name="review_request" id="toggle_review"
+                        {% if settings.review_request %}checked{% endif %} onchange="saveScenarios()">
+                    <div class="toggle-track"></div>
+                    <div class="toggle-thumb"></div>
+                </label>
+                <span id="review_status" class="text-[10px] font-bold {% if settings.review_request %}text-teal-600{% else %}text-slate-400{% endif %}">
+                    {% if settings.review_request %}مفعّل{% else %}معطّل{% endif %}
+                </span>
             </div>
         </div>
     </div>
+
+    <!-- More Scenarios -->
+    {% set extras = [
+        { key:'birthday',     icon:'fa-gift',       color:'#8b5cf6', bg:'#f5f3ff', accentFrom:'#8b5cf6', accentTo:'#a78bfa', name:'عروض عيد الميلاد',   tag:'🎂 احتفال',    tagBg:'#f5f3ff', tagColor:'#7c3aed', desc:'رسائل تهنئة وعروض حصرية تُرسل تلقائياً للعملاء في أعياد ميلادهم لزيادة الولاء.', meta1:'يُرسل صباح يوم الميلاد', metaIcon1:'fa-clock', meta2:'يرفع معدل تكرار الشراء',  metaIcon2:'fa-heart' },
+        { key:'order_status', icon:'fa-box-open',   color:'#0ea5e9', bg:'#eff6ff', accentFrom:'#0ea5e9', accentTo:'#38bdf8', name:'تحديث حالة الطلب',    tag:'📦 شحن',       tagBg:'#eff6ff', tagColor:'#0369a1', desc:'إشعارات لحظية للعميل عند تغيير حالة طلبه (قيد التجهيز، شحن، تسليم) مع رابط التتبع.', meta1:'تلقائي عند كل تغيير', metaIcon1:'fa-bolt', meta2:'يقلل استفسارات الدعم 60%', metaIcon2:'fa-headset' },
+        { key:'price_drop',   icon:'fa-tags',       color:'#10b981', bg:'#f0fdf4', accentFrom:'#10b981', accentTo:'#34d399', name:'تنبيه تخفيض السعر',  tag:'💸 عروض',      tagBg:'#f0fdf4', tagColor:'#047857', desc:'إبلاغ العملاء فور تخفيض سعر منتج كانوا قد تصفّحوه أو أضافوه للمفضّلة.',  meta1:'فحص الأسعار يومياً', metaIcon1:'fa-magnifying-glass', meta2:'يرفع المبيعات للمنتجات الراكدة', metaIcon2:'fa-chart-line' },
+        { key:'reactivation', icon:'fa-user-clock', color:'#f97316', bg:'#fff7ed', accentFrom:'#f97316', accentTo:'#fb923c', name:'إعادة تفعيل العملاء', tag:'🔄 استرجاع',   tagBg:'#fff7ed', tagColor:'#c2410c', desc:'استهداف العملاء غير النشطين منذ 30 يوم برسالة "اشتقنا لك" + عرض خاص لإعادتهم.',     meta1:'بعد 30 يوم خمول', metaIcon1:'fa-user-clock', meta2:'يستعيد 12-18% من العملاء', metaIcon2:'fa-arrows-rotate' }
+    ] %}
+    {% for s in extras %}
+    {% set is_locked = locked_scenarios and s.key in locked_scenarios %}
+    <div class="card scenario-card p-6 {% if settings[s.key] and not is_locked %}active{% endif %} {% if is_locked %}locked{% endif %}">
+        <div class="absolute top-0 right-0 w-1 h-full rounded-r-2xl" style="background: linear-gradient(to bottom, {{ s.accentFrom }}, {{ s.accentTo }});"></div>
+        <div class="flex items-start justify-between gap-4">
+            <div class="flex gap-4 flex-1">
+                <div class="w-12 h-12 rounded-2xl flex items-center justify-center text-xl flex-shrink-0" style="background: {{ s.bg }}; color: {{ s.color }};">
+                    <i class="fa-solid {{ s.icon }}"></i>
+                </div>
+                <div class="flex-1">
+                    <div class="flex items-center gap-2 mb-1 flex-wrap">
+                        <h3 class="font-bold text-slate-800 text-sm">{{ s.name }}</h3>
+                        <span class="text-[10px] px-2 py-0.5 rounded-full font-bold" style="background: {{ s.tagBg }}; color: {{ s.tagColor }};">{{ s.tag }}</span>
+                        {% if is_locked %}<span class="lock-badge"><i class="fa-solid fa-lock"></i> ترقّى لتفعيلها</span>{% endif %}
+                    </div>
+                    <p class="text-xs text-slate-500 leading-relaxed max-w-lg">{{ s.desc }}</p>
+                    <div class="flex items-center gap-4 mt-3 flex-wrap">
+                        <div class="flex items-center gap-1.5 text-[11px] text-slate-400">
+                            <i class="fa-solid {{ s.metaIcon1 }}" style="color: {{ s.color }};"></i>
+                            <span>{{ s.meta1 }}</span>
+                        </div>
+                        <div class="flex items-center gap-1.5 text-[11px] text-slate-400">
+                            <i class="fa-solid {{ s.metaIcon2 }}" style="color: {{ s.color }};"></i>
+                            <span>{{ s.meta2 }}</span>
+                        </div>
+                    </div>
+                    {% if is_locked %}<a href="/pricing" class="upgrade-cta"><i class="fa-solid fa-arrow-up-right-from-square"></i> رفّع الباقة لفتح هذه الميزة</a>{% endif %}
+                </div>
+            </div>
+            <div class="flex flex-col items-end gap-2 flex-shrink-0">
+                <label class="toggle-wrap" title="{% if is_locked %}غير متاح في باقتك{% else %}تفعيل / إيقاف{% endif %}">
+                    <input type="checkbox" name="{{ s.key }}" id="toggle_{{ s.key }}"
+                        {% if settings[s.key] and not is_locked %}checked{% endif %}
+                        {% if is_locked %}disabled{% endif %}
+                        onchange="saveScenarios()">
+                    <div class="toggle-track"></div>
+                    <div class="toggle-thumb"></div>
+                </label>
+                <span id="{{ s.key }}_status" class="text-[10px] font-bold {% if settings[s.key] and not is_locked %}text-teal-600{% elif is_locked %}text-amber-600{% else %}text-slate-400{% endif %}">
+                    {% if is_locked %}🔒 مقفول{% elif settings[s.key] %}مفعّل{% else %}معطّل{% endif %}
+                </span>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
 
 </div>
 {% endblock %}
 
 {% block scripts %}
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
     async function saveScenarios() {
         const abandoned_cart = document.getElementById('toggle_cart').checked;
         const review_request = document.getElementById('toggle_review').checked;
 
+        // Update status labels
+        document.getElementById('cart_status').textContent = abandoned_cart ? 'مفعّل' : 'معطّل';
+        document.getElementById('cart_status').className = 'text-[10px] font-bold ' + (abandoned_cart ? 'text-teal-600' : 'text-slate-400');
+        document.getElementById('review_status').textContent = review_request ? 'مفعّل' : 'معطّل';
+        document.getElementById('review_status').className = 'text-[10px] font-bold ' + (review_request ? 'text-teal-600' : 'text-slate-400');
+
+        // Update card border
+        document.querySelectorAll('.scenario-card').forEach((card, i) => {
+            const val = i === 0 ? abandoned_cart : review_request;
+            card.classList.toggle('active', val);
+        });
+
         try {
-            const response = await fetch('/api/scenarios/save', {
+            const res = await fetch('/api/scenarios/save', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ abandoned_cart, review_request })
             });
 
-            if (response.ok) {
-                const Toast = Swal.mixin({
-                    toast: true,
-                    position: 'top-start',
-                    showConfirmButton: false,
-                    timer: 2000,
-                    timerProgressBar: true
+            if (res.ok) {
+                const toast = document.createElement('div');
+                toast.innerHTML = '<i class="fa-solid fa-circle-check ml-2"></i> تم حفظ السيناريوهات';
+                Object.assign(toast.style, {
+                    position: 'fixed', top: '24px', right: '24px', zIndex: 9999,
+                    background: '#f0fdf4', border: '1px solid #bbf7d0', color: '#15803d',
+                    padding: '11px 18px', borderRadius: '12px', fontWeight: '700',
+                    fontSize: '13px', boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+                    animation: 'slide-in-up 0.3s ease'
                 });
-                Toast.fire({ icon: 'success', title: 'تم حفظ التغييرات' });
-            } else {
-                throw new Error('Failed to save');
+                document.body.appendChild(toast);
+                setTimeout(() => toast.remove(), 2500);
             }
-        } catch (error) {
-            Swal.fire('خطأ', 'لم يتم حفظ الإعدادات، حاول مرة أخرى', 'error');
-            // Revert toggle if needed (optional)
+        } catch (e) {
+            console.error('Failed to save scenarios', e);
         }
     }
 </script>

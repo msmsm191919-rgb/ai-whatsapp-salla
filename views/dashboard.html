@@ -1,415 +1,483 @@
 {% extends "layouts/dashboard_master.html" %}
 
 {% block title %}لوحة التحكم | مبهر AI{% endblock %}
-{% block header_title %}لوحة التحكم 📊{% endblock %}
-{% block header_subtitle %}نظرة شاملة على أداء متجرك وتفاعل العملاء{% endblock %}
+{% block header_title %}لوحة التحكم{% endblock %}
+{% block header_subtitle %}نظرة شاملة على أداء متجرك وتفاعل عملائك{% endblock %}
 
 {% block styles %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
-    .plan-badge {
-        animation: planPulse 2s ease-in-out infinite;
+    .hero-card {
+        background: linear-gradient(135deg, #0f172a 0%, #1e293b 60%, #0f2d2a 100%);
+        border-radius: 20px;
+        position: relative;
+        overflow: hidden;
+    }
+    .hero-card::before {
+        content: '';
+        position: absolute;
+        top: -60px; left: -60px;
+        width: 240px; height: 240px;
+        background: radial-gradient(circle, rgba(20,184,166,0.18) 0%, transparent 70%);
+        pointer-events: none;
+    }
+    .hero-card::after {
+        content: '';
+        position: absolute;
+        bottom: -40px; right: 80px;
+        width: 180px; height: 180px;
+        background: radial-gradient(circle, rgba(139,92,246,0.12) 0%, transparent 70%);
+        pointer-events: none;
     }
 
-    @keyframes planPulse {
-
-        0%,
-        100% {
-            box-shadow: 0 0 0 0 rgba(20, 184, 166, 0.3);
-        }
-
-        50% {
-            box-shadow: 0 0 0 8px rgba(20, 184, 166, 0);
-        }
+    .metric-icon {
+        width: 44px; height: 44px;
+        border-radius: 12px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 18px;
+        flex-shrink: 0;
     }
 
-    .usage-bar {
-        transition: width 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+    .plan-pill {
+        background: rgba(20,184,166,0.15);
+        border: 1px solid rgba(20,184,166,0.25);
+        border-radius: 14px;
+        backdrop-filter: blur(8px);
     }
 
-    .stat-card {
-        transition: all 0.3s ease;
+    .usage-track {
+        height: 10px;
+        background: #f1f5f9;
+        border-radius: 99px;
+        overflow: hidden;
+    }
+    .usage-fill {
+        height: 100%;
+        border-radius: 99px;
+        transition: width 1.4s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
-    .stat-card:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 12px 40px -12px rgba(0, 0, 0, 0.15);
+    .activity-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 14px;
+        border-radius: 12px;
+        transition: background 0.15s;
+        cursor: default;
     }
+    .activity-row:hover { background: #f8fafc; }
 
-    .feature-chip {
-        transition: all 0.2s;
+    .feature-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 14px;
+        border-radius: 12px;
+        border: 1px solid #f1f5f9;
+        background: #fafafa;
+        transition: border-color 0.15s;
     }
+    .feature-row:hover { border-color: #e2e8f0; background: #fff; }
 
-    .feature-chip:hover {
-        transform: scale(1.05);
+    .chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 11px;
+        font-weight: 700;
+        padding: 4px 12px;
+        border-radius: 99px;
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto space-y-8">
+<div class="space-y-6">
 
-    <!-- Welcome Banner + Plan Summary -->
-    <div
-        class="bg-gradient-to-r from-gray-900 to-gray-800 rounded-3xl p-8 text-white relative overflow-hidden shadow-2xl">
-        <div
-            class="absolute right-0 top-0 w-64 h-64 bg-teal-500 rounded-full mix-blend-overlay filter blur-3xl opacity-20">
-        </div>
-        <div
-            class="absolute left-10 bottom-0 w-48 h-48 bg-purple-500 rounded-full mix-blend-overlay filter blur-3xl opacity-10">
-        </div>
-        <div class="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+    {# 🚦 Usage Limit Warnings — يحترم الباقة #}
+    {% if msg_limit and msg_limit > 0 %}
+        {% if usage_percent >= 100 %}
+        <div class="rounded-2xl p-5 flex items-center gap-4" style="background:linear-gradient(135deg,#fef2f2,#fee2e2); border:2px solid #fca5a5;">
+            <div class="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0" style="background:#dc2626; color:#fff;">
+                <i class="fa-solid fa-circle-xmark text-xl"></i>
+            </div>
             <div class="flex-1">
-                <h1 class="text-3xl font-bold mb-2">مرحباً بك، {{ user.merchant.name }} 👋</h1>
-                <p class="text-gray-300 mb-6 max-w-xl">مساعدك الذكي يعمل بكفاءة على مدار الساعة. تابع أداء متجرك
-                    واستهلاك باقتك من هنا.</p>
-                <div class="flex gap-3 flex-wrap">
+                <p class="font-black text-red-900 text-sm">⛔ تم تجاوز الحد الشهري للرسائل</p>
+                <p class="text-xs text-red-700 mt-1 leading-relaxed">
+                    استهلكت <strong style="font-family:Inter,sans-serif;">{{ messages_sent }}</strong> من أصل <strong style="font-family:Inter,sans-serif;">{{ msg_limit }}</strong> رسالة. تم إيقاف الردود التلقائية حتى ترقّي باقتك أو يبدأ الشهر الجديد.
+                </p>
+            </div>
+            <a href="/pricing" class="px-5 py-2.5 rounded-xl text-sm font-bold text-white whitespace-nowrap shadow-lg" style="background:linear-gradient(135deg,#dc2626,#ef4444);">
+                <i class="fa-solid fa-arrow-up text-xs ml-1"></i> ترقية الباقة
+            </a>
+        </div>
+        {% elif usage_percent >= 80 %}
+        <div class="rounded-2xl p-5 flex items-center gap-4" style="background:linear-gradient(135deg,#fffbeb,#fef3c7); border:2px solid #fde68a;">
+            <div class="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0" style="background:#f59e0b; color:#fff;">
+                <i class="fa-solid fa-triangle-exclamation text-xl"></i>
+            </div>
+            <div class="flex-1">
+                <p class="font-black text-amber-900 text-sm">⚠️ اقتربت من حد الاستهلاك ({{ usage_percent }}%)</p>
+                <p class="text-xs text-amber-800 mt-1 leading-relaxed">
+                    استهلكت <strong style="font-family:Inter,sans-serif;">{{ messages_sent }}</strong> من أصل <strong style="font-family:Inter,sans-serif;">{{ msg_limit }}</strong> رسالة. متبقي <strong style="font-family:Inter,sans-serif;">{{ messages_remaining }}</strong> فقط — فكّر بالترقية قبل أن ينقطع الإرسال.
+                </p>
+            </div>
+            <a href="/pricing" class="px-5 py-2.5 rounded-xl text-sm font-bold whitespace-nowrap" style="background:#fff; color:#92400e; border:1px solid #fde68a;">
+                <i class="fa-solid fa-arrow-up text-xs ml-1"></i> ترقية الآن
+            </a>
+        </div>
+        {% endif %}
+    {% endif %}
+
+    <!-- ══ HERO BANNER ══ -->
+    <div class="hero-card p-7 text-white">
+        <div class="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+
+            <!-- Left: Welcome -->
+            <div>
+                <p class="text-slate-400 text-sm font-medium mb-1">مرحباً بعودتك 👋</p>
+                <h1 class="text-2xl font-bold text-white mb-3">{{ user.merchant.name or 'متجرك' }}</h1>
+                <p class="text-slate-400 text-sm max-w-md leading-relaxed">
+                    مساعدك الذكي يعمل بكفاءة على مدار الساعة. تابع أداء متجرك واستهلاك باقتك من هنا.
+                </p>
+                <div class="flex flex-wrap gap-2.5 mt-5">
                     <a href="/campaigns/create"
-                        class="bg-teal-500 hover:bg-teal-600 text-white px-6 py-2.5 rounded-xl font-bold transition shadow-lg shadow-teal-500/30 flex items-center gap-2 text-sm">
-                        <i class="fa-solid fa-plus"></i> إنشاء حملة
+                        class="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition shadow-lg"
+                        style="background: linear-gradient(135deg, #0d9488, #14b8a6); color: white; box-shadow: 0 4px 20px rgba(20,184,166,0.35);">
+                        <i class="fa-solid fa-plus text-xs"></i> إنشاء حملة
                     </a>
                     <a href="/ai-settings"
-                        class="bg-white/10 hover:bg-white/20 text-white px-6 py-2.5 rounded-xl font-bold transition backdrop-blur-sm border border-white/20 text-sm">
-                        <i class="fa-solid fa-gear"></i> إعدادات البوت
+                        class="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold border transition"
+                        style="background: rgba(255,255,255,0.07); border-color: rgba(255,255,255,0.12); color: #e2e8f0;">
+                        <i class="fa-solid fa-robot text-xs"></i> إعدادات الذكاء
+                    </a>
+                    <a href="/whatsapp-simulator"
+                        class="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold border transition"
+                        style="background: rgba(255,255,255,0.07); border-color: rgba(255,255,255,0.12); color: #e2e8f0;">
+                        <i class="fa-brands fa-whatsapp text-xs"></i> المحاكي
                     </a>
                 </div>
             </div>
-            <!-- Plan Badge (Right Side) -->
-            <div
-                class="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-5 min-w-[220px] text-center plan-badge">
-                <p class="text-[10px] text-gray-400 uppercase tracking-widest font-bold mb-1">الباقة الحالية</p>
-                <h2 class="text-2xl font-black text-teal-400">{{ plan_name }}</h2>
-                <p class="text-lg font-bold text-white mt-1">{{ plan_price }} <span class="text-xs text-gray-400">ر.س /
-                        {{ plan_billing }}</span></p>
+
+            <!-- Right: Plan Card -->
+            <div class="plan-pill p-5 min-w-[200px] text-center flex-shrink-0">
+                <p class="text-[10px] text-slate-400 uppercase tracking-widest font-bold mb-2">الباقة الحالية</p>
+                <p class="text-2xl font-black text-teal-300 mb-1">{{ plan_name }}</p>
+                <p class="text-white font-bold text-lg">
+                    <span style="font-family: Inter, sans-serif;">{{ plan_price }}</span>
+                    <span class="text-xs text-slate-400 font-normal"> ر.س / {{ plan_billing }}</span>
+                </p>
                 <div class="mt-3 flex items-center justify-center gap-2">
                     {% if sub_status == 'active' %}
-                    <span class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
-                    <span class="text-[10px] text-green-400 font-bold uppercase">نشط</span>
+                        <span class="w-2 h-2 rounded-full bg-emerald-400 pulse-dot"></span>
+                        <span class="text-[11px] text-emerald-400 font-bold">نشط</span>
                     {% elif sub_status == 'trial' %}
-                    <span class="w-2 h-2 rounded-full bg-yellow-400 animate-pulse"></span>
-                    <span class="text-[10px] text-yellow-400 font-bold uppercase">تجريبي</span>
-                    {% elif sub_status == 'expired' %}
-                    <span class="w-2 h-2 rounded-full bg-red-400"></span>
-                    <span class="text-[10px] text-red-400 font-bold uppercase">منتهي</span>
+                        <span class="w-2 h-2 rounded-full bg-amber-400 pulse-dot"></span>
+                        <span class="text-[11px] text-amber-400 font-bold">تجريبي</span>
                     {% else %}
-                    <span class="w-2 h-2 rounded-full bg-gray-400"></span>
-                    <span class="text-[10px] text-gray-400 font-bold uppercase">{{ sub_status }}</span>
+                        <span class="w-2 h-2 rounded-full bg-red-400"></span>
+                        <span class="text-[11px] text-red-400 font-bold">منتهي</span>
                     {% endif %}
                 </div>
+                <a href="/pricing" class="mt-3 block text-[11px] text-teal-400 hover:text-teal-300 transition font-semibold">
+                    ترقية الباقة ←
+                </a>
             </div>
         </div>
     </div>
 
-    <!-- Usage Bar (Full Width) -->
-    <div class="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
-        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
-            <div>
-                <h3 class="font-bold text-gray-800 flex items-center gap-2">
-                    <i class="fa-solid fa-gauge-high text-teal-500"></i> استهلاك الرسائل الشهري
-                </h3>
-                <p class="text-xs text-gray-400 mt-1">الفترة: {{ renewal_date }}</p>
+    <!-- ══ USAGE BAR ══ -->
+    <div class="card p-6">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+            <div class="flex items-center gap-3">
+                <div class="metric-icon" style="background: #f0fdfa; color: #0d9488;">
+                    <i class="fa-solid fa-gauge-high text-base"></i>
+                </div>
+                <div>
+                    <h3 class="text-sm font-bold text-slate-700">استهلاك الرسائل الشهري</h3>
+                    <p class="text-xs text-slate-400 mt-0.5">تجديد: {{ renewal_date }}</p>
+                </div>
             </div>
             <div class="flex items-center gap-6">
                 <div class="text-center">
-                    <p class="text-2xl font-black text-gray-800">{{ messages_sent | string }}</p>
-                    <p class="text-[10px] text-gray-400 uppercase font-bold">مرسل</p>
+                    <p class="text-xl font-black text-slate-800" style="font-family: Inter, sans-serif;">{{ messages_sent }}</p>
+                    <p class="text-[10px] text-slate-400 font-bold uppercase mt-0.5">مُرسل</p>
                 </div>
-                <div class="text-gray-200 text-2xl font-thin">/</div>
+                <div class="text-slate-200 text-lg">/</div>
                 <div class="text-center">
-                    <p class="text-2xl font-black text-teal-600">{% if msg_limit > 0 %}{{ msg_limit | string }}{% else
-                        %}∞{% endif %}</p>
-                    <p class="text-[10px] text-gray-400 uppercase font-bold">الحد</p>
+                    <p class="text-xl font-black text-teal-600" style="font-family: Inter, sans-serif;">
+                        {% if msg_limit > 0 %}{{ msg_limit }}{% else %}∞{% endif %}
+                    </p>
+                    <p class="text-[10px] text-slate-400 font-bold uppercase mt-0.5">الحد</p>
                 </div>
-                <div class="text-gray-200 text-2xl font-thin">|</div>
+                <div class="text-slate-200 text-lg">|</div>
                 <div class="text-center">
-                    <p
-                        class="text-2xl font-black {% if usage_percent > 80 %}text-red-500{% elif usage_percent > 50 %}text-yellow-500{% else %}text-green-500{% endif %}">
-                        {{ messages_remaining }}</p>
-                    <p class="text-[10px] text-gray-400 uppercase font-bold">متبقي</p>
+                    <p class="text-xl font-black {% if usage_percent > 80 %}text-red-500{% elif usage_percent > 50 %}text-amber-500{% else %}text-emerald-600{% endif %}" style="font-family: Inter, sans-serif;">
+                        {{ messages_remaining }}
+                    </p>
+                    <p class="text-[10px] text-slate-400 font-bold uppercase mt-0.5">متبقي</p>
                 </div>
             </div>
         </div>
-        <div class="w-full bg-gray-100 h-4 rounded-full overflow-hidden">
-            <div class="usage-bar h-full rounded-full {% if usage_percent > 80 %}bg-gradient-to-r from-red-400 to-red-500{% elif usage_percent > 50 %}bg-gradient-to-r from-yellow-400 to-orange-400{% else %}bg-gradient-to-r from-teal-400 to-blue-500{% endif %}"
-                style="width: {{ usage_percent }}%"></div>
+        <div class="usage-track">
+            <div class="usage-fill {% if usage_percent > 80 %}bg-gradient-to-r from-red-400 to-red-500{% elif usage_percent > 50 %}bg-gradient-to-r from-amber-400 to-orange-400{% else %}bg-gradient-to-r from-teal-400 to-emerald-500{% endif %}"
+                style="width: 0%" data-target="{{ usage_percent }}"></div>
         </div>
-        <div class="flex justify-between mt-2">
-            <p class="text-[10px] text-gray-400">{{ usage_percent }}% مستخدم</p>
+        <div class="flex justify-between mt-2.5">
+            <p class="text-[11px] text-slate-400" style="font-family: Inter, sans-serif;">{{ usage_percent }}% مستخدم</p>
             {% if usage_percent > 80 %}
-            <p class="text-[10px] text-red-500 font-bold"><i class="fa-solid fa-triangle-exclamation"></i> اقتربت من
-                الحد الأقصى! قم بترقية باقتك.</p>
+            <p class="text-[11px] text-red-500 font-bold">
+                <i class="fa-solid fa-triangle-exclamation ml-1"></i> اقتربت من الحد — <a href="/pricing" class="underline">قم بالترقية</a>
+            </p>
             {% endif %}
         </div>
     </div>
 
-    <!-- Stats Grid (4 Cards) -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <!-- Card: Messages Sent -->
-        <div class="stat-card bg-white p-6 rounded-2xl border border-gray-100 shadow-sm relative overflow-hidden group">
-            <div
-                class="absolute -left-4 -bottom-4 text-8xl text-gray-50 opacity-10 group-hover:scale-110 transition rotate-12">
-                <i class="fa-brands fa-whatsapp"></i>
-            </div>
-            <div class="flex justify-between items-start z-10 relative">
-                <div>
-                    <p class="text-gray-500 text-xs font-bold uppercase">الرسائل المرسلة</p>
-                    <h3 class="text-3xl font-black text-gray-800 mt-1">{{ messages_sent }}</h3>
-                </div>
-                <div class="w-10 h-10 rounded-lg bg-green-50 text-green-600 flex items-center justify-center text-lg">
+    <!-- ══ STATS GRID ══ -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+
+        <!-- Messages Sent -->
+        <div class="stat-card">
+            <div class="flex items-start justify-between mb-4">
+                <div class="metric-icon" style="background: #dcfce7; color: #16a34a;">
                     <i class="fa-brands fa-whatsapp"></i>
                 </div>
+                <span class="chip" style="background: #f0fdf4; color: #15803d; font-size:10px;">هذا الشهر</span>
             </div>
-            <p class="text-xs text-gray-400 font-bold flex items-center gap-1 z-10 relative mt-2">
-                هذا الشهر
-            </p>
+            <p class="text-3xl font-black text-slate-800 mb-1" style="font-family: Inter, sans-serif;">{{ messages_sent }}</p>
+            <p class="text-xs font-semibold text-slate-500">رسالة مُرسلة</p>
         </div>
 
-        <!-- Card: AI Replies -->
-        <div class="stat-card bg-white p-6 rounded-2xl border border-gray-100 shadow-sm relative overflow-hidden group">
-            <div
-                class="absolute -left-4 -bottom-4 text-8xl text-purple-50 opacity-20 group-hover:scale-110 transition rotate-12">
-                <i class="fa-solid fa-robot"></i>
-            </div>
-            <div class="flex justify-between items-start z-10 relative">
-                <div>
-                    <p class="text-gray-500 text-xs font-bold uppercase">ردود الذكاء</p>
-                    <h3 class="text-3xl font-black text-gray-800 mt-1">{{ ai_replies }}</h3>
-                </div>
-                <div class="w-10 h-10 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center text-lg">
+        <!-- AI Replies -->
+        <div class="stat-card">
+            <div class="flex items-start justify-between mb-4">
+                <div class="metric-icon" style="background: #ede9fe; color: #7c3aed;">
                     <i class="fa-solid fa-robot"></i>
                 </div>
+                {% if ai_growth | float > 0 %}
+                <span class="chip" style="background: #f0fdf4; color: #15803d; font-size:10px;">
+                    <i class="fa-solid fa-arrow-trend-up text-[9px]"></i> +{{ ai_growth }}%
+                </span>
+                {% endif %}
             </div>
-            <p
-                class="text-xs {% if ai_growth | float > 0 %}text-green-600{% else %}text-gray-400{% endif %} font-bold flex items-center gap-1 z-10 relative mt-2">
-                {% if ai_growth | float > 0 %}<i class="fa-solid fa-arrow-trend-up"></i> +{{ ai_growth }}%{% else %}لا
-                نمو بعد{% endif %}
-            </p>
+            <p class="text-3xl font-black text-slate-800 mb-1" style="font-family: Inter, sans-serif;">{{ ai_replies }}</p>
+            <p class="text-xs font-semibold text-slate-500">رد ذكي</p>
         </div>
 
-        <!-- Card: Campaigns -->
-        <div class="stat-card bg-white p-6 rounded-2xl border border-gray-100 shadow-sm relative overflow-hidden group">
-            <div
-                class="absolute -left-4 -bottom-4 text-8xl text-blue-50 opacity-20 group-hover:scale-110 transition rotate-12">
-                <i class="fa-solid fa-bullhorn"></i>
-            </div>
-            <div class="flex justify-between items-start z-10 relative">
-                <div>
-                    <p class="text-gray-500 text-xs font-bold uppercase">الحملات</p>
-                    <h3 class="text-3xl font-black text-gray-800 mt-1">{{ campaigns_count }}</h3>
-                </div>
-                <div class="w-10 h-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-lg">
+        <!-- Campaigns -->
+        <div class="stat-card">
+            <div class="flex items-start justify-between mb-4">
+                <div class="metric-icon" style="background: #dbeafe; color: #1d4ed8;">
                     <i class="fa-solid fa-bullhorn"></i>
                 </div>
+                {% if plan_features.campaigns %}
+                <span class="chip" style="background: #f0fdf4; color: #15803d; font-size:10px;">
+                    <i class="fa-solid fa-check text-[9px]"></i> مفعّلة
+                </span>
+                {% else %}
+                <span class="chip" style="background: #fef2f2; color: #b91c1c; font-size:10px;">
+                    <i class="fa-solid fa-lock text-[9px]"></i> مقفلة
+                </span>
+                {% endif %}
             </div>
-            <p class="text-xs text-gray-400 font-bold z-10 relative mt-2">
-                {% if plan_features.campaigns %}<span class="text-green-500"><i class="fa-solid fa-check"></i>
-                    مفعّلة</span>{% else %}<span class="text-red-400"><i class="fa-solid fa-lock"></i> غير متاحة
-                    بباقتك</span>{% endif %}
-            </p>
+            <p class="text-3xl font-black text-slate-800 mb-1" style="font-family: Inter, sans-serif;">{{ campaigns_count }}</p>
+            <p class="text-xs font-semibold text-slate-500">حملة تسويقية</p>
         </div>
 
-        <!-- Card: Contacts -->
-        <div class="stat-card bg-white p-6 rounded-2xl border border-gray-100 shadow-sm relative overflow-hidden group">
-            <div
-                class="absolute -left-4 -bottom-4 text-8xl text-yellow-50 opacity-20 group-hover:scale-110 transition rotate-12">
-                <i class="fa-solid fa-users"></i>
-            </div>
-            <div class="flex justify-between items-start z-10 relative">
-                <div>
-                    <p class="text-gray-500 text-xs font-bold uppercase">العملاء</p>
-                    <h3 class="text-3xl font-black text-gray-800 mt-1">{{ contacts_count }}</h3>
-                </div>
-                <div class="w-10 h-10 rounded-lg bg-yellow-50 text-yellow-600 flex items-center justify-center text-lg">
+        <!-- Contacts -->
+        <div class="stat-card">
+            <div class="flex items-start justify-between mb-4">
+                <div class="metric-icon" style="background: #fef3c7; color: #d97706;">
                     <i class="fa-solid fa-users"></i>
                 </div>
+                <span class="chip" style="background: #fffbeb; color: #b45309; font-size:10px;">قاعدة عملاء</span>
             </div>
-            <p class="text-xs text-gray-400 font-bold z-10 relative mt-2">
-                مسجل في النظام
-            </p>
+            <p class="text-3xl font-black text-slate-800 mb-1" style="font-family: Inter, sans-serif;">{{ contacts_count }}</p>
+            <p class="text-xs font-semibold text-slate-500">عميل مسجّل</p>
         </div>
     </div>
 
-    <!-- Two Columns: Recent Activity + Plan Details -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <!-- Recent Activity -->
-        <div class="bg-white p-6 rounded-3xl border border-gray-200 shadow-sm">
-            <h3 class="font-bold text-gray-800 mb-6 flex items-center gap-2">
-                <i class="fa-solid fa-list-ul text-teal-500"></i> آخر النشاطات
-            </h3>
-            <div class="space-y-3">
+    <!-- ══ TWO COLUMNS ══ -->
+    <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
+
+        <!-- Chart — 3 cols -->
+        <div class="card p-6 lg:col-span-3">
+            <div class="flex items-center justify-between mb-6">
+                <div class="flex items-center gap-3">
+                    <div class="metric-icon" style="background: #eff6ff; color: #1d4ed8;">
+                        <i class="fa-solid fa-chart-line text-base"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-bold text-slate-700">نشاط الرسائل</h3>
+                        <p class="text-xs text-slate-400 mt-0.5">آخر 7 أيام</p>
+                    </div>
+                </div>
+                <span class="chip" style="background: #f0fdfa; color: #0d9488; border: 1px solid #ccfbf1;">
+                    <span style="font-family: Inter, sans-serif;">7</span> أيام
+                </span>
+            </div>
+            <div style="height: 200px; position: relative;">
+                <canvas id="messagesChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Recent Activity — 2 cols -->
+        <div class="card p-6 lg:col-span-2">
+            <div class="flex items-center justify-between mb-5">
+                <h3 class="text-sm font-bold text-slate-700 flex items-center gap-2">
+                    <i class="fa-solid fa-clock-rotate-left text-teal-500 text-xs"></i>
+                    آخر النشاطات
+                </h3>
+                <a href="/logs" class="text-[11px] text-teal-600 font-bold hover:underline">عرض الكل ←</a>
+            </div>
+            <div class="space-y-1">
                 {% if recentLogs and recentLogs.length > 0 %}
                 {% for log in recentLogs %}
-                <div
-                    class="flex items-center gap-4 p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition cursor-pointer">
-                    <div
-                        class="w-10 h-10 rounded-full {{ 'bg-blue-100 text-blue-600' if log.direction == 'in' else 'bg-teal-100 text-teal-600' }} flex items-center justify-center">
-                        <i
-                            class="fa-solid {{ 'fa-arrow-down' if log.direction == 'in' else 'fa-arrow-up' }} text-sm"></i>
+                <div class="activity-row">
+                    <div class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0
+                        {{ 'bg-blue-100 text-blue-500' if log.direction == 'in' else 'bg-teal-100 text-teal-600' }}">
+                        <i class="fa-solid text-xs {{ 'fa-arrow-down' if log.direction == 'in' else 'fa-arrow-up' }}"></i>
                     </div>
-                    <div class="flex-1 overflow-hidden">
-                        <p class="text-sm font-bold text-gray-800 truncate">{{ log.to_phone or 'غير معروف' }}</p>
-                        <p class="text-xs text-gray-500 truncate">{{ log.content | truncate(40) }}</p>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-[12px] font-bold text-slate-700 truncate" style="font-family: Inter, sans-serif;">{{ log.to_phone or 'غير معروف' }}</p>
+                        <p class="text-[11px] text-slate-400 truncate">{{ log.content | truncate(32) }}</p>
                     </div>
-                    <div class="text-left">
-                        <span
-                            class="text-[10px] font-bold {{ 'text-teal-500' if log.status == 'sent' else 'text-gray-400' }} uppercase">{{
-                            log.status }}</span>
-                    </div>
+                    <span class="text-[10px] font-bold uppercase flex-shrink-0
+                        {{ 'text-teal-500' if log.status == 'sent' else 'text-slate-400' }}">
+                        {{ log.status }}
+                    </span>
                 </div>
                 {% endfor %}
                 {% else %}
-                <div class="text-center py-8">
-                    <div
-                        class="w-14 h-14 mx-auto bg-gray-50 rounded-full flex items-center justify-center text-2xl text-gray-300 mb-3">
+                <div class="text-center py-10">
+                    <div class="w-12 h-12 mx-auto rounded-full bg-slate-50 flex items-center justify-center text-slate-300 text-xl mb-3">
                         <i class="fa-solid fa-comment-slash"></i>
                     </div>
-                    <p class="text-gray-500 font-bold text-sm">لا توجد نشاطات حتى الآن</p>
-                    <p class="text-xs text-gray-400 mt-1">ستظهر المحادثات هنا عند بدء التفاعل</p>
+                    <p class="text-sm font-semibold text-slate-500">لا توجد نشاطات بعد</p>
+                    <p class="text-xs text-slate-400 mt-1">ستظهر المحادثات هنا عند البدء</p>
                 </div>
                 {% endif %}
-            </div>
-        </div>
-
-        <!-- Plan Features Card -->
-        <div class="bg-white p-6 rounded-3xl border border-gray-200 shadow-sm">
-            <div class="flex justify-between items-center mb-6">
-                <h3 class="font-bold text-gray-800 flex items-center gap-2">
-                    <i class="fa-solid fa-gem text-purple-500"></i> تفاصيل باقة {{ plan_name }}
-                </h3>
-                <span class="text-xs font-bold text-teal-600 bg-teal-50 px-3 py-1 rounded-full">{{ plan_price }} ر.س/{{
-                    plan_billing }}</span>
-            </div>
-
-            <!-- Features Grid -->
-            <div class="space-y-3 mb-6">
-                <!-- Messages -->
-                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
-                    <div class="flex items-center gap-3">
-                        <div
-                            class="w-8 h-8 rounded-lg bg-teal-100 text-teal-600 flex items-center justify-center text-sm">
-                            <i class="fa-solid fa-envelope"></i>
-                        </div>
-                        <span class="text-sm font-bold text-gray-700">حد الرسائل</span>
-                    </div>
-                    <span class="text-sm font-black text-gray-800">{% if msg_limit > 0 %}{{ msg_limit | string }} /
-                        شهر{% else %}غير محدود{% endif %}</span>
-                </div>
-
-                <!-- WhatsApp Numbers -->
-                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
-                    <div class="flex items-center gap-3">
-                        <div
-                            class="w-8 h-8 rounded-lg bg-green-100 text-green-600 flex items-center justify-center text-sm">
-                            <i class="fa-brands fa-whatsapp"></i>
-                        </div>
-                        <span class="text-sm font-bold text-gray-700">أرقام واتساب</span>
-                    </div>
-                    <span class="text-sm font-black text-gray-800">{{ plan_features.whatsapp_count or 1 }}</span>
-                </div>
-
-                <!-- AI -->
-                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
-                    <div class="flex items-center gap-3">
-                        <div
-                            class="w-8 h-8 rounded-lg bg-purple-100 text-purple-600 flex items-center justify-center text-sm">
-                            <i class="fa-solid fa-robot"></i>
-                        </div>
-                        <span class="text-sm font-bold text-gray-700">الذكاء الاصطناعي</span>
-                    </div>
-                    {% if plan_features.ai_enabled %}
-                    <span class="text-xs font-bold text-purple-600 bg-purple-50 px-2 py-1 rounded-full">{{
-                        plan_features.ai_model or 'GPT-3.5' }}</span>
-                    {% else %}
-                    <span class="text-xs font-bold text-red-400"><i class="fa-solid fa-lock"></i> غير مفعل</span>
-                    {% endif %}
-                </div>
-
-                <!-- Team Members -->
-                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
-                    <div class="flex items-center gap-3">
-                        <div
-                            class="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center text-sm">
-                            <i class="fa-solid fa-users-gear"></i>
-                        </div>
-                        <span class="text-sm font-bold text-gray-700">أعضاء الفريق</span>
-                    </div>
-                    <span class="text-sm font-black text-gray-800">{{ plan_features.team_members or 1 }}</span>
-                </div>
-
-                <!-- Support Level -->
-                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
-                    <div class="flex items-center gap-3">
-                        <div
-                            class="w-8 h-8 rounded-lg bg-orange-100 text-orange-600 flex items-center justify-center text-sm">
-                            <i class="fa-solid fa-headset"></i>
-                        </div>
-                        <span class="text-sm font-bold text-gray-700">الدعم الفني</span>
-                    </div>
-                    {% set support_labels = {'email': 'بريد إلكتروني', 'priority': 'أولوية', 'dedicated': 'مدير حساب'}
-                    %}
-                    <span class="text-xs font-bold text-gray-600 bg-gray-100 px-2 py-1 rounded-full">{{
-                        support_labels[plan_features.support_level] or 'بريد إلكتروني' }}</span>
-                </div>
-            </div>
-
-            <!-- Feature Chips -->
-            <div class="flex flex-wrap gap-2">
-                {% if plan_features.campaigns %}
-                <span
-                    class="feature-chip px-3 py-1.5 rounded-full bg-green-50 text-green-700 text-[10px] font-bold border border-green-100">
-                    <i class="fa-solid fa-check ml-1"></i> حملات تسويقية
-                </span>
-                {% endif %}
-                {% if plan_features.automation %}
-                <span
-                    class="feature-chip px-3 py-1.5 rounded-full bg-blue-50 text-blue-700 text-[10px] font-bold border border-blue-100">
-                    <i class="fa-solid fa-check ml-1"></i> أتمتة
-                </span>
-                {% endif %}
-                {% if plan_features.api_access %}
-                <span
-                    class="feature-chip px-3 py-1.5 rounded-full bg-indigo-50 text-indigo-700 text-[10px] font-bold border border-indigo-100">
-                    <i class="fa-solid fa-check ml-1"></i> API Access
-                </span>
-                {% endif %}
-                {% if plan_features.remove_branding %}
-                <span
-                    class="feature-chip px-3 py-1.5 rounded-full bg-purple-50 text-purple-700 text-[10px] font-bold border border-purple-100">
-                    <i class="fa-solid fa-check ml-1"></i> بدون علامة مبهر
-                </span>
-                {% endif %}
-                {% if plan_features.ai_training_docs > 0 %}
-                <span
-                    class="feature-chip px-3 py-1.5 rounded-full bg-amber-50 text-amber-700 text-[10px] font-bold border border-amber-100">
-                    <i class="fa-solid fa-file-lines ml-1"></i> {{ plan_features.ai_training_docs }} ملفات تدريب
-                </span>
-                {% endif %}
-            </div>
-
-            <!-- Connection Status -->
-            <div class="mt-6 pt-4 border-t border-gray-100 flex items-center justify-between">
-                <div class="flex items-center gap-2">
-                    {% if isConnected %}
-                    <span class="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse"></span>
-                    <span class="text-xs font-bold text-green-600">واتساب متصل</span>
-                    {% else %}
-                    <span class="w-2.5 h-2.5 rounded-full bg-red-400"></span>
-                    <span class="text-xs font-bold text-red-500">واتساب غير متصل</span>
-                    {% endif %}
-                </div>
-                <a href="/settings" class="text-xs text-teal-600 font-bold hover:underline">إعدادات الربط <i
-                        class="fa-solid fa-arrow-left"></i></a>
             </div>
         </div>
     </div>
 
-    <!-- Chart Section -->
-    <div class="bg-white p-6 rounded-3xl border border-gray-200 shadow-sm">
-        <h3 class="font-bold text-gray-800 mb-6 flex items-center gap-2">
-            <i class="fa-solid fa-chart-line text-blue-500"></i> نشاط الرسائل (آخر 7 أيام)
-        </h3>
-        <div class="h-64">
-            <canvas id="messagesChart"></canvas>
+    <!-- ══ PLAN FEATURES ══ -->
+    <div class="card p-6">
+        <div class="flex items-center justify-between mb-5">
+            <div class="flex items-center gap-3">
+                <div class="metric-icon" style="background: #ede9fe; color: #7c3aed;">
+                    <i class="fa-solid fa-gem text-base"></i>
+                </div>
+                <div>
+                    <h3 class="text-sm font-bold text-slate-700">تفاصيل باقة {{ plan_name }}</h3>
+                    <p class="text-xs text-slate-400 mt-0.5">مميزات ومحدودات باقتك الحالية</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                {% if isConnected %}
+                <span class="chip" style="background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0;">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 pulse-dot"></span> واتساب متصل
+                </span>
+                {% else %}
+                <span class="chip" style="background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca;">
+                    <span class="w-1.5 h-1.5 rounded-full bg-red-400"></span> غير متصل
+                </span>
+                {% endif %}
+                <a href="/settings/whatsapp" class="text-[11px] text-teal-600 font-bold hover:underline">الإعدادات ←</a>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+
+            <div class="feature-row">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-7 h-7 rounded-lg bg-teal-100 text-teal-700 flex items-center justify-center text-xs">
+                        <i class="fa-solid fa-envelope"></i>
+                    </div>
+                    <span class="text-xs font-semibold text-slate-600">حد الرسائل</span>
+                </div>
+                <span class="text-xs font-black text-slate-800" style="font-family: Inter, sans-serif;">
+                    {% if msg_limit > 0 %}{{ msg_limit }}/شهر{% else %}∞{% endif %}
+                </span>
+            </div>
+
+            <div class="feature-row">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-7 h-7 rounded-lg bg-green-100 text-green-700 flex items-center justify-center text-xs">
+                        <i class="fa-brands fa-whatsapp"></i>
+                    </div>
+                    <span class="text-xs font-semibold text-slate-600">أرقام واتساب</span>
+                </div>
+                <span class="text-xs font-black text-slate-800" style="font-family: Inter, sans-serif;">{{ plan_features.whatsapp_count or 1 }}</span>
+            </div>
+
+            <div class="feature-row">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-7 h-7 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center text-xs">
+                        <i class="fa-solid fa-robot"></i>
+                    </div>
+                    <span class="text-xs font-semibold text-slate-600">نموذج الذكاء</span>
+                </div>
+                {% if plan_features.ai_enabled %}
+                <span class="chip" style="background: #ede9fe; color: #6d28d9; font-size: 10px; padding: 2px 8px;">{{ plan_features.ai_model or 'GPT-3.5' }}</span>
+                {% else %}
+                <span class="text-xs text-red-400 font-bold"><i class="fa-solid fa-lock ml-1"></i>مقفل</span>
+                {% endif %}
+            </div>
+
+            <div class="feature-row">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-7 h-7 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center text-xs">
+                        <i class="fa-solid fa-users-gear"></i>
+                    </div>
+                    <span class="text-xs font-semibold text-slate-600">أعضاء الفريق</span>
+                </div>
+                <span class="text-xs font-black text-slate-800" style="font-family: Inter, sans-serif;">{{ plan_features.team_members or 1 }}</span>
+            </div>
+
+            <div class="feature-row">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-7 h-7 rounded-lg bg-orange-100 text-orange-700 flex items-center justify-center text-xs">
+                        <i class="fa-solid fa-headset"></i>
+                    </div>
+                    <span class="text-xs font-semibold text-slate-600">الدعم الفني</span>
+                </div>
+                {% set support_labels = {'email': 'بريد', 'priority': 'أولوية', 'dedicated': 'مخصص'} %}
+                <span class="chip" style="background: #f8fafc; color: #475569; border: 1px solid #e2e8f0; font-size: 10px; padding: 2px 8px;">
+                    {{ support_labels[plan_features.support_level] or 'بريد' }}
+                </span>
+            </div>
+        </div>
+
+        <!-- Feature Chips -->
+        <div class="flex flex-wrap gap-2 mt-4 pt-4 border-t border-slate-100">
+            {% if plan_features.campaigns %}
+            <span class="chip" style="background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0;">
+                <i class="fa-solid fa-check text-[9px]"></i> حملات تسويقية
+            </span>
+            {% endif %}
+            {% if plan_features.automation %}
+            <span class="chip" style="background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe;">
+                <i class="fa-solid fa-bolt text-[9px]"></i> أتمتة
+            </span>
+            {% endif %}
+            {% if plan_features.api_access %}
+            <span class="chip" style="background: #ede9fe; color: #6d28d9; border: 1px solid #ddd6fe;">
+                <i class="fa-solid fa-code text-[9px]"></i> API Access
+            </span>
+            {% endif %}
+            {% if plan_features.remove_branding %}
+            <span class="chip" style="background: #fdf4ff; color: #7e22ce; border: 1px solid #e9d5ff;">
+                <i class="fa-solid fa-eye-slash text-[9px]"></i> بدون علامة مبهر
+            </span>
+            {% endif %}
+            {% if plan_features.ai_training_docs and plan_features.ai_training_docs > 0 %}
+            <span class="chip" style="background: #fffbeb; color: #b45309; border: 1px solid #fde68a;">
+                <i class="fa-solid fa-file-lines text-[9px]"></i>
+                <span style="font-family: Inter, sans-serif;">{{ plan_features.ai_training_docs }}</span> ملفات تدريب
+            </span>
+            {% endif %}
         </div>
     </div>
 
@@ -418,58 +486,68 @@
 
 {% block scripts %}
 <script>
-    // Messages Chart
-    const ctx = document.getElementById('messagesChart').getContext('2d');
-    const gradient = ctx.createLinearGradient(0, 0, 0, 256);
-    gradient.addColorStop(0, 'rgba(20, 184, 166, 0.15)');
-    gradient.addColorStop(1, 'rgba(20, 184, 166, 0)');
+    // ── Chart ──
+    (function () {
+        const ctx = document.getElementById('messagesChart');
+        if (!ctx) return;
+        const c = ctx.getContext('2d');
+        const grad = c.createLinearGradient(0, 0, 0, 200);
+        grad.addColorStop(0, 'rgba(20,184,166,0.18)');
+        grad.addColorStop(1, 'rgba(20,184,166,0)');
 
-    new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: {{ chartLabels | safe }},
-        datasets: [{
-            label: 'رسائل',
-            data: {{ chartData | safe }},
-        borderColor: '#14b8a6',
-        backgroundColor: gradient,
-        borderWidth: 3,
-        fill: true,
-        tension: 0.4,
-        pointBackgroundColor: '#14b8a6',
-        pointBorderColor: '#fff',
-        pointBorderWidth: 2,
-        pointRadius: 5,
-        pointHoverRadius: 8
-            }]
-        },
-        options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-            legend: { display: false }
-        },
-        scales: {
-            y: {
-                beginAtZero: true,
-                grid: { color: '#f3f4f6' },
-                ticks: { font: { family: 'Tajawal', size: 11 } }
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: {{ chartLabels | safe }},
+                datasets: [{
+                    data: {{ chartData | safe }},
+                    borderColor: '#14b8a6',
+                    backgroundColor: grad,
+                    borderWidth: 2.5,
+                    fill: true,
+                    tension: 0.45,
+                    pointBackgroundColor: '#14b8a6',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    pointRadius: 4,
+                    pointHoverRadius: 7
+                }]
             },
-            x: {
-                grid: { display: false },
-                ticks: { font: { family: 'Tajawal', size: 11 } }
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false }, tooltip: {
+                    backgroundColor: '#0f172a',
+                    titleColor: '#94a3b8',
+                    bodyColor: '#fff',
+                    padding: 10,
+                    cornerRadius: 10,
+                    titleFont: { family: 'Cairo', size: 11 },
+                    bodyFont: { family: 'Inter', size: 14, weight: '700' }
+                }},
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: '#f1f5f9', drawBorder: false },
+                        ticks: { font: { family: 'Inter', size: 11 }, color: '#94a3b8', maxTicksLimit: 5 },
+                        border: { display: false }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: { font: { family: 'Cairo', size: 11 }, color: '#94a3b8' },
+                        border: { display: false }
+                    }
+                }
             }
-        }
-    }
-    });
+        });
+    })();
 
-    // Animate usage bar on load
+    // ── Animate usage bar on load ──
     document.addEventListener('DOMContentLoaded', () => {
-        const bar = document.querySelector('.usage-bar');
-        if (bar) {
-            const targetWidth = bar.style.width;
-            bar.style.width = '0%';
-            setTimeout(() => { bar.style.width = targetWidth; }, 200);
+        const fill = document.querySelector('.usage-fill');
+        if (fill) {
+            const target = fill.dataset.target || '0';
+            setTimeout(() => { fill.style.width = target + '%'; }, 300);
         }
     });
 </script>
