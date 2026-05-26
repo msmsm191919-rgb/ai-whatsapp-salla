@@ -216,10 +216,29 @@
                     <i class="fa-solid fa-users w-5 group-hover:scale-110 transition-transform"></i>
                     <span class="font-medium text-sm">العملاء</span>
                 </a>
-                <a href="/settings"
+                {% if activeChannel != 'api' %}
+                <a href="/whatsapp-web"
+                    class="flex items-center gap-3 px-4 py-2 rounded-xl transition-all group text-gray-400 hover:bg-white/5 hover:text-white">
+                    <i class="fa-brands fa-whatsapp w-5 group-hover:scale-110 transition-transform"></i>
+                    <span class="font-medium text-sm">ربط واتساب{% if activeChannel == 'qr' %} <span style="color:#16a34a;">✓</span>{% else %} ⭐{% endif %}</span>
+                </a>
+                {% endif %}
+                {% if activeChannel != 'qr' %}
+                <a href="/settings/whatsapp"
                     class="flex items-center gap-3 px-4 py-2 rounded-xl transition-all group text-gray-400 hover:bg-white/5 hover:text-white">
                     <i class="fa-solid fa-gear w-5 group-hover:scale-110 transition-transform"></i>
-                    <span class="font-medium text-sm">الإعدادات</span>
+                    <span class="font-medium text-sm">واتساب API{% if activeChannel == 'api' %} <span style="color:#16a34a;">✓</span>{% else %} (متقدم){% endif %}</span>
+                </a>
+                {% endif %}
+                <a href="/billing"
+                    class="flex items-center gap-3 px-4 py-2 rounded-xl transition-all group text-gray-400 hover:bg-white/5 hover:text-white">
+                    <i class="fa-solid fa-receipt w-5 group-hover:scale-110 transition-transform"></i>
+                    <span class="font-medium text-sm">الفواتير والاشتراك</span>
+                </a>
+                <a href="/pricing"
+                    class="flex items-center gap-3 px-4 py-2 rounded-xl transition-all group text-gray-400 hover:bg-white/5 hover:text-white">
+                    <i class="fa-solid fa-gem w-5 group-hover:scale-110 transition-transform"></i>
+                    <span class="font-medium text-sm">الباقات والأسعار</span>
                 </a>
             </nav>
 
