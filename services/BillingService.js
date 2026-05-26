@@ -1,4 +1,5 @@
 const SallaDatabase = require('../database/db_instance');
+const TapService = require('./TapService');
 
 class BillingService {
 
@@ -20,16 +21,79 @@ class BillingService {
     }
 
     /**
-     * إنشاء رابط دفع (محاكاة حالياً)
+     * 🚀 إنشاء جلسة دفع Tap — يُنشئ Payment pending + Tap charge ويرجّع URL
+     * @param {Object} params
+     * @param {number} params.tenantId
+     * @param {number} params.planId
+     * @param {'monthly'|'yearly'} params.billingPeriod
+     * @param {string} params.baseUrl - مثلاً https://app.mobhir.com
+     * @returns {Promise<{checkoutUrl, paymentId, chargeId, mock?}>}
      */
+    async initiateTapCheckout({ tenantId, planId, billingPeriod = 'monthly', baseUrl }) {
+        const { amount, currency, plan } = await this.calculateTotal(planId, billingPeriod);
+
+        const tenant = await this.db.models.Tenant.findByPk(tenantId);
+        if (!tenant) throw new Error('Tenant not found');
+
+        // 1. أنشئ Payment record بحالة pending
+        const payment = await this.db.models.Payment.create({
+            tenant_id: tenantId,
+            plan_id: planId,
+            amount,
+            currency,
+            status: 'pending',
+            provider: 'tap',
+            metadata: { billing_period: billingPeriod, plan_name: plan.name }
+        });
+
+        // 2. اتصل بـ Tap لإنشاء charge
+        const customer = {
+            name: tenant.store_name || 'Merchant',
+            email: tenant.contact_email || tenant.email || 'merchant@mobhir.local',
+            phone: tenant.contact_phone || tenant.phone || ''
+        };
+
+        const charge = await TapService.createCharge({
+            amount,
+            currency,
+            customer,
+            description: `اشتراك مبهر AI — باقة ${plan.name} (${billingPeriod === 'yearly' ? 'سنوي' : 'شهري'})`,
+            metadata: {
+                tenant_id: String(tenantId),
+                plan_id: String(planId),
+                payment_id: String(payment.id),
+                billing_period: billingPeriod
+            },
+            redirectUrl: `${baseUrl}/billing/return`,
+            postUrl: `${baseUrl}/webhook/tap`
+        });
+
+        // 3. اربط الـ provider_payment_id بالـ Payment
+        payment.provider_payment_id = charge.id;
+        await payment.save();
+
+        return {
+            checkoutUrl: charge.transaction?.url || charge.url,
+            paymentId: payment.id,
+            chargeId: charge.id,
+            mock: charge.mock === true
+        };
+    }
+
     /**
-     * @deprecated Billing is handled by Salla App Store.
-     * This method is no longer needed as we don't process payments directly.
+     * معالجة فشل الدفع
      */
-    async createCheckout(tenantId, planId, billingPeriod) {
-        // Salla handles billing. We just wait for the webhook.
-        console.log("Billing is managed by Salla Store.");
-        return null;
+    async processPaymentFailure(providerPaymentId, reason = 'Unknown') {
+        const payment = await this.db.models.Payment.findOne({
+            where: { provider_payment_id: providerPaymentId }
+        });
+        if (!payment) return { status: 'not_found' };
+        if (payment.status === 'paid') return { status: 'already_paid' };
+
+        payment.status = 'failed';
+        payment.metadata = { ...(payment.metadata || {}), failure_reason: reason };
+        await payment.save();
+        return { status: 'failed_recorded', payment_id: payment.id };
     }
 
     /**

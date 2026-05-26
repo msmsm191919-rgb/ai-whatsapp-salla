@@ -23,6 +23,13 @@ module.exports = (sequelize, DataTypes) => {
             access_token: DataTypes.TEXT,
             verify_token: DataTypes.STRING,
             phone_number: DataTypes.STRING,
+            // 🏷️ تسمية للتعرّف على الرقم (مثلاً "الرقم الرئيسي" / "الدعم الفني")
+            label: DataTypes.STRING,
+            // ⭐ هل هذا الرقم الأساسي للتاجر؟ (واحد فقط per tenant)
+            is_primary: {
+                type: DataTypes.BOOLEAN,
+                defaultValue: false
+            },
             status: {
                 type: DataTypes.ENUM('active', 'pending', 'disconnected'),
                 defaultValue: 'pending'

@@ -98,7 +98,7 @@ class AIService {
             const openai = new OpenAI({ apiKey });
 
             const completion = await openai.chat.completions.create({
-                model: isAdvancedAI ? "gpt-4o" : "gpt-3.5-turbo", // Use GPT-4o for Pro
+                model: isAdvancedAI ? "gpt-4o" : "gpt-4o-mini", // النمو/الشركات → GPT-4o | الأساسية → GPT-4o Mini
                 messages: [
                     { role: "system", content: systemPrompt },
                     ...history.slice(-5) // Keep last 5 turns for context (optimization)

@@ -21,7 +21,9 @@ module.exports = (sequelize, DataTypes) => {
             },
             access_token: DataTypes.TEXT,
             refresh_token: DataTypes.TEXT,
-            expires_in: DataTypes.DATE
+            expires_in: DataTypes.DATE,
+            expires_at: DataTypes.DATE,
+            meta: DataTypes.JSON  // { platform: 'salla'|'zid'|'shopify', authorization, ... }
         },
         {
             sequelize,
