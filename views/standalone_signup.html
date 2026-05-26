@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>تسجيل مستقل | مبهر AI</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;700;800;900&family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Cairo', sans-serif; background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); min-height: 100vh; }
+        .input-field { width: 100%; padding: 12px 16px; border: 1.5px solid rgba(255,255,255,0.1); border-radius: 12px; background: rgba(255,255,255,0.05); color: #fff; font-size: 14px; outline: none; transition: all 0.15s; }
+        .input-field:focus { border-color: #14b8a6; background: rgba(255,255,255,0.08); }
+        .input-label { display: block; font-size: 12px; font-weight: 700; color: #cbd5e1; margin-bottom: 8px; }
+    </style>
+</head>
+<body>
+    <div class="min-h-screen flex items-center justify-center p-6">
+        <div class="max-w-md w-full">
+
+            <div class="text-center mb-8">
+                <div class="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center text-white text-2xl mb-4 shadow-lg" style="background:linear-gradient(135deg,#0d9488,#14b8a6);">
+                    <i class="fa-solid fa-globe"></i>
+                </div>
+                <h1 class="text-2xl font-black text-white mb-1">ابدأ بدون منصة</h1>
+                <p class="text-sm" style="color:#94a3b8;">استخدم مبهر مع موقعك أو تطبيقك الخاص</p>
+            </div>
+
+            <div class="rounded-2xl p-7" style="background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1); backdrop-filter:blur(8px);">
+                <form id="signupForm" onsubmit="return signup(event)">
+                    <div class="mb-4">
+                        <label class="input-label">اسم نشاطك التجاري <span style="color:#ef4444;">*</span></label>
+                        <input type="text" name="store_name" required class="input-field" placeholder="مثال: متجر النور">
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="input-label">البريد الإلكتروني <span style="color:#ef4444;">*</span></label>
+                        <input type="email" name="email" required class="input-field" dir="ltr" placeholder="you@example.com" style="font-family:Inter,monospace;">
+                    </div>
+
+                    <div class="mb-6">
+                        <label class="input-label">رقم الجوال (اختياري)</label>
+                        <input type="tel" name="phone" class="input-field" dir="ltr" placeholder="+966 5X XXX XXXX" style="font-family:Inter,monospace;">
+                    </div>
+
+                    <button type="submit" id="submitBtn"
+                        class="w-full py-3.5 rounded-xl text-sm font-black text-white transition shadow-lg"
+                        style="background:linear-gradient(135deg,#0d9488,#14b8a6); box-shadow:0 8px 24px -8px rgba(13,148,136,0.5);">
+                        <i class="fa-solid fa-rocket ml-1"></i> ابدأ تجربتي المجانية
+                    </button>
+                </form>
+
+                <p class="text-[11px] text-center mt-5" style="color:#64748b;">
+                    بالتسجيل توافق على الشروط والأحكام — تجربة 7 أيام مجانية بدون بطاقة ائتمان
+                </p>
+            </div>
+
+            <p class="text-center mt-6">
+                <a href="/connect" class="text-xs" style="color:#94a3b8;">
+                    <i class="fa-solid fa-arrow-right ml-1"></i> العودة لاختيار المنصة
+                </a>
+            </p>
+        </div>
+    </div>
+
+    <script>
+        async function signup(e) {
+            e.preventDefault();
+            const btn = document.getElementById('submitBtn');
+            const orig = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري التسجيل...';
+
+            const form = document.getElementById('signupForm');
+            const data = Object.fromEntries(new FormData(form));
+            try {
+                const r = await fetch('/connect/standalone', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const result = await r.json();
+                if (result.ok) {
+                    window.location.href = result.redirect;
+                } else {
+                    alert('❌ ' + (result.error || 'فشل التسجيل'));
+                    btn.disabled = false; btn.innerHTML = orig;
+                }
+            } catch (err) {
+                alert('❌ ' + err.message);
+                btn.disabled = false; btn.innerHTML = orig;
+            }
+            return false;
+        }
+    </script>
+</body>
+</html>

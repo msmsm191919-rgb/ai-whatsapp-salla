@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>اربط متجرك | مبهر AI</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;700;800;900&family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Cairo', sans-serif; background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); min-height: 100vh; }
+        .platform-card { transition: all 0.25s; cursor: pointer; }
+        .platform-card:hover { transform: translateY(-4px); }
+        .platform-card.disabled { opacity: 0.55; cursor: not-allowed; }
+        .mock-badge { background: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.3); font-size: 10px; padding: 3px 10px; border-radius: 999px; font-weight: 700; }
+    </style>
+</head>
+<body>
+    <div class="min-h-screen flex items-center justify-center p-6">
+        <div class="max-w-5xl w-full">
+
+            <!-- Header -->
+            <div class="text-center mb-10">
+                <div class="inline-flex items-center gap-3 mb-4">
+                    <div class="w-12 h-12 rounded-2xl flex items-center justify-center text-white text-xl shadow-lg" style="background:linear-gradient(135deg,#0d9488,#0ea5e9);">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i>
+                    </div>
+                    <h1 class="text-3xl font-black text-white">مبهر AI</h1>
+                </div>
+                <h2 class="text-2xl font-black text-white mb-2">اختر منصة متجرك للبدء</h2>
+                <p class="text-sm" style="color:#94a3b8;">اربط متجرك في أقل من دقيقة وابدأ مساعدك الذكي على واتساب</p>
+            </div>
+
+            <!-- Platforms Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+                {% for p in platforms %}
+                <a href="/connect/{{ p.platform }}" class="platform-card rounded-2xl p-6 text-center {{ 'disabled' if not p.isReady and p.platform != 'standalone' else '' }}"
+                   style="background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1); backdrop-filter:blur(8px); text-decoration:none;">
+
+                    <!-- Logo placeholder -->
+                    <div class="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center mb-4 text-white text-2xl font-black shadow-lg" style="background:linear-gradient(135deg, {{ p.color }}, {{ p.color_accent }});">
+                        {% if p.platform == 'salla' %}<i class="fa-solid fa-shop"></i>
+                        {% elif p.platform == 'zid' %}<i class="fa-solid fa-z"></i>
+                        {% elif p.platform == 'shopify' %}<i class="fa-brands fa-shopify"></i>
+                        {% else %}<i class="fa-solid fa-globe"></i>
+                        {% endif %}
+                    </div>
+
+                    <h3 class="text-lg font-black text-white mb-1">{{ p.name_ar }}</h3>
+                    <p class="text-xs mb-3" style="color:#64748b; font-family:Inter,sans-serif;">{{ p.name }}</p>
+                    <p class="text-xs leading-relaxed" style="color:#cbd5e1;">{{ p.description }}</p>
+
+                    {% if p.mockMode %}
+                    <div class="mt-4">
+                        <span class="mock-badge">🧪 وضع تجريبي</span>
+                    </div>
+                    {% elif p.isReady %}
+                    <div class="mt-4">
+                        <span style="background:rgba(16,185,129,0.15); color:#34d399; border:1px solid rgba(16,185,129,0.3); font-size:10px; padding:3px 10px; border-radius:999px; font-weight:700;">
+                            <i class="fa-solid fa-circle-check text-[8px]"></i> جاهز
+                        </span>
+                    </div>
+                    {% endif %}
+
+                    <button class="mt-5 w-full py-2.5 rounded-xl text-sm font-bold text-white transition" style="background:linear-gradient(135deg, {{ p.color }}, {{ p.color_accent }});">
+                        ربط الآن <i class="fa-solid fa-arrow-left text-xs mr-1"></i>
+                    </button>
+                </a>
+                {% endfor %}
+            </div>
+
+            <!-- Info Footer -->
+            <div class="mt-10 text-center">
+                <p class="text-xs" style="color:#64748b;">
+                    <i class="fa-solid fa-shield-halved ml-1"></i>
+                    اتصال آمن — لا نحتفظ بكلمات المرور، نستخدم OAuth الرسمي لكل منصة
+                </p>
+                <p class="text-xs mt-3" style="color:#475569;">
+                    تجربة مجانية لمدة 7 أيام — بدون الحاجة لبطاقة ائتمان
+                </p>
+            </div>
+
+        </div>
+    </div>
+</body>
+</html>

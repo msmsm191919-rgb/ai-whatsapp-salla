@@ -1,0 +1,100 @@
+{% extends "layouts/dashboard_master.html" %}
+
+{% block title %}ترقية الباقة مطلوبة | مبهر AI{% endblock %}
+{% block header_title %}🔒 ميزة متقدمة{% endblock %}
+{% block header_subtitle %}هذه الميزة غير متاحة في باقتك الحالية{% endblock %}
+
+{% set feature_info = {
+    'campaigns':         { icon:'fa-bullhorn', title:'الحملات التسويقية', desc:'أرسل آلاف الرسائل دفعة واحدة لعملائك المستهدفين بضغطة زر (Broadcast).', need:'النمو',   price:'149' },
+    'api_access':        { icon:'fa-code',     title:'الوصول للـ API',    desc:'ادمج مبهر مع أنظمتك الداخلية عبر REST API احترافي وموثّق.',               need:'الشركات', price:'299' },
+    'custom_ai_training':{ icon:'fa-brain',    title:'تدريب AI خاص',      desc:'درّب نموذج ذكاء اصطناعي مخصّص لنشاطك التجاري على بياناتك.',              need:'الشركات', price:'299' },
+    'white_label':       { icon:'fa-tag',      title:'إخفاء شعار مبهر',   desc:'استخدم النظام بعلامتك التجارية الخاصة بدون أي إشارة لمبهر AI.',          need:'الشركات', price:'299' }
+} %}
+{% set info = feature_info[locked_feature] or { icon:'fa-lock', title:'ميزة متقدمة', desc:'هذه الميزة متاحة في الباقات الأعلى.', need:'النمو', price:'149' } %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto" style="padding-top:24px;">
+
+    <!-- 🔒 Hero Lock Card -->
+    <div style="background:linear-gradient(135deg, #0f172a 0%, #1e293b 100%); border-radius:24px; padding:48px 32px; text-align:center; position:relative; overflow:hidden; box-shadow:0 24px 60px -20px rgba(15,23,42,0.4);">
+
+        <!-- Decorative blurs -->
+        <div style="position:absolute; top:-60px; left:-60px; width:240px; height:240px; background:radial-gradient(circle, rgba(13,148,136,0.3), transparent); filter:blur(40px);"></div>
+        <div style="position:absolute; bottom:-60px; right:-60px; width:240px; height:240px; background:radial-gradient(circle, rgba(14,165,233,0.25), transparent); filter:blur(40px);"></div>
+
+        <div style="position:relative; z-index:1;">
+            <!-- Icon with glow -->
+            <div style="display:inline-flex; width:96px; height:96px; border-radius:28px; background:linear-gradient(135deg, #f59e0b, #d97706); color:#fff; align-items:center; justify-content:center; box-shadow:0 16px 40px -10px rgba(245,158,11,0.5); margin-bottom:24px; position:relative;">
+                <i class="fa-solid {{ info.icon }}" style="font-size:38px;"></i>
+                <div style="position:absolute; bottom:-4px; right:-4px; width:36px; height:36px; border-radius:50%; background:#fff; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 12px rgba(0,0,0,0.15);">
+                    <i class="fa-solid fa-lock" style="color:#f59e0b; font-size:14px;"></i>
+                </div>
+            </div>
+
+            <h2 style="font-size:28px; font-weight:900; color:#fff; margin-bottom:12px; letter-spacing:-0.01em;">{{ info.title }}</h2>
+            <p style="font-size:15px; color:#cbd5e1; max-width:480px; margin:0 auto 28px; line-height:1.7;">{{ info.desc }}</p>
+
+            <!-- Plan tag -->
+            <div style="display:inline-flex; align-items:center; gap:8px; background:rgba(13,148,136,0.15); border:1px solid rgba(13,148,136,0.3); padding:8px 18px; border-radius:999px; color:#5eead4; font-size:12px; font-weight:700; margin-bottom:28px;">
+                <i class="fa-solid fa-crown"></i>
+                <span>متاحة في باقة <strong style="color:#fff;">{{ info.need }}</strong> فأعلى — تبدأ من <strong style="color:#fff; font-family:Inter,sans-serif;">{{ info.price }}</strong> ر.س/شهر</span>
+            </div>
+
+            <!-- CTAs -->
+            <div style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap;">
+                <button id="upgrade-direct-btn" onclick="upgradeDirectly('{{ info.need }}')" style="display:inline-flex; align-items:center; gap:8px; background:linear-gradient(135deg, #0d9488, #0ea5e9); color:#fff; padding:14px 28px; border-radius:14px; font-weight:800; font-size:14px; cursor:pointer; border:none; box-shadow:0 12px 28px -8px rgba(13,148,136,0.5); transition:transform 0.2s; font-family:Cairo,sans-serif;"
+                    onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                    <i class="fa-solid fa-credit-card"></i>
+                    اشترك في باقة {{ info.need }} الآن
+                </button>
+                <a href="/pricing" style="display:inline-flex; align-items:center; gap:8px; background:rgba(255,255,255,0.08); color:#e2e8f0; padding:14px 28px; border-radius:14px; font-weight:700; font-size:14px; text-decoration:none; border:1px solid rgba(255,255,255,0.1);"
+                    onmouseover="this.style.background='rgba(255,255,255,0.12)'" onmouseout="this.style.background='rgba(255,255,255,0.08)'">
+                    مقارنة الباقات
+                </a>
+                <a href="/dashboard" style="display:inline-flex; align-items:center; gap:8px; background:rgba(255,255,255,0.08); color:#e2e8f0; padding:14px 28px; border-radius:14px; font-weight:700; font-size:14px; text-decoration:none; border:1px solid rgba(255,255,255,0.1); transition:background 0.2s;"
+                    onmouseover="this.style.background='rgba(255,255,255,0.12)'" onmouseout="this.style.background='rgba(255,255,255,0.08)'">
+                    العودة للداشبورد
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    async function upgradeDirectly(planName) {
+        const btn = document.getElementById('upgrade-direct-btn');
+        const orig = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري التحويل...';
+        try {
+            const r = await fetch('/billing/checkout', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ plan_name: planName, billing_period: 'monthly' })
+            });
+            const data = await r.json();
+            if (data.ok && data.checkoutUrl) {
+                window.location.href = data.checkoutUrl;
+            } else {
+                alert('❌ فشل بدء الدفع: ' + (data.error || 'خطأ'));
+                btn.disabled = false; btn.innerHTML = orig;
+            }
+        } catch (e) {
+            alert('❌ ' + e.message);
+            btn.disabled = false; btn.innerHTML = orig;
+        }
+    }
+    </script>
+
+    <!-- Plan comparison teaser -->
+    <div style="margin-top:24px; background:#fff; border:1px solid #e2e8f0; border-radius:16px; padding:20px; display:flex; align-items:center; gap:14px;">
+        <div style="width:42px; height:42px; background:#f0fdf4; border-radius:12px; display:flex; align-items:center; justify-content:center;">
+            <i class="fa-solid fa-info" style="color:#16a34a;"></i>
+        </div>
+        <div style="flex:1;">
+            <p style="font-size:13px; font-weight:700; color:#0f172a;">باقتك الحالية: <span style="color:#0d9488;">{{ plan_name }}</span></p>
+            <p style="font-size:12px; color:#64748b; margin-top:2px;">تابع استمتاعك بالمميزات المتاحة، أو رفّع باقتك لفتح المزيد.</p>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

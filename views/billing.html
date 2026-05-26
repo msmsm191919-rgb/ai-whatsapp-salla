@@ -1,0 +1,129 @@
+{% extends "layouts/dashboard_master.html" %}
+
+{% block title %}الفواتير والاشتراك | مبهر AI{% endblock %}
+{% block header_title %}الفواتير والاشتراك{% endblock %}
+{% block header_subtitle %}إدارة باقتك وعرض سجل المدفوعات{% endblock %}
+
+{% block content %}
+<div class="space-y-5">
+
+    {# Status messages from redirect #}
+    {% if status_msg == 'success' %}
+    <div class="rounded-2xl p-5 flex items-center gap-4" style="background:linear-gradient(135deg,#f0fdf4,#dcfce7); border:2px solid #86efac;">
+        <div class="w-12 h-12 rounded-2xl flex items-center justify-center" style="background:#16a34a; color:#fff;">
+            <i class="fa-solid fa-circle-check text-xl"></i>
+        </div>
+        <div>
+            <p class="font-black text-green-900 text-sm">🎉 تم الدفع بنجاح!</p>
+            <p class="text-xs text-green-700 mt-1">تم تفعيل اشتراكك. استمتع بمميزات باقتك الجديدة.</p>
+        </div>
+    </div>
+    {% elif status_msg == 'failed' %}
+    <div class="rounded-2xl p-5 flex items-center gap-4" style="background:linear-gradient(135deg,#fef2f2,#fee2e2); border:2px solid #fca5a5;">
+        <div class="w-12 h-12 rounded-2xl flex items-center justify-center" style="background:#dc2626; color:#fff;">
+            <i class="fa-solid fa-circle-xmark text-xl"></i>
+        </div>
+        <div>
+            <p class="font-black text-red-900 text-sm">❌ فشل الدفع</p>
+            <p class="text-xs text-red-700 mt-1">{{ status_reason or 'حدث خطأ أثناء معالجة الدفع. حاول مرة أخرى.' }}</p>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Current Subscription Card -->
+    <div class="card p-7 relative overflow-hidden" style="background:linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color:#fff;">
+        <div class="absolute top-0 left-0 w-64 h-64 rounded-full opacity-10" style="background:#14b8a6; filter:blur(60px);"></div>
+        <div class="relative z-10 flex flex-wrap items-start justify-between gap-6">
+            <div>
+                <p class="text-[11px] uppercase tracking-widest font-bold mb-2" style="color:#5eead4;">باقتك الحالية</p>
+                <h2 class="text-3xl font-black mb-1">{{ plan_name }}</h2>
+                {% if plan %}
+                <p class="text-sm" style="color:#94a3b8;">
+                    {% if subscription and subscription.is_yearly %}
+                    {{ plan.price_yearly }} ر.س / سنوياً
+                    {% else %}
+                    {{ plan.price_monthly }} ر.س / شهرياً
+                    {% endif %}
+                </p>
+                {% endif %}
+                {% if subscription %}
+                <div class="mt-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold"
+                     style="background:rgba({{ '16,185,129' if subscription.status == 'active' else '245,158,11' }},0.15); color:{{ '#34d399' if subscription.status == 'active' else '#fbbf24' }}; border:1px solid rgba({{ '16,185,129' if subscription.status == 'active' else '245,158,11' }},0.3);">
+                    <span class="w-1.5 h-1.5 rounded-full" style="background:{{ '#34d399' if subscription.status == 'active' else '#fbbf24' }};"></span>
+                    {% if subscription.status == 'active' %}نشط{% elif subscription.status == 'trial' %}تجريبي{% elif subscription.status == 'expired' %}منتهي{% else %}{{ subscription.status }}{% endif %}
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="text-left">
+                {% if subscription and subscription.end_date %}
+                <p class="text-[11px] uppercase tracking-widest font-bold mb-2" style="color:#94a3b8;">ينتهي في</p>
+                <p class="text-lg font-black" style="font-family:Inter,sans-serif;">{{ subscription.end_date.toLocaleDateString('ar-SA') }}</p>
+                {% endif %}
+                <a href="/pricing" class="inline-flex items-center gap-2 mt-4 px-5 py-2.5 rounded-xl text-sm font-bold text-white transition" style="background:linear-gradient(135deg,#0d9488,#0ea5e9);">
+                    <i class="fa-solid fa-arrow-up text-xs"></i> ترقية الباقة
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payments History -->
+    <div class="card overflow-hidden">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100" style="background:#f8fafc;">
+            <h3 class="font-bold text-slate-800 text-sm">سجل المدفوعات</h3>
+            <span class="text-xs text-slate-500">{{ payments.length or 0 }} عملية</span>
+        </div>
+        <table class="w-full text-right text-sm">
+            <thead style="background:#f8fafc;">
+                <tr class="text-xs text-slate-400 uppercase tracking-wider">
+                    <th class="px-6 py-3 font-bold">التاريخ</th>
+                    <th class="px-6 py-3 font-bold">الباقة</th>
+                    <th class="px-6 py-3 font-bold">المبلغ</th>
+                    <th class="px-6 py-3 font-bold">المزوّد</th>
+                    <th class="px-6 py-3 font-bold">الحالة</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+                {% for p in payments %}
+                <tr class="hover:bg-slate-50/70 transition">
+                    <td class="px-6 py-4 text-xs text-slate-500 font-mono" dir="ltr">{{ (p.createdAt or p.created_at) | date("Y-m-d") }}</td>
+                    <td class="px-6 py-4 font-bold text-slate-700">{{ p.Plan.name if p.Plan else '—' }}</td>
+                    <td class="px-6 py-4 font-bold text-slate-800" style="font-family:Inter,sans-serif;">{{ p.amount }} {{ p.currency }}</td>
+                    <td class="px-6 py-4">
+                        <span class="chip" style="background:#f1f5f9; color:#475569; font-size:11px;">{{ p.provider or '—' }}</span>
+                    </td>
+                    <td class="px-6 py-4">
+                        {% if p.status == 'paid' %}
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold" style="background:#f0fdf4; color:#16a34a; border:1px solid #bbf7d0;">
+                            <i class="fa-solid fa-check"></i> مدفوع
+                        </span>
+                        {% elif p.status == 'pending' %}
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold" style="background:#fffbeb; color:#92400e; border:1px solid #fde68a;">
+                            <i class="fa-solid fa-clock"></i> قيد المعالجة
+                        </span>
+                        {% elif p.status == 'failed' %}
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold" style="background:#fef2f2; color:#dc2626; border:1px solid #fca5a5;">
+                            <i class="fa-solid fa-xmark"></i> فشل
+                        </span>
+                        {% else %}
+                        <span class="text-[10px] font-bold text-slate-400">{{ p.status }}</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="5" class="px-6 py-12 text-center">
+                    <div class="flex flex-col items-center gap-3">
+                        <div class="w-14 h-14 bg-slate-50 rounded-2xl flex items-center justify-center text-2xl text-slate-300">
+                            <i class="fa-solid fa-receipt"></i>
+                        </div>
+                        <p class="text-sm font-bold text-slate-600">لا توجد مدفوعات بعد</p>
+                        <p class="text-xs text-slate-400">سيظهر هنا سجل اشتراكاتك بعد أول عملية دفع</p>
+                    </div>
+                </td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+</div>
+{% endblock %}
