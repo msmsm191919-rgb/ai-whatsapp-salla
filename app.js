@@ -688,8 +688,6 @@ const { Server } = require("socket.io");
 const server = http.createServer(app);
 const io = new Server(server);
 
-// Legacy WhatsApp Removed
-
 // ---------------------------------------------------------
 // CUSTOMERS ROUTE (Active WhatsApp Users) - MOVED TO TOP
 // ---------------------------------------------------------
