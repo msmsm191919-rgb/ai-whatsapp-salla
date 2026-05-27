@@ -1,45 +1,70 @@
 {% extends "layouts/dashboard_master.html" %}
 
-{% block title %}WhatsApp API (متقدم) | مبهر AI{% endblock %}
-{% block header_title %}WhatsApp Business API (خيار متقدم){% endblock %}
-{% block header_subtitle %}للعملاء الذين يفضّلون الربط الرسمي من Meta — الطريقة الأساسية هي ربط QR المجاني{% endblock %}
+{% block title %}مدير قنوات الواتساب | مبهر AI{% endblock %}
+{% block header_title %}واتساب Business API (متقدم){% endblock %}
+{% block header_subtitle %}إدارة قنوات الاتصال وتفعيل الربط الرسمي عبر Meta Cloud API{% endblock %}
 
 {% block styles %}
 <style>
     .input-field {
         width: 100%;
-        padding: 11px 14px;
+        padding: 12px 16px;
         border: 1.5px solid #e2e8f0;
-        border-radius: 12px;
+        border-radius: 14px;
         font-size: 13.5px;
-        font-family: 'Inter', monospace;
+        font-family: 'Inter', 'Cairo', sans-serif;
         background: #f8fafc;
         color: #1e293b;
-        transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         outline: none;
     }
     .input-field:focus {
         border-color: #14b8a6;
         background: #fff;
-        box-shadow: 0 0 0 3px rgba(20,184,166,0.10);
+        box-shadow: 0 0 0 4px rgba(20,184,166,0.12);
     }
     .input-label {
         display: block;
         font-size: 13px;
         font-weight: 700;
-        color: #374151;
+        color: #475569;
         margin-bottom: 7px;
     }
     .input-hint {
         font-size: 11px;
         color: #94a3b8;
         margin-top: 5px;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+    .channel-card {
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        border: 1px solid #e2e8f0;
+    }
+    .channel-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 30px -5px rgba(0,0,0,0.08);
+    }
+    .channel-card.primary-active {
+        border-color: #5eead4;
+        background: linear-gradient(180deg, #ffffff 0%, #f0fdfa 100%);
+        box-shadow: 0 4px 20px -2px rgba(20,184,166,0.06);
+    }
+    .glass-lock {
+        background: rgba(255, 255, 255, 0.7);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        border: 1px dashed #cbd5e1;
+    }
+    .glow-dot {
+        box-shadow: 0 0 8px currentColor;
     }
     details summary { list-style: none; }
     details summary::-webkit-details-marker { display: none; }
-    details[open] .chevron { transform: rotate(180deg); }
-    .chevron { transition: transform 0.2s; }
-    .tab-btn { transition: all 0.18s; }
+    details[open] .chevron-icon { transform: rotate(180deg); }
+    .chevron-icon { transition: transform 0.2s ease; }
+    .tab-btn { transition: all 0.2s ease; }
     .tab-btn.active {
         color: #0d9488;
         border-bottom-color: #0d9488;
@@ -48,121 +73,331 @@
 {% endblock %}
 
 {% block content %}
-<div class="max-w-3xl mx-auto space-y-5">
+<div class="max-w-5xl mx-auto space-y-6">
 
-    <!-- بانر: الطريقة الأساسية هي QR -->
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-5 py-4 rounded-2xl"
-        style="background:linear-gradient(135deg,#f0fdfa,#eff6ff); border:1px solid #99f6e4;">
-        <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl flex items-center justify-center text-white shrink-0" style="background:linear-gradient(135deg,#0d9488,#0ea5e9);">
-                <i class="fa-brands fa-whatsapp"></i>
+    <!-- البانر العلوي للتوجيه لربط الـ QR -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 rounded-2xl shadow-sm transition-all hover:shadow-md"
+        style="background: linear-gradient(135deg, #f0fdfa 0%, #eff6ff 100%); border: 1px solid #99f6e4;">
+        <div class="flex items-center gap-4">
+            <div class="w-12 h-12 rounded-2xl flex items-center justify-center text-white shrink-0 shadow-md" 
+                style="background: linear-gradient(135deg, #0d9488, #0ea5e9);">
+                <i class="fa-brands fa-whatsapp text-xl"></i>
             </div>
             <div>
-                <p class="font-black text-slate-800 text-sm">الطريقة الأساسية: ربط QR (مجاني) ⭐</p>
-                <p class="text-xs text-slate-500 mt-0.5">الأسهل والأسرع — امسح QR وأرسل رسائل جماعية مجاناً. صفحة API هذي <strong>خيار متقدم</strong> اختياري.</p>
+                <p class="font-black text-slate-800 text-sm md:text-base">هل تفضل الربط المجاني السريع؟ ⭐</p>
+                <p class="text-xs text-slate-500 mt-1 leading-relaxed">
+                    امسح كود الـ QR واربط رقمك الحالي في أقل من دقيقة مجاناً دون الحاجة لحساب مطورين أو موافقات Meta.
+                </p>
             </div>
         </div>
-        <a href="/whatsapp-web" class="shrink-0 inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-white text-sm font-bold shadow-lg" style="background:linear-gradient(135deg,#0d9488,#0ea5e9);">
-            <i class="fa-solid fa-qrcode"></i> ربط QR
+        <a href="/whatsapp-web" class="shrink-0 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl text-white text-sm font-bold shadow-lg transition-transform hover:scale-[1.02] active:scale-[0.98]" style="background: linear-gradient(135deg, #0d9488, #0ea5e9);">
+            <i class="fa-solid fa-qrcode"></i> ربط عبر الـ QR
         </a>
     </div>
 
-    <!-- Alert -->
+    <!-- إشارات حفظ الحالة العامة -->
     {% if status == 'saved' %}
-    <div class="flex items-center gap-3 px-5 py-3.5 rounded-2xl text-sm font-semibold"
+    <div class="flex items-center gap-3 px-5 py-4 rounded-2xl text-sm font-bold animate-pulse"
         style="background: #f0fdf4; border: 1px solid #bbf7d0; color: #15803d;">
-        <i class="fa-solid fa-circle-check"></i>
-        <span>تم حفظ الإعدادات بنجاح!</span>
+        <i class="fa-solid fa-circle-check text-base"></i>
+        <span>تم حفظ البيانات والتحقق من القناة بنجاح!</span>
     </div>
     {% endif %}
 
-    <!-- Connection Status Banner -->
-    <div class="card p-5 flex items-center justify-between gap-4">
-        <div class="flex items-center gap-4">
-            <div class="w-12 h-12 rounded-2xl flex items-center justify-center text-xl
-                {{ 'bg-emerald-100 text-emerald-600' if config.access_token else 'bg-amber-100 text-amber-600' }}">
-                <i class="fa-brands fa-whatsapp"></i>
-            </div>
+    <!-- ══════════════════════════════════════
+         مدير قنوات الواتساب (WhatsApp Channels Manager)
+         ══════════════════════════════════════ -->
+    <div class="card p-6 md:p-8 relative overflow-hidden">
+        <!-- خط جانبي يعكس هوية واتساب -->
+        <div class="absolute top-0 right-0 left-0 h-1.5 bg-gradient-to-l from-brand-500 to-teal-600"></div>
+
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
             <div>
-                <p class="font-bold text-slate-800 text-sm">حالة الاتصال</p>
-                {% if config.access_token %}
-                <p class="text-emerald-600 text-xs font-semibold mt-0.5 flex items-center gap-1.5">
-                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 pulse-dot"></span> متصل بـ WhatsApp Business API
-                </p>
+                <h3 class="font-extrabold text-slate-800 text-lg flex items-center gap-2">
+                    <i class="fa-solid fa-network-wired text-brand-600"></i>
+                    مدير قنوات الواتساب <span class="font-mono text-xs px-2.5 py-1 bg-slate-100 text-slate-600 rounded-full font-bold">Channels Manager</span>
+                </h3>
+                <p class="text-xs text-slate-400 mt-1">قم بربط وإدارة أرقام واتساب المتعددة الخاصة بفروعك وأقسامك وتوزيع الأدوار بينها</p>
+            </div>
+
+            <!-- معلومات حدود الباقة والزر -->
+            {% set wa_limit = (planContext.plan_limits.whatsapp_numbers if planContext and planContext.plan_limits else 1) %}
+            {% set wa_limit_label = 'غير محدودة' if wa_limit == -1 else wa_limit %}
+            <div class="flex items-center gap-3 flex-wrap">
+                <span class="text-xs text-slate-500 bg-slate-50 px-3 py-2 rounded-xl border border-slate-200 font-medium">
+                    الحد الأقصى لباقة <strong class="text-brand-600">{{ plan_name }}</strong>: 
+                    <strong class="font-mono text-slate-800">{{ total_numbers }} / {{ wa_limit_label }}</strong>
+                </span>
+
+                {% if wa_limit == -1 or total_numbers < wa_limit %}
+                <button onclick="openModal('add')" class="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold text-white shadow-md hover:shadow-lg transition-all hover:scale-[1.02]" style="background: linear-gradient(135deg, #0d9488, #14b8a6);">
+                    <i class="fa-solid fa-plus"></i> ربط رقم جديد
+                </button>
                 {% else %}
-                <p class="text-amber-600 text-xs font-semibold mt-0.5 flex items-center gap-1.5">
-                    <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span> غير مُربط — أدخل بياناتك أدناه
-                </p>
+                <button onclick="showUpgradeWarning()" class="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold text-slate-400 bg-slate-100 cursor-not-allowed border border-slate-200">
+                    <i class="fa-solid fa-lock text-[10px]"></i> ربط رقم جديد
+                </button>
                 {% endif %}
             </div>
         </div>
-        <a href="https://developers.facebook.com/apps" target="_blank"
-            class="text-xs text-teal-600 font-bold hover:underline flex items-center gap-1.5 flex-shrink-0">
-            لوحة Meta <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
-        </a>
+
+        <!-- شبكة قنوات الاتصال -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+
+            <!-- كرت الرقم الأساسي (إذا كان مضافاً) -->
+            {% if primary_number %}
+            <div class="channel-card primary-active rounded-2xl p-5 relative flex flex-col justify-between">
+                <div class="flex items-start justify-between gap-3">
+                    <div class="flex items-center gap-3">
+                        <div class="w-11 h-11 rounded-xl bg-teal-100 text-teal-600 flex items-center justify-center text-lg relative shrink-0">
+                            <i class="fa-brands fa-whatsapp"></i>
+                            <span class="absolute -top-1 -left-1 w-3 h-3 rounded-full bg-emerald-500 glow-dot border-2 border-white"></span>
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-1.5 flex-wrap">
+                                <h4 class="font-bold text-slate-800 text-sm">{{ primary_number.label or 'الرقم الأساسي' }}</h4>
+                                <span class="badge badge-teal text-[9px] py-0.5">أساسي ⭐</span>
+                            </div>
+                            <p class="text-[11px] text-slate-500 font-mono mt-0.5" dir="ltr">{{ primary_number.phone_number or 'لا يوجد رقم عرض' }}</p>
+                        </div>
+                    </div>
+
+                    <!-- شارة الحالة -->
+                    <span class="badge text-[9px] py-0.5 px-2 bg-emerald-100 text-emerald-700 border border-emerald-200">
+                        <i class="fa-solid fa-circle-check text-[8px] ml-1"></i> نشط
+                    </span>
+                </div>
+
+                <!-- تفاصيل المعرفات -->
+                <div class="mt-4 pt-3 border-t border-slate-100 space-y-1.5 text-[11px] text-slate-500 font-mono">
+                    <div class="flex justify-between">
+                        <span class="text-slate-400">Phone ID:</span>
+                        <span class="text-slate-700">{{ primary_number.phone_number_id }}</span>
+                    </div>
+                    {% if primary_number.waba_id %}
+                    <div class="flex justify-between">
+                        <span class="text-slate-400">WABA ID:</span>
+                        <span class="text-slate-700">{{ primary_number.waba_id }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- أزرار التحكم -->
+                <div class="mt-5 pt-3 border-t border-slate-100 flex justify-end gap-2">
+                    <button onclick="openModal('edit', {
+                        id: '{{ primary_number.id }}',
+                        label: '{{ primary_number.label }}',
+                        phone_number: '{{ primary_number.phone_number }}',
+                        phone_number_id: '{{ primary_number.phone_number_id }}',
+                        waba_id: '{{ primary_number.waba_id }}',
+                        access_token: '{{ primary_number.access_token }}'
+                    })" class="px-3.5 py-2 bg-white hover:bg-slate-50 text-slate-600 border border-slate-200 rounded-lg text-xs font-bold transition flex items-center gap-1">
+                        <i class="fa-regular fa-pen-to-square"></i> تعديل الإعدادات
+                    </button>
+                    <!-- الرقم الأساسي لا يمكن حذفه إلا إذا كان هناك أرقام أخرى مضافة لتأخذ مكانه -->
+                    {% if extra_numbers.length > 0 %}
+                    <button onclick="alert('يرجى جعل رقم آخر أساسياً أولاً قبل حذف هذا الرقم الأساسي.')" class="px-3 py-2 bg-slate-50 text-slate-300 border border-slate-100 rounded-lg text-xs font-bold cursor-not-allowed">
+                        <i class="fa-regular fa-trash-can"></i>
+                    </button>
+                    {% else %}
+                    <button onclick="deleteNumber({{ primary_number.id }})" class="px-3 py-2 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 rounded-lg text-xs font-bold transition">
+                        <i class="fa-regular fa-trash-can"></i>
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+            {% else %}
+            <!-- رقم فارغ - لم يتم الربط -->
+            <div class="border-2 border-dashed border-slate-200 rounded-2xl p-6 text-center flex flex-col items-center justify-center bg-slate-50/50">
+                <div class="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 mb-3 text-lg">
+                    <i class="fa-solid fa-link-slash"></i>
+                </div>
+                <h4 class="font-bold text-slate-800 text-sm">الرقم الأساسي غير مربوط</h4>
+                <p class="text-xs text-slate-400 mt-1 max-w-xs leading-relaxed">لم تقم بربط أي قناة واتساب API رسمية حتى الآن للمتجر</p>
+                <button onclick="openModal('add')" class="mt-4 px-4 py-2 bg-brand-500 hover:bg-brand-600 text-white rounded-xl text-xs font-bold shadow-md transition">
+                    أضف الرقم الأساسي الآن
+                </button>
+            </div>
+            {% endif %}
+
+            <!-- الأرقام الإضافية (Extra Numbers) -->
+            {% for n in extra_numbers %}
+            <div class="channel-card rounded-2xl p-5 relative flex flex-col justify-between bg-white">
+                <div class="flex items-start justify-between gap-3">
+                    <div class="flex items-center gap-3">
+                        <div class="w-11 h-11 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center text-lg relative shrink-0">
+                            <i class="fa-brands fa-whatsapp text-brand-500"></i>
+                            <span class="absolute -top-1 -left-1 w-3 h-3 rounded-full {{ 'bg-emerald-500 glow-dot' if n.status == 'active' else 'bg-amber-400' }} border-2 border-white"></span>
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-1.5 flex-wrap">
+                                <h4 class="font-bold text-slate-800 text-sm">{{ n.label or 'رقم إضافي' }}</h4>
+                                <span class="badge bg-slate-100 text-slate-600 text-[9px] py-0.5">فرعي</span>
+                            </div>
+                            <p class="text-[11px] text-slate-500 font-mono mt-0.5" dir="ltr">{{ n.phone_number or 'لا يوجد رقم عرض' }}</p>
+                        </div>
+                    </div>
+
+                    <!-- شارة الحالة -->
+                    {% if n.status == 'active' %}
+                    <span class="badge text-[9px] py-0.5 px-2 bg-emerald-50 text-emerald-700 border border-emerald-100">
+                        <i class="fa-solid fa-circle-check text-[8px] ml-1"></i> نشط
+                    </span>
+                    {% elif n.status == 'disconnected' %}
+                    <span class="badge text-[9px] py-0.5 px-2 bg-rose-50 text-rose-700 border border-rose-100">
+                        <i class="fa-solid fa-triangle-exclamation text-[8px] ml-1"></i> منقطع
+                    </span>
+                    {% else %}
+                    <span class="badge text-[9px] py-0.5 px-2 bg-amber-50 text-amber-700 border border-amber-100">
+                        <i class="fa-solid fa-spinner fa-spin text-[8px] ml-1"></i> قيد الإعداد
+                    </span>
+                    {% endif %}
+                </div>
+
+                <!-- تفاصيل المعرفات -->
+                <div class="mt-4 pt-3 border-t border-slate-100 space-y-1.5 text-[11px] text-slate-500 font-mono">
+                    <div class="flex justify-between">
+                        <span class="text-slate-400">Phone ID:</span>
+                        <span class="text-slate-700">{{ n.phone_number_id }}</span>
+                    </div>
+                    {% if n.waba_id %}
+                    <div class="flex justify-between">
+                        <span class="text-slate-400">WABA ID:</span>
+                        <span class="text-slate-700">{{ n.waba_id }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- أزرار التحكم -->
+                <div class="mt-5 pt-3 border-t border-slate-100 flex justify-end gap-2">
+                    <button onclick="makePrimary({{ n.id }})" class="px-3.5 py-2 bg-white hover:bg-slate-50 text-amber-600 border border-slate-200 rounded-lg text-xs font-bold transition flex items-center gap-1" title="جعله الرقم الأساسي للمتجر">
+                        <i class="fa-solid fa-star"></i> الأساسي
+                    </button>
+                    <button onclick="openModal('edit', {
+                        id: '{{ n.id }}',
+                        label: '{{ n.label }}',
+                        phone_number: '{{ n.phone_number }}',
+                        phone_number_id: '{{ n.phone_number_id }}',
+                        waba_id: '{{ n.waba_id }}',
+                        access_token: '{{ n.access_token }}'
+                    })" class="px-3 py-2 bg-white hover:bg-slate-50 text-slate-600 border border-slate-200 rounded-lg text-xs font-bold transition">
+                        <i class="fa-regular fa-pen-to-square"></i>
+                    </button>
+                    <button onclick="deleteNumber({{ n.id }})" class="px-3 py-2 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 rounded-lg text-xs font-bold transition">
+                        <i class="fa-regular fa-trash-can"></i>
+                    </button>
+                </div>
+            </div>
+            {% endfor %}
+
+            <!-- 🔒 كرت القفل والترقية (للباقة الأساسية) -->
+            {% if wa_limit == 1 %}
+            <div class="glass-lock rounded-2xl p-6 relative flex flex-col items-center justify-center text-center overflow-hidden min-h-[220px]">
+                <div class="absolute -top-6 -right-6 w-24 h-24 bg-teal-400 rounded-full blur-3xl opacity-10"></div>
+                <div class="absolute -bottom-6 -left-6 w-24 h-24 bg-blue-400 rounded-full blur-3xl opacity-10"></div>
+                
+                <div class="w-10 h-10 rounded-full bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-500 mb-3">
+                    <i class="fa-solid fa-lock"></i>
+                </div>
+                <h4 class="font-extrabold text-slate-800 text-xs mb-1">ربط أرقام متعددة (حتى 3 أرقام)</h4>
+                <p class="text-[11px] text-slate-500 max-w-xs leading-relaxed mb-4">
+                    باقتك الحالية تسمح برقم واحد فقط. رفّع حسابك لباقة <strong>النمو</strong> لتوزيع المهام وربط أرقام متعددة لفريق الدعم والمبيعات.
+                </p>
+                <a href="/pricing" class="px-5 py-2 rounded-xl text-xs font-bold text-white transition-all shadow-md hover:shadow-lg" style="background: linear-gradient(135deg, #0d9488, #0ea5e9);">
+                    <i class="fa-solid fa-gem ml-1 text-[10px]"></i> ترقية باقة التاجر الآن
+                </a>
+            </div>
+            {% endif %}
+
+            <!-- 🔒 كرت القفل والترقية لباقة الشركات (للباقة النمو عند بلوغ الحد) -->
+            {% if wa_limit == 3 and total_numbers >= 3 %}
+            <div class="glass-lock rounded-2xl p-6 relative flex flex-col items-center justify-center text-center overflow-hidden min-h-[220px]">
+                <div class="w-10 h-10 rounded-full bg-purple-50 border border-purple-200 flex items-center justify-center text-purple-600 mb-3">
+                    <i class="fa-solid fa-lock"></i>
+                </div>
+                <h4 class="font-extrabold text-slate-800 text-xs mb-1">ربط أرقام غير محدودة 🚀</h4>
+                <p class="text-[11px] text-slate-500 max-w-xs leading-relaxed mb-4">
+                    لقد وصلت للحد الأقصى لباقة النمو (3 أرقام). رقّي إلى باقة <strong>الشركات</strong> لربط عدد غير محدود من الأرقام لشركتك.
+                </p>
+                <a href="/pricing" class="px-5 py-2 rounded-xl text-xs font-bold text-white transition-all shadow-md hover:shadow-lg" style="background: linear-gradient(135deg, #7c3aed, #8b5cf6);">
+                    <i class="fa-solid fa-gem ml-1 text-[10px]"></i> ترقية إلى باقة الشركات
+                </a>
+            </div>
+            {% endif %}
+
+            <!-- كرت فارغ لإضافة رقم جديد (لأصحاب باقات النمو والشركات في حال وجود سعة) -->
+            {% if (wa_limit == -1 or total_numbers < wa_limit) and total_numbers > 0 %}
+            <button onclick="openModal('add')" class="border-2 border-dashed border-slate-200 hover:border-brand-400 rounded-2xl p-6 text-center flex flex-col items-center justify-center bg-slate-50/20 hover:bg-slate-50 transition-all duration-200 group min-h-[220px]">
+                <div class="w-12 h-12 rounded-full bg-slate-100 group-hover:bg-teal-50 flex items-center justify-center text-slate-400 group-hover:text-brand-600 mb-3 text-lg transition-colors">
+                    <i class="fa-solid fa-plus"></i>
+                </div>
+                <h4 class="font-bold text-slate-700 text-sm group-hover:text-brand-700 transition-colors">ربط رقم إضافي جديد</h4>
+                <p class="text-xs text-slate-400 mt-1 max-w-xs leading-relaxed">اضغط هنا لإدخال إعدادات رقم Meta الإضافي وتفعيله</p>
+            </button>
+            {% endif %}
+
+        </div>
     </div>
 
-    <!-- Guide Tabs -->
+    <!-- 🔍 تبويبات الشرح الإرشادي المنسق -->
     <div class="card overflow-hidden">
-        <div class="flex border-b border-slate-100">
+        <div class="flex border-b border-slate-100 bg-slate-50/50">
             <button onclick="switchTab('why')" id="tab-why"
-                class="tab-btn active flex-1 py-3.5 text-xs font-bold text-center border-b-2">
-                <i class="fa-solid fa-lightbulb ml-1"></i> QR أم API؟
+                class="tab-btn active flex-1 py-4 text-xs font-black text-center border-b-2">
+                <i class="fa-solid fa-lightbulb ml-1"></i> مقارنة: QR أم API؟
             </button>
             <button onclick="switchTab('how')" id="tab-how"
-                class="tab-btn flex-1 py-3.5 text-xs font-bold text-center border-b-2 border-transparent text-slate-400 hover:text-slate-600">
-                <i class="fa-solid fa-list-check ml-1"></i> خطوات التفعيل
+                class="tab-btn flex-1 py-4 text-xs font-black text-center border-b-2 border-transparent text-slate-400 hover:text-slate-600">
+                <i class="fa-solid fa-list-check ml-1"></i> خطوات استخراج البيانات
             </button>
             <button onclick="switchTab('faq')" id="tab-faq"
-                class="tab-btn flex-1 py-3.5 text-xs font-bold text-center border-b-2 border-transparent text-slate-400 hover:text-slate-600">
+                class="tab-btn flex-1 py-4 text-xs font-black text-center border-b-2 border-transparent text-slate-400 hover:text-slate-600">
                 <i class="fa-solid fa-circle-question ml-1"></i> أسئلة شائعة
             </button>
         </div>
 
-        <!-- Panel: Why (مقارنة عادلة بين القناتين) -->
+        <!-- تبويب: المقارنة -->
         <div id="panel-why" class="p-6 guide-panel">
-            <p class="text-xs text-slate-500 mb-4 leading-relaxed">عندك طريقتان للربط — كلاهما يرسل رسائل جماعية لعملائك. الأغلب يكتفون بربط QR المجاني، والـ API خيار للي يبي رقم رسمي معتمد.</p>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <!-- ربط QR (الأساسي المجاني) -->
-                <div style="background: #f0fdfa; border: 1px solid #99f6e4; border-radius: 14px; padding: 16px;">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <div style="background: #f0fdfa; border: 1px solid #99f6e4; border-radius: 16px; padding: 18px;">
                     <div class="flex items-center gap-2 mb-3">
-                        <div class="w-7 h-7 rounded-lg bg-teal-100 flex items-center justify-center text-teal-600 text-xs">
-                            <i class="fa-solid fa-qrcode"></i></div>
-                        <span class="font-bold text-xs text-teal-700">ربط QR ⭐ (الأساسي — مجاني)</span>
+                        <div class="w-8 h-8 rounded-lg bg-teal-100 flex items-center justify-center text-teal-600 text-sm">
+                            <i class="fa-solid fa-qrcode"></i>
+                        </div>
+                        <span class="font-extrabold text-xs text-teal-700">ربط QR (الأساسي - مجاني) ⭐</span>
                     </div>
-                    <ul class="space-y-1.5 text-[11px] text-teal-700">
-                        <li class="flex gap-2"><i class="fa-solid fa-check mt-0.5"></i><span>مجاني تماماً — بدون رسوم</span></li>
-                        <li class="flex gap-2"><i class="fa-solid fa-check mt-0.5"></i><span>ربط سريع بمسح QR (أقل من دقيقة)</span></li>
-                        <li class="flex gap-2"><i class="fa-solid fa-check mt-0.5"></i><span>رسائل جماعية + ردود تلقائية لعملائك</span></li>
-                        <li class="flex gap-2"><i class="fa-solid fa-check mt-0.5"></i><span>مثالي للبداية والمتاجر الصغيرة والمتوسطة</span></li>
+                    <ul class="space-y-2.5 text-[11px] text-teal-800 leading-relaxed font-semibold">
+                        <li class="flex gap-2"><i class="fa-solid fa-check mt-0.5 text-teal-500"></i><span>مجاني بالكامل بدون رسوم إضافية لـ Meta</span></li>
+                        <li class="flex gap-2"><i class="fa-solid fa-check mt-0.5 text-teal-500"></i><span>ربط فوري خلال دقيقة بمسح الباركود من هاتفك</span></li>
+                        <li class="flex gap-2"><i class="fa-solid fa-check mt-0.5 text-teal-500"></i><span>يصلح للرسائل الجماعية والرد الآلي الذكي</span></li>
+                        <li class="flex gap-2"><i class="fa-solid fa-check mt-0.5 text-teal-500"></i><span>رائع للمبتدئين والمتاجر البسيطة</span></li>
                     </ul>
                 </div>
-                <!-- WhatsApp API (المتقدم) -->
-                <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 14px; padding: 16px;">
+                <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 16px; padding: 18px;">
                     <div class="flex items-center gap-2 mb-3">
-                        <div class="w-7 h-7 rounded-lg bg-emerald-100 flex items-center justify-center text-emerald-600 text-xs">
-                            <i class="fa-solid fa-bolt"></i></div>
-                        <span class="font-bold text-xs text-emerald-700">WhatsApp API (متقدم)</span>
+                        <div class="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center text-emerald-600 text-sm">
+                            <i class="fa-solid fa-bolt"></i>
+                        </div>
+                        <span class="font-extrabold text-xs text-emerald-700">واتساب API الرسمي (متقدم)</span>
                     </div>
-                    <ul class="space-y-1.5 text-[11px] text-emerald-700">
-                        <li class="flex gap-2"><i class="fa-solid fa-check mt-0.5"></i><span>رقم رسمي مُعتمد من Meta + علامة موثّقة</span></li>
-                        <li class="flex gap-2"><i class="fa-solid fa-check mt-0.5"></i><span>استقرار أعلى للأحجام الكبيرة جداً</span></li>
-                        <li class="flex gap-2"><i class="fa-solid fa-check mt-0.5"></i><span>مناسب للشركات الكبيرة</span></li>
-                        <li class="flex gap-2"><i class="fa-solid fa-circle-info mt-0.5"></i><span>يحتاج إعداد لمرة + رسوم Meta</span></li>
+                    <ul class="space-y-2.5 text-[11px] text-emerald-800 leading-relaxed font-semibold">
+                        <li class="flex gap-2"><i class="fa-solid fa-check mt-0.5 text-emerald-500"></i><span>رقم رسمي وعلامة خضراء لتوثيق المتجر</span></li>
+                        <li class="flex gap-2"><i class="fa-solid fa-check mt-0.5 text-emerald-500"></i><span>استقرار الإرسال وضمان عدم الحظر من واتساب</span></li>
+                        <li class="flex gap-2"><i class="fa-solid fa-check mt-0.5 text-emerald-500"></i><span>دعم أرقام متعددة لفروع وموظفي المتجر</span></li>
+                        <li class="flex gap-2"><i class="fa-solid fa-circle-info mt-0.5 text-amber-600"></i><span>يتطلب حساب تجاري موثق ورسوم إرسال لـ Meta</span></li>
                     </ul>
                 </div>
             </div>
         </div>
 
-        <!-- Panel: How -->
+        <!-- تبويب: كيفية الاستخراج -->
         <div id="panel-how" class="p-6 guide-panel hidden">
-            <p class="text-xs text-slate-500 mb-5">اتبع هذه الخطوات للحصول على بيانات الربط من Meta:</p>
             <ol class="space-y-4">
                 {% set steps = [
-                    ['أنشئ حساب Meta Business', 'توجه إلى business.facebook.com وسجل بحساب فيسبوك.', '1'],
-                    ['أنشئ تطبيق من نوع Business', 'في developers.facebook.com ← إنشاء تطبيق ← اختر "Business".', '2'],
-                    ['أضف منتج WhatsApp للتطبيق', 'من لوحة التطبيق ← إضافة منتج ← اختر WhatsApp.', '3'],
-                    ['احصل على بيانات الربط الثلاثة', 'من WhatsApp ← API Setup، انسخ: Phone Number ID، WABA ID، Access Token.', '4']
+                    ['1. حساب Meta Business Suite', 'ادخل على business.facebook.com وأنشئ حساب أعمال لشركتك.', '1'],
+                    ['2. إنشاء تطبيق من نوع Business', 'توجه لـ developers.facebook.com ← أنشئ تطبيقاً جديداً ← اختر نوع التطبيق "Business".', '2'],
+                    ['3. إضافة منتج WhatsApp للتطبيق', 'من القائمة الجانبية للتطبيق المطور ← إضافة منتج ← اختر WhatsApp ثم فعل الخدمة.', '3'],
+                    ['4. توليد رمز الوصول والـ IDs', 'من إعدادات الواتساب بالداخل ← API Setup، انسخ Phone Number ID، WABA ID، ورمز الوصول الدائم.', '4']
                 ] %}
                 {% for step in steps %}
                 <li class="flex gap-3 items-start">
@@ -173,270 +408,41 @@
                     </div>
                 </li>
                 {% endfor %}
-                <li class="flex gap-3 items-start">
-                    <div class="w-7 h-7 shrink-0 rounded-full bg-emerald-500 flex items-center justify-center text-white text-xs">✓</div>
-                    <div>
-                        <p class="font-bold text-sm text-emerald-700">الصق البيانات في النموذج أدناه واحفظ ✅</p>
-                        <p class="text-xs text-slate-500 mt-0.5">سيبدأ مبهر AI بالإرسال التلقائي فوراً!</p>
-                    </div>
-                </li>
             </ol>
         </div>
 
-        <!-- Panel: FAQ -->
-        <div id="panel-faq" class="p-6 guide-panel hidden space-y-2">
+        <!-- تبويب: الأسئلة الشائعة -->
+        <div id="panel-faq" class="p-6 guide-panel hidden space-y-2.5">
             {% set faqs = [
-                ['هل الـ API مجانية؟', 'الـ 1000 محادثة أولى شهرياً مجانية من Meta. بعدها رسوم بسيطة (حوالي 0.005$) لكل محادثة تدفعها لـ Meta مباشرة.'],
-                ['هل يمكن استخدام رقم واتساب الحالي؟', 'نعم يمكن نقل رقمك، لكنك ستفقد محادثاتك القديمة. الأفضل استخدام رقم جديد مخصص للمتجر.'],
-                ['كم يستغرق التفعيل؟', 'إنشاء الحساب فوري. التحقق من الرقم قد يأخذ 5 دقائق إلى ساعة. الربط بمبهر بعدها فوري.'],
-                ['ما الفرق بين Token مؤقت ودائم؟', 'المؤقت ينتهي خلال 24 ساعة. للعمل المستمر أنشئ رمز وصول دائم من Meta → System User → Generate Token.']
+                ['كم تكلفة إرسال الرسائل عبر الـ API؟', 'تمنح Meta أول 1000 محادثة شهرياً مجاناً لكل رقم. بعد ذلك يتم احتساب رسوم رمزية تترواح بين (0.005$ إلى 0.015$) لكل محادثة حسب بلد العميل وتدفع لـ Meta مباشرة.'],
+                ['هل يمكنني جعل الرقم الفرعي أساسياً؟', 'نعم، في أي وقت يمكنك الضغط على زر "الأساسي ⭐" بجانب أي رقم فرعي، وسيتحول تلقائياً ليكون القناة الرئيسية للإرسال ويتحول الرقم القديم لرقم فرعي.'],
+                ['هل يمكن حذف الرقم الأساسي؟', 'لا يسمح النظام بحذف الرقم الأساسي في حال وجود أرقام أخرى لحماية تدفق الرسائل. اجعل رقماً آخر أساسياً أولاً ثم احذف الرقم القديم.'],
+                ['ما هي الصلاحيات المطلوبة لرمز الوصول (Access Token)؟', 'عند توليد الرمز من Meta، تأكد من تحديد صلاحيتي: whatsapp_business_messaging و whatsapp_business_management ليعمل الربط بكفاءة.']
             ] %}
             {% for faq in faqs %}
-            <details class="group" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px;">
-                <summary class="px-4 py-3 text-xs font-bold text-slate-700 cursor-pointer flex justify-between items-center">
+            <details class="group" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px;">
+                <summary class="px-5 py-3.5 text-xs font-bold text-slate-700 cursor-pointer flex justify-between items-center select-none">
                     {{ faq[0] }}
-                    <i class="fa-solid fa-chevron-down text-[10px] text-slate-400 chevron"></i>
+                    <i class="fa-solid fa-chevron-down text-[10px] text-slate-400 chevron-icon"></i>
                 </summary>
-                <p class="px-4 pb-4 text-xs text-slate-500 leading-relaxed">{{ faq[1] }}</p>
+                <p class="px-5 pb-4 text-xs text-slate-500 leading-relaxed border-t border-slate-100/50 pt-2.5">{{ faq[1] }}</p>
             </details>
             {% endfor %}
         </div>
     </div>
 
-    <!-- WhatsApp Numbers Limit Banner -->
-    {% set wa_limit = (planContext.plan_limits.whatsapp_numbers if planContext and planContext.plan_limits else 1) %}
-    {% set wa_limit_label = 'غير محدودة' if wa_limit == -1 else wa_limit %}
-    {% set wa_connected = 1 if config.access_token else 0 %}
-    <div class="card p-5" style="background:linear-gradient(135deg,#ecfeff,#f0fdfa); border:1px solid #99f6e4;">
-        <div class="flex items-center justify-between gap-4 flex-wrap">
-            <div class="flex items-center gap-3">
-                <div class="w-11 h-11 rounded-xl flex items-center justify-center" style="background:#0d9488; color:#fff;">
-                    <i class="fa-solid fa-hashtag"></i>
-                </div>
-                <div>
-                    <p class="font-bold text-slate-800 text-sm">أرقام واتساب المسموحة في باقتك</p>
-                    <p class="text-xs text-slate-500 mt-0.5">
-                        باقة <strong style="color:#0d9488;">{{ plan_name }}</strong> — مربوط <strong style="font-family:Inter,sans-serif;">{{ wa_connected }}</strong> من أصل <strong style="font-family:Inter,sans-serif;">{{ wa_limit_label }}</strong>
-                    </p>
-                </div>
-            </div>
-            {% if wa_limit != 1 and wa_limit != -1 %}
-            <span class="chip" style="background:#fff; border:1px solid #99f6e4; color:#0d9488; font-size:11px; font-weight:700;">
-                <i class="fa-solid fa-circle-plus text-[10px] ml-1"></i>
-                يمكنك ربط {{ wa_limit - wa_connected }} رقم إضافي
-            </span>
-            {% elif wa_limit == -1 %}
-            <span class="chip" style="background:#fff; border:1px solid #99f6e4; color:#0d9488; font-size:11px; font-weight:700;">
-                <i class="fa-solid fa-infinity text-[10px] ml-1"></i> أرقام بلا حدود
-            </span>
-            {% endif %}
-        </div>
-    </div>
-
-    <!-- Settings Form -->
+    <!-- 🔑 كرت واجهة برمجيات المطورين (REST API) -->
     <div class="card p-7 relative overflow-hidden">
-        <div class="absolute top-0 right-0 w-1 h-full" style="background: linear-gradient(to bottom, #14b8a6, #0d9488);"></div>
+        <div class="absolute top-0 right-0 left-0 h-1.5 bg-gradient-to-l from-purple-500 to-violet-600"></div>
 
-        <div class="flex items-center gap-3 mb-6">
-            <div class="w-10 h-10 rounded-xl gradient-teal flex items-center justify-center">
-                <i class="fa-solid fa-plug text-white text-sm"></i>
-            </div>
-            <div>
-                <h3 class="font-bold text-slate-800 text-sm">الرقم الأساسي</h3>
-                <p class="text-xs text-slate-400 mt-0.5">أدخل بيانات حساب Meta Business للرقم الأول</p>
-            </div>
-        </div>
-
-        <form method="POST" action="/settings/whatsapp" class="space-y-5">
-            <div>
-                <label class="input-label">معرف رقم الهاتف <span style="font-family: Inter, sans-serif;">(Phone Number ID)</span></label>
-                <input type="text" name="phone_id" value="{{ config.phone_number_id }}"
-                    class="input-field" placeholder="مثال: 105931123456789">
-                <p class="input-hint">تجده في Meta Developers → WhatsApp → API Setup</p>
-            </div>
-
-            <div>
-                <label class="input-label">معرف حساب الأعمال <span style="font-family: Inter, sans-serif;">(WABA ID)</span></label>
-                <input type="text" name="waba_id" value="{{ config.waba_id }}"
-                    class="input-field" placeholder="مثال: 100231987654321">
-            </div>
-
-            <div>
-                <label class="input-label">رمز الوصول الدائم <span style="font-family: Inter, sans-serif;">(Permanent Access Token)</span></label>
-                <div class="relative">
-                    <input type="password" name="token" id="tokenInput" value="{{ config.access_token }}"
-                        class="input-field" placeholder="EAAG..." style="padding-left: 42px;">
-                    <button type="button" onclick="toggleToken()"
-                        class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition">
-                        <i class="fa-solid fa-eye text-sm" id="tokenEye"></i>
-                    </button>
-                </div>
-                <p class="input-hint">تأكد أن الرمز لديه صلاحيات <code class="bg-slate-100 px-1.5 py-0.5 rounded text-[10px]">whatsapp_business_messaging</code></p>
-            </div>
-
-            <div class="pt-4 border-t border-slate-100 flex justify-end">
-                <button type="submit"
-                    class="flex items-center gap-2 px-7 py-3 rounded-xl text-sm font-bold text-white transition shadow-lg"
-                    style="background: linear-gradient(135deg, #0d9488, #14b8a6); box-shadow: 0 4px 16px rgba(20,184,166,0.3);">
-                    <i class="fa-solid fa-floppy-disk"></i> حفظ والتحقق من الاتصال
-                </button>
-            </div>
-        </form>
-    </div>
-
-    <!-- ✅ Extra WhatsApp Numbers — إدارة الأرقام الفعلية (Growth/Enterprise) -->
-    {% if wa_limit == -1 or wa_limit > 1 %}
-    <div class="card p-7 relative overflow-hidden">
-        <div class="absolute top-0 right-0 w-1 h-full" style="background: linear-gradient(to bottom, #0ea5e9, #38bdf8);"></div>
-
-        <div class="flex items-center justify-between gap-3 mb-6 flex-wrap">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background:linear-gradient(135deg,#0ea5e9,#38bdf8);">
-                    <i class="fa-solid fa-layer-group text-white text-sm"></i>
-                </div>
-                <div>
-                    <h3 class="font-bold text-slate-800 text-sm">الأرقام الإضافية</h3>
-                    <p class="text-xs text-slate-400 mt-0.5">
-                        {{ extra_numbers.length }} من
-                        {% if wa_limit == -1 %} غير محدودة {% else %} {{ wa_limit - 1 }} {% endif %}
-                        — لديك إجمالي <strong>{{ total_numbers }}</strong> رقم
-                    </p>
-                </div>
-            </div>
-            <button onclick="openAddNumberModal()" class="px-4 py-2 rounded-xl text-xs font-bold text-white transition" style="background:linear-gradient(135deg,#0ea5e9,#38bdf8);">
-                <i class="fa-solid fa-plus ml-1"></i> إضافة رقم
-            </button>
-        </div>
-
-        <div class="space-y-3" id="extraNumbersList">
-            {% for n in extra_numbers %}
-            <div class="flex items-center gap-3 p-4 rounded-xl" style="background:#f0f9ff; border:1px solid #bae6fd;" data-number-id="{{ n.id }}">
-                <div class="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0" style="background:#0d9488; color:#fff;">
-                    <i class="fa-brands fa-whatsapp"></i>
-                </div>
-                <div class="flex-1 min-w-0">
-                    <div class="flex items-center gap-2 flex-wrap">
-                        <p class="text-sm font-bold text-slate-800">{{ n.label or 'رقم بدون اسم' }}</p>
-                        {% if n.status == 'active' %}
-                        <span class="chip" style="background:#dcfce7;color:#166534;font-size:9px;font-weight:700;border:1px solid #86efac;">نشط</span>
-                        {% elif n.status == 'disconnected' %}
-                        <span class="chip" style="background:#fee2e2;color:#991b1b;font-size:9px;font-weight:700;border:1px solid #fca5a5;">منقطع</span>
-                        {% else %}
-                        <span class="chip" style="background:#fef3c7;color:#92400e;font-size:9px;font-weight:700;border:1px solid #fde68a;">قيد الإعداد</span>
-                        {% endif %}
-                    </div>
-                    <p class="text-[11px] text-slate-500 mt-0.5 font-mono" dir="ltr">{{ n.phone_number or n.phone_number_id }}</p>
-                </div>
-                <button onclick="makePrimary({{ n.id }})" class="px-3 py-1.5 rounded-lg text-[11px] font-bold transition" style="background:#fff;color:#0d9488;border:1px solid #5eead4;" title="جعله الرقم الأساسي">
-                    <i class="fa-solid fa-star"></i>
-                </button>
-                <button onclick="deleteNumber({{ n.id }})" class="px-3 py-1.5 rounded-lg text-[11px] font-bold transition" style="background:#fff;color:#dc2626;border:1px solid #fca5a5;" title="حذف">
-                    <i class="fa-solid fa-trash"></i>
-                </button>
-            </div>
-            {% else %}
-            <div class="text-center py-8 rounded-xl border border-dashed border-sky-200" style="background:#f0f9ff;">
-                <i class="fa-brands fa-whatsapp text-3xl text-slate-300 mb-2"></i>
-                <p class="text-sm font-bold text-slate-600">لم تُضف أرقام إضافية بعد</p>
-                <p class="text-xs text-slate-400 mt-1">اضغط "إضافة رقم" لربط رقم واتساب آخر بمتجرك</p>
-            </div>
-            {% endfor %}
-        </div>
-    </div>
-
-    <!-- Modal: Add Number -->
-    <div id="addNumberModal" class="fixed inset-0 z-50 hidden items-center justify-center" style="background:rgba(0,0,0,0.5);">
-        <div class="bg-white rounded-2xl p-7 w-full max-w-lg mx-4 relative">
-            <button onclick="closeAddNumberModal()" class="absolute top-4 left-4 text-slate-400 hover:text-slate-700 text-xl">×</button>
-            <h3 class="text-lg font-black text-slate-800 mb-1">إضافة رقم واتساب جديد</h3>
-            <p class="text-xs text-slate-500 mb-5">أدخل بيانات الرقم من Meta Developers Console</p>
-
-            <form id="addNumberForm" onsubmit="return submitAddNumber(event)" class="space-y-4">
-                <div>
-                    <label class="input-label">اسم الرقم (لتمييزه)</label>
-                    <input type="text" name="label" class="input-field" placeholder="مثال: الدعم الفني، المبيعات">
-                </div>
-                <div>
-                    <label class="input-label">رقم الجوال (للعرض فقط)</label>
-                    <input type="tel" name="phone_number" class="input-field" dir="ltr" placeholder="+966 5X XXX XXXX" style="font-family:Inter,monospace;">
-                </div>
-                <div>
-                    <label class="input-label">Phone Number ID <span style="color:#ef4444;">*</span></label>
-                    <input type="text" name="phone_number_id" required class="input-field" dir="ltr" placeholder="مثال: 105931123456789" style="font-family:Inter,monospace;">
-                </div>
-                <div>
-                    <label class="input-label">WABA ID</label>
-                    <input type="text" name="waba_id" class="input-field" dir="ltr" placeholder="مثال: 100231987654321" style="font-family:Inter,monospace;">
-                </div>
-                <div>
-                    <label class="input-label">Access Token <span style="color:#ef4444;">*</span></label>
-                    <input type="password" name="access_token" required class="input-field" dir="ltr" placeholder="EAAG..." style="font-family:Inter,monospace;">
-                </div>
-                <button type="submit" id="submitAddBtn" class="w-full py-3 rounded-xl text-sm font-bold text-white" style="background:linear-gradient(135deg,#0d9488,#14b8a6);">
-                    <i class="fa-solid fa-plus ml-1"></i> إضافة الرقم
-                </button>
-            </form>
-        </div>
-    </div>
-
-    <script>
-        function openAddNumberModal() {
-            document.getElementById('addNumberModal').classList.remove('hidden');
-            document.getElementById('addNumberModal').classList.add('flex');
-        }
-        function closeAddNumberModal() {
-            document.getElementById('addNumberModal').classList.add('hidden');
-            document.getElementById('addNumberModal').classList.remove('flex');
-        }
-        async function submitAddNumber(e) {
-            e.preventDefault();
-            const btn = document.getElementById('submitAddBtn');
-            const orig = btn.innerHTML;
-            btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري...';
-            const data = Object.fromEntries(new FormData(e.target));
-            try {
-                const r = await fetch('/api/whatsapp-numbers', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data)
-                });
-                const result = await r.json();
-                if (result.ok) {
-                    location.reload();
-                } else {
-                    alert('❌ ' + (result.message || result.error));
-                    btn.disabled = false; btn.innerHTML = orig;
-                }
-            } catch (err) { alert('❌ ' + err.message); btn.disabled = false; btn.innerHTML = orig; }
-            return false;
-        }
-        async function deleteNumber(id) {
-            if (!confirm('حذف هذا الرقم نهائياً؟')) return;
-            const r = await fetch('/api/whatsapp-numbers/' + id, { method: 'DELETE' });
-            const data = await r.json();
-            if (data.ok) location.reload(); else alert('❌ ' + (data.error || 'خطأ'));
-        }
-        async function makePrimary(id) {
-            if (!confirm('جعل هذا الرقم الأساسي؟ الرقم الحالي الأساسي سيُحوّل لإضافي.')) return;
-            const r = await fetch('/api/whatsapp-numbers/' + id + '/make-primary', { method: 'POST' });
-            const data = await r.json();
-            if (data.ok) location.reload(); else alert('❌ ' + (data.error || 'خطأ'));
-        }
-    </script>
-    {% endif %}
-
-    <!-- Developer API Access -->
-    <div class="card p-7 relative overflow-hidden">
-        <div class="absolute top-0 right-0 w-1 h-full" style="background: linear-gradient(to bottom, #7c3aed, #8b5cf6);"></div>
-
-        <div class="flex items-center justify-between mb-6">
+        <div class="flex items-center justify-between mb-6 flex-wrap gap-3">
             <div class="flex items-center gap-3">
                 <div class="w-10 h-10 rounded-xl gradient-purple flex items-center justify-center">
                     <i class="fa-solid fa-code text-white text-sm"></i>
                 </div>
                 <div>
-                    <h3 class="font-bold text-slate-800 text-sm">API المطورين</h3>
-                    <p class="text-xs text-slate-400 mt-0.5">اربط أنظمتك الخارجية برمجياً عبر REST API</p>
+                    <h3 class="font-extrabold text-slate-800 text-sm">API المطورين (REST API)</h3>
+                    <p class="text-xs text-slate-400 mt-0.5">اربط أنظمتك وموقعك الخارجي لإرسال الرسائل عبر الـ API الخاص بنا</p>
                 </div>
             </div>
             <span class="chip badge-purple">باقة الشركات</span>
@@ -445,54 +451,132 @@
         {% if has_api_access %}
         <div class="space-y-4">
             <div>
-                <label class="input-label">مفتاح الربط <span style="font-family: Inter, sans-serif;">(API Key)</span></label>
+                <label class="input-label">مفتاح الربط الخاص بك <span class="font-mono">(API Key)</span></label>
                 <div class="flex gap-2">
                     <input type="text" id="api_key_display" readonly value="{{ api_key or '' }}"
-                        class="input-field flex-1" placeholder="لم يتم توليد مفتاح بعد">
+                        class="input-field flex-1 font-mono text-xs" placeholder="اضغط على توليد لإنشاء مفتاح للربط">
                     <button onclick="generateApiKey()"
-                        class="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold text-white gradient-purple transition flex-shrink-0">
-                        <i class="fa-solid fa-rotate"></i> توليد
+                        class="flex items-center gap-1.5 px-5 py-2.5 rounded-xl text-xs font-bold text-white gradient-purple transition flex-shrink-0 hover:scale-[1.02]">
+                        <i class="fa-solid fa-rotate"></i> توليد مفتاح جديد
                     </button>
-                    <button onclick="copyApiKey()"
-                        class="px-3 py-2.5 rounded-xl text-xs font-bold border border-slate-200 text-slate-600 hover:bg-slate-50 transition flex-shrink-0">
+                    <button onclick="copyApiKey()" id="copyBtn"
+                        class="px-4 py-2.5 rounded-xl text-xs font-bold border border-slate-200 text-slate-600 hover:bg-slate-50 transition flex-shrink-0">
                         <i class="fa-regular fa-copy"></i>
                     </button>
                 </div>
             </div>
-            <div style="background: #0f172a; border-radius: 12px; padding: 16px; direction: ltr; text-align: left; overflow-x: auto;">
-                <p style="color: #64748b; font-size: 10px; font-family: Inter, monospace; margin-bottom: 8px;">POST /api/v1/send</p>
-                <pre style="color: #cbd5e1; font-size: 11px; font-family: Inter, monospace; line-height: 1.7;">curl -X POST https://app.mobhir.com/api/v1/send \
-  -H "Authorization: Bearer <span style="color: #fbbf24;">YOUR_API_KEY</span>" \
+            
+            <div class="rounded-2xl p-4 bg-slate-900 border border-slate-800 overflow-hidden shadow-inner">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-2 mb-3">
+                    <span class="text-[10px] font-mono text-purple-400 font-bold uppercase tracking-wider">مثال لطلب الإرسال (cURL)</span>
+                    <span class="text-[10px] font-mono text-slate-600">POST /api/v1/send</span>
+                </div>
+                <pre class="text-xs font-mono text-slate-300 leading-relaxed overflow-x-auto" style="direction: ltr; text-align: left;">curl -X POST https://app.mobhir.com/api/v1/send \
+  -H "Authorization: Bearer <span style="color: #fbbf24;" id="curlKey">{{ api_key or 'YOUR_API_KEY' }}</span>" \
   -H "Content-Type: application/json" \
-  -d '{"phone": "966500000000", "message": "Hello!"}'</pre>
+  -d '{"phone": "966500000000", "message": "Hello from Mobher AI!"}'</pre>
             </div>
         </div>
         {% else %}
-        <div style="background: linear-gradient(135deg, #faf5ff, #ede9fe); border: 1px solid #ddd6fe; border-radius: 14px; padding: 24px; text-align: center;">
-            <div class="w-14 h-14 rounded-2xl mx-auto mb-4 flex items-center justify-center" style="background: #ede9fe;">
+        <div style="background: linear-gradient(135deg, #faf5ff 0%, #ede9fe 100%); border: 1px solid #ddd6fe; border-radius: 18px; padding: 28px; text-align: center;">
+            <div class="w-14 h-14 rounded-2xl mx-auto mb-4 flex items-center justify-center bg-white shadow-sm">
                 <i class="fa-solid fa-lock text-purple-500 text-xl"></i>
             </div>
-            <h4 class="font-bold text-slate-800 mb-1.5 text-sm">حصرية لباقة الشركات</h4>
-            <p class="text-xs text-slate-500 mb-5 leading-relaxed">باقتك الحالية: <strong>{{ plan_name }}</strong> — ادمج أنظمتك الخارجية مع واتساب برمجياً، مثالية للكيانات الكبيرة التي تحتاج أتمتة متقدمة.</p>
-            <div class="flex flex-wrap justify-center gap-2 mb-5">
-                <span class="chip" style="background: white; border: 1px solid #e9d5ff; color: #6d28d9;"><i class="fa-solid fa-check text-emerald-500 ml-1 text-[9px]"></i>REST API كاملة</span>
-                <span class="chip" style="background: white; border: 1px solid #e9d5ff; color: #6d28d9;"><i class="fa-solid fa-check text-emerald-500 ml-1 text-[9px]"></i>Webhook Support</span>
-                <span class="chip" style="background: white; border: 1px solid #e9d5ff; color: #6d28d9;"><i class="fa-solid fa-check text-emerald-500 ml-1 text-[9px]"></i>إرسال مخصص برمجي</span>
+            <h4 class="font-extrabold text-slate-800 mb-2 text-sm">ميزة مغلقة - حصرية لباقة الشركات</h4>
+            <p class="text-xs text-slate-500 mb-5 leading-relaxed max-w-md mx-auto">
+                باقتك الحالية: <strong>{{ plan_name }}</strong>. يتيح لك نظام API المطورين دمج قنوات الواتساب الخاصة بك ببرامجك المحاسبية ومواقعك الخارجية للإرسال التلقائي الفوري.
+            </p>
+            <div class="flex flex-wrap justify-center gap-2 mb-6">
+                <span class="chip" style="background: white; border: 1px solid #e9d5ff; color: #6d28d9; font-size:10px; font-weight:700;"><i class="fa-solid fa-check text-emerald-500 ml-1"></i>REST API متكامل</span>
+                <span class="chip" style="background: white; border: 1px solid #e9d5ff; color: #6d28d9; font-size:10px; font-weight:700;"><i class="fa-solid fa-check text-emerald-500 ml-1"></i>Webhooks مخصصة</span>
+                <span class="chip" style="background: white; border: 1px solid #e9d5ff; color: #6d28d9; font-size:10px; font-weight:700;"><i class="fa-solid fa-check text-emerald-500 ml-1"></i>تحكم برمجي كامل</span>
             </div>
             <a href="/pricing"
-                class="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold text-white transition"
+                class="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-bold text-white transition-all shadow-md hover:shadow-lg hover:scale-[1.02]"
                 style="background: linear-gradient(135deg, #7c3aed, #8b5cf6); box-shadow: 0 4px 16px rgba(124,58,237,0.3);">
-                <i class="fa-solid fa-arrow-up text-xs"></i> ترقية إلى الشركات — 299 ر.س/شهر
+                <i class="fa-solid fa-arrow-up text-xs"></i> ترقية إلى باقة الشركات — 299 ر.س/شهر
             </a>
         </div>
         {% endif %}
     </div>
 
 </div>
+
+<!-- ══════════════════════════════════════
+     MODAL: ADD / EDIT NUMBER (منبثق الإضافة والتعديل المشترك)
+     ══════════════════════════════════════ -->
+<div id="numberModal" class="fixed inset-0 z-50 hidden items-center justify-center" style="background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px);">
+    <div class="bg-white rounded-2xl p-6 md:p-8 w-full max-w-xl mx-4 relative shadow-2xl border border-slate-100 animate-in">
+        
+        <!-- زر الإغلاق -->
+        <button onclick="closeModal()" class="absolute top-5 left-5 text-slate-400 hover:text-slate-600 text-xl transition-colors">✕</button>
+        
+        <!-- ترويسة المودال -->
+        <div class="flex items-center gap-3 mb-6">
+            <div id="modalIconContainer" class="w-10 h-10 rounded-xl flex items-center justify-center text-white">
+                <i class="fa-brands fa-whatsapp text-lg"></i>
+            </div>
+            <div>
+                <h3 id="modalTitle" class="text-base font-extrabold text-slate-800">ربط قناة واتساب</h3>
+                <p id="modalSubtitle" class="text-xs text-slate-400 mt-0.5">أدخل بيانات الربط المستخرجة من لوحة مطوري Meta</p>
+            </div>
+        </div>
+
+        <form id="numberForm" onsubmit="return handleFormSubmit(event)" class="space-y-4">
+            <!-- معرف رقم الهاتف للـ API (ID مخفي للتعديل) -->
+            <input type="hidden" name="id" id="field_id">
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label class="input-label">تسمية القناة (لتسهيل التعرف عليها)</label>
+                    <input type="text" name="label" id="field_label" required class="input-field" placeholder="مثال: الدعم الفني، قسم المبيعات">
+                </div>
+                <div>
+                    <label class="input-label">رقم الجوال (للعرض والتوثيق)</label>
+                    <input type="tel" name="phone_number" id="field_phone_number" class="input-field font-mono" dir="ltr" placeholder="+966 5X XXX XXXX">
+                </div>
+            </div>
+
+            <div>
+                <label class="input-label">معرف رقم الهاتف <span class="font-mono text-rose-500">(Phone Number ID) *</span></label>
+                <input type="text" name="phone_number_id" id="field_phone_number_id" required class="input-field font-mono" dir="ltr" placeholder="مثال: 105931123456789">
+                <p class="input-hint"><i class="fa-solid fa-circle-info"></i> تجده في لوحة Meta Developers ← WhatsApp ← API Setup</p>
+            </div>
+
+            <div>
+                <label class="input-label">معرف حساب أعمال الواتساب <span class="font-mono text-slate-400">(WABA ID)</span></label>
+                <input type="text" name="waba_id" id="field_waba_id" class="input-field font-mono" dir="ltr" placeholder="مثال: 100231987654321">
+            </div>
+
+            <div>
+                <label class="input-label">رمز الوصول الدائم للـ API <span class="font-mono text-rose-500">(Access Token) *</span></label>
+                <div class="relative">
+                    <input type="password" name="access_token" id="field_access_token" required class="input-field font-mono" dir="ltr" placeholder="EAAG..." style="padding-left: 45px;">
+                    <button type="button" onclick="toggleTokenVisibility('field_access_token', 'tokenEye')" class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition">
+                        <i class="fa-solid fa-eye text-sm" id="tokenEye"></i>
+                    </button>
+                </div>
+                <p class="input-hint"><i class="fa-solid fa-circle-info"></i> تأكد من صلاحية <code class="bg-slate-100 px-1 py-0.5 rounded text-[10px]">whatsapp_business_messaging</code> لهذا التوكن</p>
+            </div>
+
+            <!-- أزرار الإرسال -->
+            <div class="pt-4 border-t border-slate-100 flex justify-end gap-3">
+                <button type="button" onclick="closeModal()" class="px-5 py-2.5 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded-xl text-xs font-bold transition">
+                    إلغاء
+                </button>
+                <button type="submit" id="submitBtn" class="flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-bold text-white shadow-md transition-all hover:scale-[1.02]" style="background: linear-gradient(135deg, #0d9488, #14b8a6);">
+                    <i class="fa-solid fa-floppy-disk"></i> <span id="submitBtnText">ربط القناة</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 {% endblock %}
 
 {% block scripts %}
 <script>
+    // تبديل التبويبات الإرشادية
     const panels = ['why', 'how', 'faq'];
     function switchTab(tab) {
         panels.forEach(p => {
@@ -507,9 +591,10 @@
         active.classList.remove('border-transparent', 'text-slate-400');
     }
 
-    function toggleToken() {
-        const input = document.getElementById('tokenInput');
-        const eye = document.getElementById('tokenEye');
+    // إظهار/إخفاء كلمة المرور للتوكن
+    function toggleTokenVisibility(inputId, eyeId) {
+        const input = document.getElementById(inputId);
+        const eye = document.getElementById(eyeId);
         if (input.type === 'password') {
             input.type = 'text';
             eye.className = 'fa-solid fa-eye-slash text-sm';
@@ -519,20 +604,178 @@
         }
     }
 
-    async function generateApiKey() {
-        const res = await fetch('/settings/generate-api-key', { method: 'POST' });
-        const data = await res.json();
-        if (data.success) {
-            document.getElementById('api_key_display').value = data.key;
+    // تنبيه تخطي حدود الباقة
+    function showUpgradeWarning() {
+        alert('❌ لقد وصلت للحد الأقصى المسموح به في باقتك الحالية لربط أرقام إضافية. يرجى الترقية لإضافة المزيد من القنوات.');
+    }
+
+    // إدارة المنبثق (Modal)
+    function openModal(mode, data = null) {
+        const modal = document.getElementById('numberModal');
+        const title = document.getElementById('modalTitle');
+        const subtitle = document.getElementById('modalSubtitle');
+        const btnText = document.getElementById('submitBtnText');
+        const iconContainer = document.getElementById('modalIconContainer');
+        const form = document.getElementById('numberForm');
+
+        // تنظيف الفورم
+        form.reset();
+        document.getElementById('field_id').value = '';
+
+        if (mode === 'add') {
+            title.innerText = 'ربط قناة واتساب جديدة';
+            subtitle.innerText = 'أدخل تفاصيل الربط من حساب Meta Developers لربط فرع أو قسم جديد';
+            btnText.innerText = 'ربط القناة';
+            iconContainer.className = 'w-10 h-10 rounded-xl flex items-center justify-center text-white gradient-teal shadow-md';
         } else {
-            alert(data.error || 'حدث خطأ');
+            title.innerText = 'تعديل بيانات القناة';
+            subtitle.innerText = 'قم بتحديث بيانات رمز الوصول أو معرفات الهاتف المربوطة حالياً';
+            btnText.innerText = 'حفظ التعديلات';
+            iconContainer.className = 'w-10 h-10 rounded-xl flex items-center justify-center text-white gradient-amber shadow-md';
+
+            // تعبئة البيانات في حال التعديل
+            if (data) {
+                document.getElementById('field_id').value = data.id;
+                document.getElementById('field_label').value = data.label || '';
+                document.getElementById('field_phone_number').value = data.phone_number || '';
+                document.getElementById('field_phone_number_id').value = data.phone_number_id || '';
+                document.getElementById('field_waba_id').value = data.waba_id || '';
+                document.getElementById('field_access_token').value = data.access_token || '';
+            }
+        }
+
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    }
+
+    function closeModal() {
+        const modal = document.getElementById('numberModal');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
+
+    // إرسال الفورم (إضافة أو تعديل)
+    async function handleFormSubmit(e) {
+        e.preventDefault();
+        const submitBtn = document.getElementById('submitBtn');
+        const origBtnHtml = submitBtn.innerHTML;
+        
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري التحقق...';
+
+        const id = document.getElementById('field_id').value;
+        const data = {
+            label: document.getElementById('field_label').value,
+            phone_number: document.getElementById('field_phone_number').value,
+            phone_number_id: document.getElementById('field_phone_number_id').value,
+            waba_id: document.getElementById('field_waba_id').value,
+            access_token: document.getElementById('field_access_token').value
+        };
+
+        const isEdit = !!id;
+        const url = isEdit ? `/api/whatsapp-numbers/${id}` : '/api/whatsapp-numbers';
+        const method = isEdit ? 'PUT' : 'POST';
+
+        try {
+            const response = await fetch(url, {
+                method: method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+
+            const result = await response.json();
+
+            if (result.ok) {
+                closeModal();
+                // إعادة تحميل الصفحة مع status=saved لإظهار التنبيه الجميل
+                window.location.href = '/settings/whatsapp?status=saved';
+            } else {
+                alert('❌ خطأ: ' + (result.message || result.error || 'حدث خطأ غير متوقع'));
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = origBtnHtml;
+            }
+        } catch (err) {
+            alert('❌ فشل الاتصال بالسيرفر: ' + err.message);
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = origBtnHtml;
+        }
+
+        return false;
+    }
+
+    // حذف رقم
+    async function deleteNumber(id) {
+        if (!confirm('🚨 هل أنت متأكد من رغبتك في حذف هذا الرقم بالكامل من النظام؟ ستتوقف جميع الردود الآلية عبره فوراً.')) return;
+        
+        try {
+            const response = await fetch(`/api/whatsapp-numbers/${id}`, { method: 'DELETE' });
+            const result = await response.json();
+
+            if (result.ok) {
+                location.reload();
+            } else {
+                alert('❌ فشل الحذف: ' + (result.error || result.message || 'خطأ'));
+            }
+        } catch (err) {
+            alert('❌ خطأ في الاتصال: ' + err.message);
         }
     }
 
+    // جعل الرقم أساسي
+    async function makePrimary(id) {
+        if (!confirm('⭐ هل تود تعيين هذا الرقم كرقم أساسي للمتجر لتلقي وإرسال الحملات الرئيسية منه؟')) return;
+
+        try {
+            const response = await fetch(`/api/whatsapp-numbers/${id}/make-primary`, { method: 'POST' });
+            const result = await response.json();
+
+            if (result.ok) {
+                location.reload();
+            } else {
+                alert('❌ فشل تعيين الرقم كأولوي: ' + (result.error || result.message || 'خطأ'));
+            }
+        } catch (err) {
+            alert('❌ خطأ في الاتصال: ' + err.message);
+        }
+    }
+
+    // توليد مفتاح REST API
+    async function generateApiKey() {
+        if (!confirm('🔑 هل تريد توليد مفتاح API جديد؟ المفتاح القديم (إن وجد) سيتوقف عن العمل فوراً.')) return;
+
+        try {
+            const res = await fetch('/settings/generate-api-key', { method: 'POST' });
+            const data = await res.json();
+            
+            if (data.success) {
+                document.getElementById('api_key_display').value = data.key;
+                const curlKey = document.getElementById('curlKey');
+                if (curlKey) curlKey.innerText = data.key;
+            } else {
+                alert('❌ خطأ: ' + (data.error || 'فشل التوليد'));
+            }
+        } catch (e) {
+            alert('❌ خطأ اتصال: ' + e.message);
+        }
+    }
+
+    // نسخ مفتاح الـ API
     function copyApiKey() {
-        const val = document.getElementById('api_key_display').value;
-        if (!val) return;
-        navigator.clipboard.writeText(val);
+        const keyInput = document.getElementById('api_key_display');
+        const copyBtn = document.getElementById('copyBtn');
+        if (!keyInput || !keyInput.value) return;
+
+        navigator.clipboard.writeText(keyInput.value);
+        
+        // تأثير بصري للنسخ
+        const origHtml = copyBtn.innerHTML;
+        copyBtn.innerHTML = '<i class="fa-solid fa-check text-emerald-500"></i>';
+        copyBtn.style.borderColor = '#10b981';
+        
+        setTimeout(() => {
+            copyBtn.innerHTML = origHtml;
+            copyBtn.style.borderColor = '';
+        }, 2000);
     }
 </script>
 {% endblock %}

@@ -288,6 +288,33 @@ app.use('/dashboard', dashboardRoutes);
 app.use('/settings', settingsRoutes);
 app.use('/admin', adminRoutes);
 
+// 🎨 Interactive Widget Demo & Preview Page
+app.get('/widget-demo', async (req, res) => {
+  try {
+    const merchantId = req.user?.merchant?.id || 123456789;
+    const db = SallaDatabase.connection;
+    let planName = 'الأساسية';
+    if (db && db.models?.Tenant) {
+      const tenant = await db.models.Tenant.findOne({
+        where: { salla_merchant_id: merchantId },
+        include: [{ model: db.models.Subscription, include: [db.models.Plan] }]
+      });
+      planName = tenant?.Subscription?.Plan?.name || 'الأساسية';
+    }
+    res.render('widget_demo.html', {
+      user: req.user || { merchant: { name: 'متجر تجريبي' } },
+      plan_name: planName,
+      activePage: 'widget_demo'
+    });
+  } catch (e) {
+    res.render('widget_demo.html', {
+      user: req.user || { merchant: { name: 'متجر تجريبي' } },
+      plan_name: 'الأساسية',
+      activePage: 'widget_demo'
+    });
+  }
+});
+
 // DEV TOOL: Force Upgrade
 app.get('/force-upgrade', devOnly, async (req, res) => {
   const db = SallaDatabase.connection;

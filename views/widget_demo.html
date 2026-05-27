@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>محرر ومحاكي الأيقونة العملية | مبهر AI</title>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <!-- Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Tailwind for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'cairo': ['Cairo', 'sans-serif'],
+                        'inter': ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            font-family: 'Cairo', 'Inter', sans-serif;
+            background-color: #0b0f19;
+            color: #f8fafc;
+            overflow: hidden;
+        }
+
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.65);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .luxury-gradient {
+            background: linear-gradient(135deg, #1e1b4b 0%, #030712 100%);
+        }
+
+        /* Ambient Glows */
+        .glow-orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(120px);
+            pointer-events: none;
+            z-index: 0;
+            opacity: 0.15;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.2);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 99px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Widget Styles */
+        .wa-widget-btn {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .wa-widget-btn:hover {
+            transform: scale(1.06) translateY(-2px);
+        }
+
+        /* Glow animation */
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 10px rgba(37, 211, 102, 0.4); }
+            50% { box-shadow: 0 0 25px rgba(37, 211, 102, 0.7); }
+        }
+
+        .glow-active-green { animation: pulse-glow 2.5s infinite; }
+
+        /* Speech bubble bounce */
+        @keyframes bubble-float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-4px); }
+        }
+        .speech-bubble {
+            animation: bubble-float 3s ease-in-out infinite;
+        }
+
+        /* Typing Indicator */
+        .typing-dot {
+            width: 6px;
+            height: 6px;
+            background-color: #94a3b8;
+            border-radius: 50%;
+            display: inline-block;
+            animation: typing-bounce 1.4s infinite ease-in-out both;
+        }
+        .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+        .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+
+        @keyframes typing-bounce {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1.0); }
+        }
+    </style>
+</head>
+<body class="h-screen w-screen relative overflow-hidden flex flex-col md:flex-row">
+
+    <!-- Orbs of ambient light -->
+    <div class="glow-orb w-[400px] h-[400px] bg-teal-500 top-10 right-10"></div>
+    <div class="glow-orb w-[450px] h-[450px] bg-indigo-600 bottom-10 left-10"></div>
+
+    <!-- ══════════════════════════════════════
+         SIDEBAR: DESIGN PANEL (يمين الشاشة)
+         ══════════════════════════════════════ -->
+    <aside class="w-full md:w-[420px] glass-panel h-auto md:h-screen flex flex-col border-b md:border-b-0 md:border-l border-white/10 z-10 overflow-y-auto p-6 md:p-8 flex-shrink-0">
+        
+        <!-- Header -->
+        <div class="flex items-center justify-between border-b border-white/10 pb-5 mb-6">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-teal-500 to-emerald-400 flex items-center justify-center text-white shadow-lg">
+                    <i class="fa-solid fa-wand-magic-sparkles text-base"></i>
+                </div>
+                <div>
+                    <h1 class="text-white font-extrabold text-base leading-none">محرر الأيقونة <span class="text-teal-400">AI</span></h1>
+                    <p class="text-[10px] text-slate-400 mt-1 uppercase font-inter tracking-wider">Official & Practical Styles</p>
+                </div>
+            </div>
+            
+            <a href="/dashboard" class="px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-xs font-bold text-slate-300 transition flex items-center gap-1">
+                <i class="fa-solid fa-arrow-left"></i> لوحة التحكم
+            </a>
+        </div>
+
+        <p class="text-xs text-slate-400 mb-6 leading-relaxed">
+            لقد قمنا بتحديث الخيارات بناءً على رغبتك في استخدام **أيقونات عملية فائقة الفعالية** وتوفير **التحويل المباشر إلى تطبيق واتساب**.
+        </p>
+
+        <!-- Configuration Controls -->
+        <div class="space-y-6 flex-1">
+
+            <!-- 1. Click Behavior Mode (New & Practical Feature) -->
+            <div>
+                <label class="block text-xs font-bold text-slate-300 mb-2.5">
+                    <i class="fa-solid fa-square-phone-flip text-teal-400 ml-1.5"></i> إجراء النقر (Click Behavior)
+                </label>
+                <div class="flex gap-2 bg-slate-950/60 p-1 rounded-xl border border-white/5">
+                    <button onclick="setClickMode('redirect')" id="click-redirect" class="flex-1 py-2 px-2.5 rounded-lg bg-teal-500/10 text-white text-[11px] font-bold border border-teal-500/20 transition">
+                        ⚡ تحويل مباشر للواتس
+                    </button>
+                    <button onclick="setClickMode('chat')" id="click-chat" class="flex-1 py-2 px-2.5 rounded-lg bg-transparent text-slate-400 text-[11px] font-bold border border-transparent transition hover:text-white">
+                        💬 محادثة داخل الموقع
+                    </button>
+                </div>
+                <p class="text-[9.5px] text-slate-500 mt-1.5 leading-relaxed">
+                    **التحويل المباشر (موصى به):** يفتح تطبيق واتساب فوراً للعميل مع رسالة بدء مجهزة تفاعلياً بالذكاء الاصطناعي لتسهيل تواصله السريع.
+                </p>
+            </div>
+
+            <!-- 2. Style Selection (Practical & Professional Styles) -->
+            <div>
+                <label class="block text-xs font-bold text-slate-300 mb-3">
+                    <i class="fa-solid fa-palette text-teal-400 ml-1.5"></i> الأشكال والرموز العملية (Official Styles)
+                </label>
+                <div class="grid grid-cols-2 gap-3">
+                    
+                    <!-- Style 1: Classic Green -->
+                    <button onclick="changeStyle('classic')" id="btn-classic" class="flex flex-col items-center justify-center p-3 rounded-xl border border-teal-500/30 bg-teal-500/10 text-white transition-all duration-200 hover:border-teal-400 group">
+                        <div class="w-9 h-9 rounded-full bg-[#25D366] flex items-center justify-center text-white text-lg shadow-md group-hover:scale-105 transition-transform glow-active-green">
+                            <i class="fa-brands fa-whatsapp text-xl"></i>
+                        </div>
+                        <span class="text-[10px] font-bold mt-2 text-center">شعار رسمي دائري</span>
+                    </button>
+
+                    <!-- Style 2: Squircle -->
+                    <button onclick="changeStyle('squircle')" id="btn-squircle" class="flex flex-col items-center justify-center p-3 rounded-xl border border-white/5 bg-white/5 text-slate-400 transition-all duration-200 hover:border-white/20 hover:text-white group">
+                        <div class="w-9 h-9 rounded-2xl bg-[#25D366] flex items-center justify-center text-white text-lg shadow-md group-hover:scale-105 transition-transform">
+                            <i class="fa-brands fa-whatsapp text-xl"></i>
+                        </div>
+                        <span class="text-[10px] font-bold mt-2 text-center">مربع مستدير الحواف</span>
+                    </button>
+
+                    <!-- Style 3: Rounded Box with custom text (للمساعدة أو للتواصل اضغط) -->
+                    <button onclick="changeStyle('pill')" id="btn-pill" class="flex flex-col items-center justify-center p-3 rounded-xl border border-white/5 bg-white/5 text-slate-400 transition-all duration-200 hover:border-white/20 hover:text-white group">
+                        <div class="px-3 py-2 rounded-xl bg-[#25D366] text-white text-[8px] font-extrabold flex items-center gap-1.5 shadow-md group-hover:scale-105 transition-transform">
+                            <i class="fa-brands fa-whatsapp"></i> للمساعدة أو للتواصل
+                        </div>
+                        <span class="text-[10px] font-bold mt-2 text-center">مربع مستدير مع نص إرشادي</span>
+                    </button>
+
+                    <!-- Style 4: Hybrid Brand AI -->
+                    <button onclick="changeStyle('hybrid')" id="btn-hybrid" class="flex flex-col items-center justify-center p-3 rounded-xl border border-white/5 bg-white/5 text-slate-400 transition-all duration-200 hover:border-white/20 hover:text-white group">
+                        <div class="w-9 h-9 rounded-full bg-[#128C7E] flex items-center justify-center text-white text-lg shadow-md relative group-hover:scale-105 transition-transform">
+                            <i class="fa-brands fa-whatsapp text-lg"></i>
+                            <span class="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-amber-500 text-[8px] flex items-center justify-center text-black font-black border border-slate-950 shadow">AI</span>
+                        </div>
+                        <span class="text-[10px] font-bold mt-2 text-center">هجين ذكي (AI)</span>
+                    </button>
+
+                </div>
+            </div>
+
+            <!-- 3. Welcome Message Text -->
+            <div>
+                <label class="block text-xs font-bold text-slate-300 mb-2">
+                    <i class="fa-solid fa-comment-dots text-teal-400 ml-1.5"></i> نص الفقاعة الترحيبية / رسالة البدء
+                </label>
+                <input type="text" id="welcomeInput" oninput="updateWelcomeText(this.value)" value="تواصل معنا مباشرة عبر واتساب! 💬" 
+                    class="w-full bg-slate-950/80 border border-white/10 rounded-xl px-4 py-3 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition">
+                <p class="text-[10px] text-slate-500 mt-1.5">
+                    في وضع **التحويل المباشر**؛ يتم تلقائياً تجهيز هذا النص ليكون هو رسالة البداية التي يرسلها العميل للتاجر.
+                </p>
+            </div>
+
+            <!-- 4. Show/Hide welcome bubble -->
+            <div class="flex items-center justify-between bg-slate-950/40 p-3 rounded-xl border border-white/5">
+                <div class="flex items-center gap-2">
+                    <i class="fa-regular fa-eye text-teal-400 text-sm"></i>
+                    <div>
+                        <p class="text-xs font-bold text-slate-200">عرض الفقاعة الترحيبية</p>
+                        <p class="text-[10px] text-slate-500 mt-0.5">إظهار تلميح بجانب الزر بالمتجر</p>
+                    </div>
+                </div>
+                <input type="checkbox" id="toggleBubble" checked onchange="toggleWelcomeBubble(this.checked)" 
+                    class="w-8 h-4 rounded-full bg-slate-800 accent-teal-500 cursor-pointer">
+            </div>
+
+            <!-- 5. Position Selection -->
+            <div>
+                <label class="block text-xs font-bold text-slate-300 mb-2"><i class="fa-solid fa-arrows-to-eye text-teal-400 ml-1.5"></i> موقع الأيقونة بالمتجر</label>
+                <div class="flex gap-3">
+                    <button onclick="changePosition('right')" id="pos-right" class="flex-1 py-2.5 rounded-xl border border-teal-500/30 bg-teal-500/10 text-white text-xs font-bold transition">
+                        أسفل اليمين (RTL)
+                    </button>
+                    <button onclick="changePosition('left')" id="pos-left" class="flex-1 py-2.5 rounded-xl border border-white/5 bg-white/5 text-slate-400 text-xs font-bold transition hover:text-white">
+                        أسفل اليسار
+                    </button>
+                </div>
+            </div>
+
+            <!-- 6. Online Status Glow -->
+            <div class="flex items-center justify-between bg-slate-950/40 p-3 rounded-xl border border-white/5">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-circle-nodes text-teal-400 text-sm animate-pulse"></i>
+                    <div>
+                        <p class="text-xs font-bold text-slate-200">مؤشر اتصال الذكاء الاصطناعي</p>
+                        <p class="text-[10px] text-slate-500 mt-0.5">مؤشر اتصال وميضي صغير</p>
+                    </div>
+                </div>
+                <input type="checkbox" id="toggleOnlineGlow" checked onchange="toggleOnlineIndicator(this.checked)" 
+                    class="w-8 h-4 rounded-full bg-slate-800 accent-teal-500 cursor-pointer">
+            </div>
+
+        </div>
+
+        <!-- Call to Action Banner -->
+        <div class="mt-8 pt-5 border-t border-white/10 text-center">
+            <button onclick="alert('تهانينا! تم حفظ وتفعيل الإجراء والأيقونات العملية لمتجرك بنجاح سيتم تطبيقها في متجرك فوراً 🚀')" class="w-full bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-white font-extrabold text-xs py-3.5 px-4 rounded-xl shadow-lg transition transform active:scale-95">
+                <i class="fa-solid fa-circle-check ml-1.5"></i> اعتماد وحفظ الإعدادات
+            </button>
+            <p class="text-[9px] text-slate-500 mt-2 font-mono">Powered by Mubhir SaaS Script Injection</p>
+        </div>
+
+    </aside>
+
+    <!-- ══════════════════════════════════════
+         MAIN VIEWPORT: LIVE STORE PREVIEW (يسار الشاشة)
+         ══════════════════════════════════════ -->
+    <main class="flex-1 relative flex flex-col luxury-gradient overflow-hidden">
+        
+        <!-- Live Preview Header Notification Bar -->
+        <div class="w-full glass-panel border-b border-white/10 px-6 py-4 flex items-center justify-between z-10 shrink-0">
+            <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 pulse-dot"></span>
+                <span class="text-xs font-extrabold text-slate-200">وضع المحاكاة المباشر لمتجر العميل</span>
+            </div>
+            
+            <div class="flex items-center gap-3">
+                <button onclick="resetDemoStore()" class="text-slate-400 hover:text-white transition text-xs flex items-center gap-1">
+                    <i class="fa-solid fa-rotate-right"></i> إعادة تهيئة المتجر
+                </button>
+            </div>
+        </div>
+
+        <!-- ── Mock luxury storefront backdrop ── -->
+        <div class="flex-1 p-6 md:p-12 overflow-y-auto flex flex-col justify-between relative z-0">
+            
+            <!-- Mini Luxury Store Header -->
+            <div class="flex justify-between items-center pb-8 border-b border-white/5">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 to-yellow-600 flex items-center justify-center text-white text-lg shadow-md">
+                        <i class="fa-solid fa-crown"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-white font-black text-sm md:text-base leading-none">متجر الفخامة الملكي للعود والعطور</h2>
+                        <p class="text-[9px] text-amber-500 mt-1 font-inter tracking-widest uppercase">Premium Storefront Mockup</p>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-4 text-xs text-slate-400">
+                    <span class="hover:text-white cursor-pointer transition hidden sm:inline">الرئيسية</span>
+                    <span class="hover:text-white cursor-pointer transition hidden sm:inline">العطور الفاخرة</span>
+                    <span class="hover:text-white cursor-pointer transition hidden sm:inline">دهن العود والمسك</span>
+                    <div class="w-9 h-9 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-white relative cursor-pointer">
+                        <i class="fa-solid fa-basket-shopping text-sm"></i>
+                        <span class="absolute -top-1 -left-1 w-4 h-4 rounded-full bg-amber-500 text-[9px] font-black text-black flex items-center justify-center">3</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mini Store Hero Section -->
+            <div class="my-auto py-8 text-center max-w-2xl mx-auto">
+                <span class="text-amber-500 text-xs font-black tracking-widest uppercase bg-amber-500/10 px-3 py-1.5 rounded-full border border-amber-500/20">تشكيلة الملوك والأمراء حصرياً ✨</span>
+                <h1 class="text-3xl md:text-5xl font-black text-white mt-6 leading-tight">
+                    أفخم أنواع دهن العود العتيق والعطور الفاخرة
+                </h1>
+                <p class="text-slate-400 text-xs md:text-sm mt-4 leading-relaxed max-w-lg mx-auto">
+                    نقدم لك أرقى العطور الطبيعية 100% والمستخرجة من أندر غابات العود حول العالم بضمان ذهبي للاسترجاع.
+                </p>
+                <div class="flex flex-wrap justify-center gap-4 mt-8">
+                    <button class="bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-400 hover:to-yellow-500 text-black font-extrabold text-xs py-3 px-6 rounded-xl shadow-lg transition transform hover:-translate-y-0.5">
+                        اكتشف التشكيلة الفخمة
+                    </button>
+                    <button class="bg-white/5 hover:bg-white/10 border border-white/10 text-white font-extrabold text-xs py-3 px-6 rounded-xl transition">
+                        آراء عملائنا المميزين
+                    </button>
+                </div>
+            </div>
+
+            <!-- Products Showcase Mock -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-8 border-t border-white/5">
+                
+                <!-- Prod 1 -->
+                <div class="bg-white/[0.02] border border-white/5 rounded-2xl p-4 flex gap-4 items-center hover:bg-white/[0.04] transition">
+                    <div class="w-16 h-16 rounded-xl bg-gradient-to-tr from-purple-500/20 to-pink-500/20 border border-white/10 flex items-center justify-center text-3xl shrink-0">
+                        🏺
+                    </div>
+                    <div class="min-w-0">
+                        <h4 class="text-white font-bold text-xs truncate">عود سيوفي ملكي معتق</h4>
+                        <p class="text-[10px] text-amber-500 mt-1 font-mono">420 ر.س</p>
+                        <span class="badge text-[9px] py-0.5 px-1.5 mt-1.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded font-bold">متوفر ✅</span>
+                    </div>
+                </div>
+
+                <!-- Prod 2 -->
+                <div class="bg-white/[0.02] border border-white/5 rounded-2xl p-4 flex gap-4 items-center hover:bg-white/[0.04] transition">
+                    <div class="w-16 h-16 rounded-xl bg-gradient-to-tr from-amber-500/20 to-yellow-500/20 border border-white/10 flex items-center justify-center text-3xl shrink-0">
+                        🧴
+                    </div>
+                    <div class="min-w-0">
+                        <h4 class="text-white font-bold text-xs truncate">عطر "مبهر" الخاص بكسرة العود</h4>
+                        <p class="text-[10px] text-amber-500 mt-1 font-mono">280 ر.س</p>
+                        <span class="badge text-[9px] py-0.5 px-1.5 mt-1.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded font-bold">متوفر ✅</span>
+                    </div>
+                </div>
+
+                <!-- Prod 3 -->
+                <div class="bg-white/[0.02] border border-white/5 rounded-2xl p-4 flex gap-4 items-center hover:bg-white/[0.04] transition">
+                    <div class="w-16 h-16 rounded-xl bg-gradient-to-tr from-teal-500/20 to-cyan-500/20 border border-white/10 flex items-center justify-center text-3xl shrink-0">
+                        🔮
+                    </div>
+                    <div class="min-w-0">
+                        <h4 class="text-white font-bold text-xs truncate">مسك التوت والورود البرية</h4>
+                        <p class="text-[10px] text-amber-500 mt-1 font-mono">150 ر.س</p>
+                        <span class="badge text-[9px] py-0.5 px-1.5 mt-1.5 bg-red-500/10 text-red-400 border border-red-500/20 rounded font-bold">شارف على الانتهاء ⚠️</span>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- ══════════════════════════════════════
+             DYNAMIC FLOATING WHATSAPP WIDGET
+             ══════════════════════════════════════ -->
+        <div id="floatingWidgetContainer" class="absolute bottom-8 right-8 z-30 flex items-end gap-3 pointer-events-auto">
+            
+            <!-- Welcome Speech Bubble -->
+            <div id="welcomeSpeechBubble" class="speech-bubble bg-slate-900 border border-white/10 rounded-2xl px-4 py-3 shadow-2xl max-w-xs text-right relative mb-2 flex items-start gap-3">
+                
+                <!-- Tiny Bot Avatar inside bubble -->
+                <div class="w-8 h-8 rounded-lg bg-teal-500/10 border border-teal-500/30 flex items-center justify-center shrink-0">
+                    <i class="fa-solid fa-robot text-teal-400 text-xs"></i>
+                </div>
+                
+                <div class="flex-1">
+                    <p id="welcomeText" class="text-[11px] text-slate-200 font-bold leading-relaxed">
+                        تواصل معنا مباشرة عبر واتساب! 💬
+                    </p>
+                    <p class="text-[9px] text-teal-400 mt-1 font-bold">
+                        <span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 pulse-dot ml-1"></span>
+                        رد فوري بالذكاء الاصطناعي
+                    </p>
+                </div>
+                
+                <!-- Arrow pointer -->
+                <div class="absolute bottom-4 -left-2 w-0 h-0 border-t-4 border-r-8 border-b-4 border-transparent border-r-slate-900 z-10" id="bubbleArrow"></div>
+            </div>
+
+            <!-- WhatsApp Pulse Button -->
+            <button onclick="handleWidgetClick()" id="widgetButton" class="wa-widget-btn w-14 h-14 rounded-full bg-[#25D366] flex items-center justify-center text-white text-2xl shadow-xl relative glow-active-green">
+                
+                <!-- Online Green Status Indicator Dot -->
+                <span id="widgetOnlineIndicator" class="absolute top-0 right-0 w-4 h-4 bg-emerald-400 rounded-full border-2 border-slate-950 flex items-center justify-center">
+                    <span class="w-1.5 h-1.5 rounded-full bg-white"></span>
+                </span>
+                
+                <span id="widgetButtonContent"><i class="fa-brands fa-whatsapp text-2xl" id="widgetIcon"></i></span>
+            </button>
+
+        </div>
+
+        <!-- ══════════════════════════════════════
+             MOCK DIRECT REDIRECT OVERLAY (NEW)
+             ══════════════════════════════════════ -->
+        <div id="redirectOverlay" class="absolute inset-0 bg-slate-950/85 z-50 flex items-center justify-center hidden animate-in">
+            <div class="glass-panel p-8 rounded-3xl max-w-sm text-center border border-emerald-500/20 space-y-4 shadow-2xl relative mx-4">
+                <div class="w-16 h-16 rounded-full bg-[#25D366]/20 text-[#25D366] flex items-center justify-center text-3xl mx-auto shadow-lg shadow-[#25D366]/10 animate-bounce">
+                    <i class="fa-brands fa-whatsapp animate-pulse"></i>
+                </div>
+                <div>
+                    <h3 class="text-white font-extrabold text-sm">جاري توجيه العميل إلى واتساب... ⚡</h3>
+                    <p class="text-[11px] text-slate-400 mt-1 leading-relaxed">
+                        بموجب إعدادك العملي؛ تم فك الارتباط بنافذة الدردشة الداخلية وسيتم الآن توجيه الزائر فوراً للرقم الرسمي المربوط مع رسالة ترحيبية مخصصة.
+                    </p>
+                </div>
+                <div class="bg-slate-900 border border-white/5 rounded-2xl p-4 text-right space-y-1 font-mono">
+                    <span class="text-[10px] text-slate-500 block">💬 نص الرسالة المجهزة للعميل:</span>
+                    <p id="redirectMsgText" class="text-xs text-slate-200 leading-relaxed font-bold font-inter" dir="rtl">
+                        "مرحباً متجر الفخامة، أريد الاستفسار عن عطر مبهر الخاص وباقي العروض..."
+                    </p>
+                </div>
+                <button onclick="closeRedirectOverlay()" class="w-full bg-[#25D366] hover:bg-[#20ba5a] text-white font-extrabold text-xs py-3 rounded-xl transition shadow-md shadow-emerald-500/10">
+                    رجوع لمحاكاة المتجر
+                </button>
+            </div>
+        </div>
+
+        <!-- ══════════════════════════════════════
+             MOCK INTERACTIVE CHAT WINDOW (OPTIONAL VIEW)
+             ══════════════════════════════════════ -->
+        <div id="widgetChatWindow" class="absolute bottom-24 right-8 w-[380px] h-[520px] rounded-3xl glass-panel shadow-2xl border border-white/10 flex flex-col z-40 hidden overflow-hidden animate-in">
+            
+            <!-- Chat Window Header -->
+            <div class="px-5 py-4 border-b border-white/10 flex justify-between items-center bg-slate-950/80">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-teal-500 to-emerald-400 flex items-center justify-center text-white text-base shadow-md relative shrink-0">
+                        <i class="fa-solid fa-robot"></i>
+                        <span class="absolute -bottom-0.5 -left-0.5 w-3 h-3 bg-emerald-500 rounded-full border-2 border-slate-950"></span>
+                    </div>
+                    <div>
+                        <h3 class="text-white font-extrabold text-xs">مساعد مبهر الذكي 🤖</h3>
+                        <p class="text-[9px] text-emerald-400 font-bold mt-0.5">متصل الآن والرد فوري بالذكاء الاصطناعي</p>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <button onclick="toggleChatWindow()" class="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-slate-400 hover:text-white transition">
+                        <i class="fa-solid fa-xmark text-sm"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Chat Messages Log Container -->
+            <div id="chatMessagesLog" class="flex-1 p-4 overflow-y-auto space-y-4 text-xs font-cairo">
+                
+                <!-- Initial Welcome Msg -->
+                <div class="flex items-start gap-2.5">
+                    <div class="w-7 h-7 rounded-lg bg-teal-500/10 border border-teal-500/30 flex items-center justify-center text-teal-400 text-xs shrink-0">
+                        <i class="fa-solid fa-robot"></i>
+                    </div>
+                    <div class="bg-slate-900 border border-white/5 rounded-2xl rounded-tr-none p-3 max-w-[80%] text-slate-200 leading-relaxed shadow-sm">
+                        <p>مرحباً بك يا فندم! 🌸 يسعدني جداً تصفحك لمتجر الفخامة الملكي للعود.</p>
+                        <p class="mt-1">أنا **مساعد مبهر AI** الذكي، هنا لخدمتك ومساعدتك في اختيار أفخر أنواع البخور أو الاستفسار عن تفاصيل طلبك والأسعار. كيف يمكنني خدمتك اليوم؟ ✨</p>
+                        <span class="block text-[8px] text-slate-500 text-left mt-1">الآن</span>
+                    </div>
+                </div>
+
+                <!-- Custom Scripted Message 1 -->
+                <div class="flex items-start gap-2.5">
+                    <div class="w-7 h-7 rounded-lg bg-teal-500/10 border border-teal-500/30 flex items-center justify-center text-teal-400 text-xs shrink-0">
+                        <i class="fa-solid fa-robot"></i>
+                    </div>
+                    <div class="bg-slate-900 border border-white/5 rounded-2xl rounded-tr-none p-3 max-w-[80%] text-slate-200 leading-relaxed shadow-sm space-y-2 w-full">
+                        <p class="font-bold text-slate-300">💡 يمكنك سؤالي عن:</p>
+                        <button onclick="simulateQuestion('هل العطور أصلية؟')" class="w-full text-right p-2.5 bg-white/5 hover:bg-teal-500/15 border border-white/10 hover:border-teal-500/50 rounded-xl text-[11px] text-slate-300 hover:text-white transition flex justify-between items-center font-bold">
+                            <span>🏺 هل العطور أصلية وما هو ضمانكم؟</span>
+                            <i class="fa-solid fa-chevron-left text-[9px] text-slate-500"></i>
+                        </button>
+                        <button onclick="simulateQuestion('كم يستغرق الشحن والتوصيل؟')" class="w-full text-right p-2.5 bg-white/5 hover:bg-teal-500/15 border border-white/10 hover:border-teal-500/50 rounded-xl text-[11px] text-slate-300 hover:text-white transition flex justify-between items-center font-bold">
+                            <span>🚚 كم يستغرق الشحن؟ وهل هو مجاني؟</span>
+                            <i class="fa-solid fa-chevron-left text-[9px] text-slate-500"></i>
+                        </button>
+                        <button onclick="simulateQuestion('أبحث عن عطر فخم للمناسبات')" class="w-full text-right p-2.5 bg-white/5 hover:bg-teal-500/15 border border-white/10 hover:border-teal-500/50 rounded-xl text-[11px] text-slate-300 hover:text-white transition flex justify-between items-center font-bold">
+                            <span>✨ رشح لي عطلاً فخماً للمناسبات الرسمية</span>
+                            <i class="fa-solid fa-chevron-left text-[9px] text-slate-500"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Simulation Dynamic Messages go here -->
+                <div id="dynamicMessages" class="space-y-4"></div>
+
+                <!-- Typing indicator -->
+                <div id="botTypingIndicator" class="flex items-start gap-2.5 hidden">
+                    <div class="w-7 h-7 rounded-lg bg-teal-500/10 border border-teal-500/30 flex items-center justify-center text-teal-400 text-xs shrink-0">
+                        <i class="fa-solid fa-robot"></i>
+                    </div>
+                    <div class="bg-slate-900 border border-white/5 rounded-2xl rounded-tr-none p-3 px-4 shadow-sm flex items-center gap-1">
+                        <span class="typing-dot"></span>
+                        <span class="typing-dot"></span>
+                        <span class="typing-dot"></span>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Chat Window Footer Message Input -->
+            <div class="p-4 border-t border-white/10 bg-slate-950/80 shrink-0">
+                <form id="chatForm" onsubmit="handleChatSubmit(event)" class="flex gap-2">
+                    <input type="text" id="chatInput" placeholder="اكتب سؤالك هنا بخصوص العطور أو الضمان..." 
+                        class="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition">
+                    <button type="submit" class="w-10 h-10 rounded-xl bg-gradient-to-tr from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-white flex items-center justify-center shrink-0 shadow-md shadow-teal-500/10 transition active:scale-95">
+                        <i class="fa-solid fa-paper-plane transform rotate-180"></i>
+                    </button>
+                </form>
+                <div class="flex justify-between items-center mt-2.5 text-[9px] text-slate-500 font-mono">
+                    <span>💡 مساعد ذكي مدعوم بـ GPT-4o</span>
+                    <span>مبهر AI Widget</span>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- ══════════════════════════════════════
+         PAGE LOGIC (JAVASCRIPT)
+         ══════════════════════════════════════ -->
+    <script>
+        let currentStyle = 'classic';
+        let currentPosition = 'right';
+        let clickMode = 'redirect'; // Default practical redirect behavior
+
+        // 1. Set Click Behavior Mode
+        function setClickMode(mode) {
+            const btnRedirect = document.getElementById('click-redirect');
+            const btnChat = document.getElementById('click-chat');
+
+            clickMode = mode;
+
+            if (mode === 'redirect') {
+                btnRedirect.className = "flex-1 py-2 px-2.5 rounded-lg bg-teal-500/10 text-white text-[11px] font-bold border border-teal-500/20 transition";
+                btnChat.className = "flex-1 py-2 px-2.5 rounded-lg bg-transparent text-slate-400 text-[11px] font-bold border border-transparent transition hover:text-white";
+                
+                // Hide local chat window if open
+                document.getElementById('widgetChatWindow').classList.add('hidden');
+                restoreWidgetIcon();
+            } else {
+                btnChat.className = "flex-1 py-2 px-2.5 rounded-lg bg-teal-500/10 text-white text-[11px] font-bold border border-teal-500/20 transition";
+                btnRedirect.className = "flex-1 py-2 px-2.5 rounded-lg bg-transparent text-slate-400 text-[11px] font-bold border border-transparent transition hover:text-white";
+                
+                // Hide redirect overlay if open
+                document.getElementById('redirectOverlay').classList.add('hidden');
+            }
+        }
+
+        // 2. Handle main widget click
+        function handleWidgetClick() {
+            if (clickMode === 'redirect') {
+                launchDirectWhatsApp();
+            } else {
+                toggleChatWindow();
+            }
+        }
+
+        // 3. Simulated Direct Redirection to WhatsApp
+        function launchDirectWhatsApp() {
+            const overlay = document.getElementById('redirectOverlay');
+            const msgBox = document.getElementById('redirectMsgText');
+            const welcomeText = document.getElementById('welcomeInput').value;
+
+            // Set the mock message text in the panel
+            msgBox.innerText = `"${welcomeText}"`;
+            
+            // Display overlay
+            overlay.classList.remove('hidden');
+        }
+
+        function closeRedirectOverlay() {
+            document.getElementById('redirectOverlay').classList.add('hidden');
+        }
+
+        // Helper to restore normal icon (WhatsApp Logo)
+        function restoreWidgetIcon() {
+            const icon = document.getElementById('widgetIcon');
+            if (icon) icon.className = "fa-brands fa-whatsapp text-2xl";
+        }
+
+        // 4. Change Widget Style Selection (4 Practical Styles)
+        function changeStyle(style) {
+            const container = document.getElementById('floatingWidgetContainer');
+            const button = document.getElementById('widgetButton');
+            const welcome = document.getElementById('welcomeSpeechBubble');
+            const arrow = document.getElementById('bubbleArrow');
+            const dot = document.getElementById('widgetOnlineIndicator');
+
+            // Reset active style button layout
+            ['classic', 'squircle', 'pill', 'hybrid'].forEach(s => {
+                const btn = document.getElementById('btn-' + s);
+                btn.className = "flex flex-col items-center justify-center p-3 rounded-xl border border-white/5 bg-white/5 text-slate-400 transition-all duration-200 hover:border-white/20 hover:text-white group";
+            });
+
+            const activeBtn = document.getElementById('btn-' + style);
+            activeBtn.className = "flex flex-col items-center justify-center p-3 rounded-xl border border-teal-500/30 bg-teal-500/10 text-white transition-all duration-200 hover:border-teal-400 group";
+
+            // Reset basic classes
+            button.className = "wa-widget-btn rounded-full flex items-center justify-center text-white text-2xl shadow-xl relative transition-all duration-300";
+            welcome.className = "speech-bubble bg-slate-900 border border-white/10 rounded-2xl px-4 py-3 shadow-2xl max-w-xs text-right relative mb-2 flex items-start gap-3";
+            arrow.className = "absolute bottom-4 w-0 h-0 border-t-4 border-r-8 border-b-4 border-transparent z-10";
+
+            currentStyle = style;
+
+            // 1. Classic WhatsApp Badge
+            if (style === 'classic') {
+                button.classList.add('w-14', 'h-14', 'bg-[#25D366]', 'glow-active-green');
+                button.innerHTML = `<i class="fa-brands fa-whatsapp text-2xl" id="widgetIcon"></i>`;
+                welcome.classList.add('bg-slate-900');
+                if (currentPosition === 'right') arrow.classList.add('-left-2', 'border-r-slate-900');
+                else arrow.classList.add('-right-2', 'border-l-slate-900');
+                
+                // Show dot indicator if enabled
+                toggleOnlineIndicator(document.getElementById('toggleOnlineGlow').checked);
+            } 
+            // 2. squircle WhatsApp Badge
+            else if (style === 'squircle') {
+                button.classList.add('w-14', 'h-14', 'rounded-2xl', 'bg-[#25D366]', 'glow-active-green');
+                button.innerHTML = `<i class="fa-brands fa-whatsapp text-2xl" id="widgetIcon"></i>`;
+                welcome.classList.add('bg-slate-900');
+                if (currentPosition === 'right') arrow.classList.add('-left-2', 'border-r-slate-900');
+                else arrow.classList.add('-right-2', 'border-l-slate-900');
+                
+                toggleOnlineIndicator(document.getElementById('toggleOnlineGlow').checked);
+            } 
+            // 3. Rounded Box with help text (للمساعدة أو للتواصل اضغط)
+            else if (style === 'pill') {
+                button.className = "wa-widget-btn px-4 py-3 bg-[#25D366] rounded-xl flex items-center gap-2 text-white font-extrabold text-[11px] shadow-xl relative glow-active-green transition-all duration-300";
+                button.innerHTML = `<i class="fa-brands fa-whatsapp text-lg animate-pulse"></i> <span class="font-bold font-cairo">للمساعدة أو للتواصل اضغط</span>`;
+                welcome.classList.add('bg-slate-900');
+                
+                if (currentPosition === 'right') arrow.classList.add('-left-2', 'border-r-slate-900');
+                else arrow.classList.add('-right-2', 'border-l-slate-900');
+
+                // Hide online dot inside rectangular badge to keep it clean
+                dot.style.display = 'none';
+            } 
+            // 4. Hybrid AI Logo
+            else if (style === 'hybrid') {
+                button.classList.add('w-14', 'h-14', 'bg-[#128C7E]');
+                button.innerHTML = `
+                    <i class="fa-brands fa-whatsapp text-2xl" id="widgetIcon"></i>
+                    <span class="absolute -top-1 -left-1 w-5.5 h-5.5 rounded-full bg-amber-500 text-[8px] flex items-center justify-center text-black font-black border border-slate-950 shadow">AI</span>
+                `;
+                welcome.classList.add('bg-slate-950', 'border-slate-800');
+                
+                if (currentPosition === 'right') arrow.classList.add('-left-2', 'border-r-slate-950');
+                else arrow.classList.add('-right-2', 'border-l-slate-950');
+                
+                toggleOnlineIndicator(document.getElementById('toggleOnlineGlow').checked);
+            }
+        }
+
+        // 5. Change Position (Bottom Right vs Bottom Left)
+        function changePosition(pos) {
+            const container = document.getElementById('floatingWidgetContainer');
+            const chatWin = document.getElementById('widgetChatWindow');
+            const arrow = document.getElementById('bubbleArrow');
+
+            const btnRight = document.getElementById('pos-right');
+            const btnLeft = document.getElementById('pos-left');
+
+            if (pos === 'right') {
+                btnRight.className = "flex-1 py-2.5 rounded-xl border border-teal-500/30 bg-teal-500/10 text-white text-xs font-bold transition";
+                btnLeft.className = "flex-1 py-2.5 rounded-xl border border-white/5 bg-white/5 text-slate-400 text-xs font-bold transition hover:text-white";
+
+                container.className = "absolute bottom-8 right-8 z-30 flex items-end gap-3 pointer-events-auto";
+                container.style.flexDirection = "row"; // bubble then widget
+                
+                chatWin.style.right = "2rem";
+                chatWin.style.left = "auto";
+
+                currentPosition = 'right';
+            } else {
+                btnLeft.className = "flex-1 py-2.5 rounded-xl border border-teal-500/30 bg-teal-500/10 text-white text-xs font-bold transition";
+                btnRight.className = "flex-1 py-2.5 rounded-xl border border-white/5 bg-white/5 text-slate-400 text-xs font-bold transition hover:text-white";
+
+                container.className = "absolute bottom-8 left-8 z-30 flex items-end gap-3 pointer-events-auto";
+                container.style.flexDirection = "row-reverse"; // widget then bubble
+
+                chatWin.style.left = "2rem";
+                chatWin.style.right = "auto";
+
+                currentPosition = 'left';
+            }
+
+            changeStyle(currentStyle);
+        }
+
+        // 6. Update Welcome Message Text
+        function updateWelcomeText(val) {
+            document.getElementById('welcomeText').innerText = val || 'تواصل معنا مباشرة عبر واتساب! 💬';
+        }
+
+        // 7. Toggle Welcome Bubble Visibility
+        function toggleWelcomeBubble(show) {
+            const bubble = document.getElementById('welcomeSpeechBubble');
+            if (show) {
+                bubble.style.display = 'flex';
+            } else {
+                bubble.style.display = 'none';
+            }
+        }
+
+        // 8. Toggle Online indicator dot
+        function toggleOnlineIndicator(show) {
+            const dot = document.getElementById('widgetOnlineIndicator');
+            // Prevent display on 'pill' style to keep layout clean
+            if (currentStyle === 'pill') {
+                dot.style.display = 'none';
+                return;
+            }
+            if (show) {
+                dot.style.display = 'flex';
+            } else {
+                dot.style.display = 'none';
+            }
+        }
+
+        // 9. Show / Hide Chat Window (for Local Chat Mode only)
+        function toggleChatWindow() {
+            const chatWin = document.getElementById('widgetChatWindow');
+            const bubble = document.getElementById('welcomeSpeechBubble');
+            const icon = document.getElementById('widgetIcon');
+
+            if (chatWin.classList.contains('hidden')) {
+                chatWin.classList.remove('hidden');
+                if (icon) icon.className = "fa-solid fa-chevron-down text-lg transform rotate-0 transition duration-300";
+                
+                bubble.style.opacity = '0';
+                setTimeout(() => { if (chatWin.classList.contains('hidden') === false) bubble.style.display = 'none'; }, 200);
+            } else {
+                chatWin.classList.add('hidden');
+                restoreWidgetIcon();
+                
+                if (document.getElementById('toggleBubble').checked) {
+                    bubble.style.display = 'flex';
+                    setTimeout(() => { bubble.style.opacity = '1'; }, 50);
+                }
+            }
+        }
+
+        // 10. Interactive Chat Conversation Simulation
+        const mockResponses = {
+            'هل العطور أصلية؟': 'بكل تأكيد يا فندم! 🏺 جميع عطورنا ودهن العود المتوفر بالمتجر أصلية 100% ومستخرجة بشكل نقي. نوفر لك **ضماناً ذهبياً**؛ فإذا لم تعجبك رائحة العود أو ثباته، يمكنك استرجاعه فوراً واسترداد أموالك كاملة وبكل سرور! 🌸✨',
+            'كم يستغرق الشحن والتوصيل؟': 'توصيل طلباتكم هو أولويتنا! 🚚 التوصيل يستغرق من **2 إلى 4 أيام عمل** كحد أقصى لكافة مدن ومحافظات المملكة. والشحن **مجاني بالكامل** لأي طلب تتجاوز قيمته 200 ريال! لطلبك الحالي؛ يمكننا شحنه اليوم فور تأكيد الطلب. 📦✨',
+            'أبحث عن عطر فخم للمناسبات': 'اختيار موفق! للمناسبات الرسمية الفاخرة، أنصحك بشدة بعطر **"مبهر الخاص"** 🏺 فهو يجمع بين رائحة دهن العود العتيق ونكهة الورد البري، ثباته يدوم لأكثر من 48 ساعة ويمنحك حضوراً ملوكياً لا ينسى. متوفر حالياً بعرض التأسيس بخصم 25%! هل تفضل إضافته لسلتك؟ 😍👑',
+            'default': 'أهلاً بك! 🤖 سؤالك ممتاز جداً، بصفتي المساعد الذكي لهذا المتجر، يمكنني تأكيد أننا نوفر خدمات متميزة، دفعاً آمناً، وضمان استرجاع مرن. هل ترغب في إتمام طلبك الآن أو ترشيح عينات تجريبية؟ ✨🌸'
+        };
+
+        function simulateQuestion(qText) {
+            addMessage('user', qText);
+            
+            const typing = document.getElementById('botTypingIndicator');
+            typing.classList.remove('hidden');
+            scrollChat();
+
+            setTimeout(() => {
+                typing.classList.add('hidden');
+                const reply = mockResponses[qText] || mockResponses['default'];
+                addMessage('bot', reply);
+                scrollChat();
+            }, 1500);
+        }
+
+        function handleChatSubmit(e) {
+            e.preventDefault();
+            const input = document.getElementById('chatInput');
+            const text = input.value.trim();
+            if (!text) return;
+
+            addMessage('user', text);
+            input.value = '';
+            
+            const typing = document.getElementById('botTypingIndicator');
+            typing.classList.remove('hidden');
+            scrollChat();
+
+            let matchedReply = mockResponses['default'];
+            if (text.includes('أصلية') || text.includes('اصلي') || text.includes('عطوركم')) {
+                matchedReply = mockResponses['هل العطور أصلية؟'];
+            } else if (text.includes('شحن') || text.includes('توصيل') || text.includes('يوصل')) {
+                matchedReply = mockResponses['كم يستغرق الشحن والتوصيل؟'];
+            } else if (text.includes('عطر') || text.includes('مناسبات') || text.includes('بخور') || text.includes('ترشح')) {
+                matchedReply = mockResponses['أبحث عن عطر فخم للمناسبات'];
+            }
+
+            setTimeout(() => {
+                typing.classList.add('hidden');
+                addMessage('bot', matchedReply);
+                scrollChat();
+            }, 1600);
+        }
+
+        function addMessage(sender, text) {
+            const container = document.getElementById('dynamicMessages');
+            const msgDiv = document.createElement('div');
+            
+            if (sender === 'user') {
+                msgDiv.className = "flex items-start gap-2.5 justify-end";
+                msgDiv.innerHTML = `
+                    <div class="bg-teal-600 border border-teal-500/30 rounded-2xl rounded-tl-none p-3 max-w-[80%] text-white leading-relaxed shadow-sm">
+                        <p>${text}</p>
+                        <span class="block text-[8px] text-teal-200 text-left mt-1">الآن</span>
+                    </div>
+                    <div class="w-7 h-7 rounded-lg bg-teal-500 flex items-center justify-center text-white text-xs shrink-0 font-bold">
+                        أ
+                    </div>
+                `;
+            } else {
+                msgDiv.className = "flex items-start gap-2.5";
+                msgDiv.innerHTML = `
+                    <div class="w-7 h-7 rounded-lg bg-teal-500/10 border border-teal-500/30 flex items-center justify-center text-teal-400 text-xs shrink-0">
+                        <i class="fa-solid fa-robot"></i>
+                    </div>
+                    <div class="bg-slate-900 border border-white/5 rounded-2xl rounded-tr-none p-3 max-w-[80%] text-slate-200 leading-relaxed shadow-sm font-cairo">
+                        <p>${text}</p>
+                        <span class="block text-[8px] text-slate-500 text-left mt-1 font-mono">الآن</span>
+                    </div>
+                `;
+            }
+            
+            container.appendChild(msgDiv);
+        }
+
+        function scrollChat() {
+            const log = document.getElementById('chatMessagesLog');
+            log.scrollTop = log.scrollHeight;
+        }
+
+        function resetDemoStore() {
+            document.getElementById('dynamicMessages').innerHTML = '';
+            document.getElementById('welcomeInput').value = "تواصل معنا مباشرة عبر واتساب! 💬";
+            updateWelcomeText("تواصل معنا مباشرة عبر واتساب! 💬");
+            changeStyle('classic');
+            changePosition('right');
+            setClickMode('redirect');
+            
+            document.getElementById('widgetChatWindow').classList.add('hidden');
+            document.getElementById('redirectOverlay').classList.add('hidden');
+            restoreWidgetIcon();
+            
+            alert('تمت إعادة ضبط المتجر التخيلي وإعدادات الأيقونة الذكية!');
+        }
+
+        // Initialize defaults
+        changeStyle('classic');
+        setClickMode('redirect'); // Default behavior: redirect to WhatsApp
+    </script>
+</body>
+</html>
