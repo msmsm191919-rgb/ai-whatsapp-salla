@@ -177,6 +177,7 @@ function restoreAll() {
         if (!ids.length) return [];
         console.log(`🔄 [waWeb] استعادة ${ids.length} جلسة محفوظة: ${ids.join(', ')}`);
         ids.forEach((id, i) => setTimeout(() => {
+        ids.forEach((id, i) => setTimeout(() => {
             try { start(id); } catch (e) { console.error(`[waWeb] فشل استعادة ${id}:`, e.message); }
         }, i * 4000)); // 4 ثوانٍ بين كل جلسة لتخفيف الحمل
         return ids;
@@ -186,4 +187,21 @@ function restoreAll() {
     }
 }
 
-module.exports = { start, getState, isReady, sendMessage, sendImage, logout, restart, restoreAll };
+async function destroyAll() {
+    console.log(`🧹 [waWeb] Destroying all active WhatsApp clients gracefully...`);
+    const promises = [];
+    for (const [k, s] of sessions.entries()) {
+        if (s.client) {
+            console.log(`- Closing client session: ${k}`);
+            if (s.poller) { clearInterval(s.poller); s.poller = null; }
+            promises.push(
+                s.client.destroy().catch(e => console.error(`Error destroying client ${k}:`, e.message))
+            );
+        }
+    }
+    await Promise.all(promises);
+    sessions.clear();
+    console.log(`✅ [waWeb] All clients closed.`);
+}
+
+module.exports = { start, getState, isReady, sendMessage, sendImage, logout, restart, restoreAll, destroyAll };

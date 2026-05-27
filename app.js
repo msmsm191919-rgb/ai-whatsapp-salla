@@ -1,12 +1,14 @@
-// Import Deps
-require("dotenv").config();
+// Import Deps & Configure Environment Files (Loads production or development separately)
+const path = require("path");
+const envFile = process.env.NODE_ENV === "production" ? ".env.production" : ".env.development";
+require("dotenv").config({ path: path.join(__dirname, envFile) });
+require("dotenv").config({ path: path.join(__dirname, ".env") }); // Fallback to default .env
 const express = require("express");
 const app = express();
 const session = require("express-session");
 const passport = require("passport");
 const consolidate = require("consolidate");
 const nunjucks = require("nunjucks");
-const path = require("path");
 const getUnixTimestamp = require("./helpers/getUnixTimestamp");
 const port = process.env.PORT || process.argv[2] || 3000;
 console.log("SERVER PORT:", port);
@@ -2993,3 +2995,39 @@ SallaDatabase.connect().then(async (connection) => {
 
   startServer(port);
 });
+
+// 🔒 GRACEFUL SHUTDOWN HANDLERS (Zero-Downtime & Session Protection)
+const gracefulShutdown = async (signal) => {
+  console.log(`\n⚠️ [SHUTDOWN] Received ${signal}. Starting graceful shutdown...`);
+  
+  // 1. Close HTTP server first
+  if (server && server.listening) {
+    server.close(() => {
+      console.log('HTTP Server closed.');
+    });
+  }
+  
+  // 2. Gracefully close all Puppeteer/whatsapp-web.js client sessions to preserve session keys and avoid locks
+  try {
+    const waWebMod = require('./services/waWeb');
+    await waWebMod.destroyAll();
+  } catch (e) {
+    console.error('Error during waWeb graceful shutdown:', e.message);
+  }
+
+  // 3. Close database connections cleanly
+  try {
+    if (SallaDatabase && SallaDatabase.connection) {
+      await SallaDatabase.connection.close();
+      console.log('Database connections closed cleanly.');
+    }
+  } catch (e) {
+    console.error('Error closing database connection:', e.message);
+  }
+
+  console.log('👋 Graceful shutdown complete. Exiting.');
+  process.exit(0);
+};
+
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));

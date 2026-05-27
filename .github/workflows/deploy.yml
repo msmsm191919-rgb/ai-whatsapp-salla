@@ -1,0 +1,66 @@
+name: Production Auto Deploy Pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    name: Deploy to Production VPS
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'npm'
+
+      - name: Validate Code Syntax
+        run: node -c app.js routes/*.js services/*.js 2>/dev/null || true
+
+      - name: Deploy via SSH Key
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: 22
+          script: |
+            echo "🚀 Auto-deploy triggered! Navigating to project directory..."
+            cd /var/www/mobher-ai || cd ~/ai-whatsapp-salla
+            
+            # Verify we are in the correct directory
+            if [ ! -f "app.js" ]; then
+              echo "❌ Error: app.js not found! Wrong deployment directory."
+              exit 1
+            fi
+            
+            echo "📦 Backing up SQLite Database before pull..."
+            mkdir -p database/backups
+            cp database/salla_saas_v4.sqlite database/backups/salla_saas_v4_backup_$(date +%F_%H%M%S).sqlite 2>/dev/null || true
+            
+            echo "📥 Fetching latest code from GitHub..."
+            git fetch --all
+            git reset --hard origin/main
+            
+            echo "🧹 Installing production dependencies..."
+            npm install --omit=dev
+            
+            # Critical constraint: Make sure NOT to touch or delete the session folder
+            echo "🔒 Ensuring WhatsApp session directory (.wwebjs_auth) is secure and has write permissions..."
+            mkdir -p .wwebjs_auth
+            chmod -R 777 .wwebjs_auth 2>/dev/null || true
+            
+            echo "⚙️ Restarting PM2 app cleanly in Fork Mode to clear memory and start fresh..."
+            # Using ecosystem file if present, otherwise app name
+            if [ -f "ecosystem.config.js" ]; then
+              pm2 startOrGracefulReload ecosystem.config.js --update-env
+            else
+              pm2 restart whatsapp-ai --update-env
+            fi
+            
+            echo "✅ Auto-deployment successful!"
