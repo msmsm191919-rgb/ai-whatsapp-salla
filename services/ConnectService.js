@@ -45,11 +45,19 @@ class ConnectService {
         }
 
         if (!tenant) {
+            let sallaMerchantId = null;
+            if (platform === 'salla') {
+                sallaMerchantId = Number(store_id);
+            } else {
+                // توليد معرف سلة رقمي فريد ومميز للمنصة المستقلة لضمان التوافق التام مع استعلامات الداشبورد
+                sallaMerchantId = Math.floor(100000000 + Math.random() * 900000000);
+            }
+
             // أنشئ tenant جديد
             tenant = await this.db.models.Tenant.create({
                 platform,
                 platform_store_id: String(store_id),
-                salla_merchant_id: platform === 'salla' ? Number(store_id) : null,
+                salla_merchant_id: sallaMerchantId,
                 store_name: store_name || 'متجر جديد',
                 store_domain,
                 email,

@@ -1,3 +1,4 @@
+require('dotenv').config();
 // services/platforms/SallaAdapter.js
 // Adapter لمنصة سلة — يلفّ Salla OAuth + API
 

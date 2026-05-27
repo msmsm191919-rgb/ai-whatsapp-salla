@@ -8,7 +8,8 @@ const consolidate = require("consolidate");
 const nunjucks = require("nunjucks");
 const path = require("path");
 const getUnixTimestamp = require("./helpers/getUnixTimestamp");
-const port = process.argv[2] || 8095;
+const port = process.env.PORT || process.argv[2] || 3000;
+console.log("SERVER PORT:", port);
 
 /*
   Create a .env file in the root directory of your project. 
@@ -236,8 +237,14 @@ app.use(express.static(__dirname + "/public"));
 app.use(express.json({ limit: '12mb' }));            // 12mb لاستقبال صور الحملات (base64)
 app.use(express.urlencoded({ extended: true, limit: '12mb' }));
 
+// Session & Passport configuration (MUST BE BEFORE ANY ROUTER OR ROUTE GUARD)
+app.use(
+  session({ secret: process.env.SESSION_SECRET || "keyboard cat", resave: true, saveUninitialized: true })
+);
+app.use(passport.initialize());
+app.use(passport.session());
+
 // DEV ONLY Mock Auth Middleware REMOVED for Production
-// app.use((req, res, next) => { ... });
 
 // Routes
 const apiRoutes = require('./routes/api');
@@ -282,6 +289,13 @@ const devOnly = (req, res, next) => {
   }
   next();
 };
+
+// 🔒 حماية المسارات الخاصة بالـ SaaS ومنع أي وصول غير مصرح به أو Fallback للمتجر الافتراضي
+app.use([
+  '/dashboard', '/settings', '/logs', '/api/whatsapp-numbers', 
+  '/automation', '/campaigns', '/ai-settings', '/knowledge-base', 
+  '/scenarios', '/customers', '/billing', '/pricing'
+], ensureAuthenticated);
 
 app.use('/api', apiRoutes);
 app.use('/dashboard', dashboardRoutes);
@@ -352,12 +366,7 @@ app.get('/simulate/abandoned-cart', devOnly, async (req, res) => {
 // DEBUG ROUTE: CUSTOMERS (Moved to Top)
 // ---------------------------------------------------------
 // (Legacy /customers route removed - see proper route below)\n
-// Session & Passport
-app.use(
-  session({ secret: process.env.SESSION_SECRET || "keyboard cat", resave: true, saveUninitialized: true })
-);
-app.use(passport.initialize());
-app.use(passport.session());
+// Session & Passport moved to top above routers
 
 // (moved injectPlanContext to before routes — see line ~247)
 
@@ -535,7 +544,16 @@ app.get('/connect', (req, res) => {
 app.get('/connect/:platform', (req, res) => {
   try {
     const { platform } = req.params;
-    if (!PlatformRegistry.has(platform)) return res.status(404).send('Unknown platform');
+    console.log(`[CONNECT DEBUG] Clicked on platform: ${platform} | Session user:`, req.user);
+    if (!PlatformRegistry.has(platform)) {
+      console.log(`[CONNECT DEBUG] Platform not found: ${platform}`);
+      return res.status(404).send('Unknown platform');
+    }
+
+    // تعطيل Zid و Shopify مؤقتاً
+    if (platform === 'zid' || platform === 'shopify') {
+      return res.status(403).send('Zid and Shopify platforms are currently disabled.');
+    }
 
     const adapter = PlatformRegistry.get(platform);
 
@@ -549,7 +567,11 @@ app.get('/connect/:platform', (req, res) => {
     req.session.oauth_state = state;
     req.session.oauth_platform = platform;
 
-    const redirectUri = `${req.protocol}://${req.get('host')}/oauth/${platform}/callback`;
+    // استخدام المتغير السحابي لسلة إن وجد لضمان مطابقة الـ pre-registered redirect urls
+    let redirectUri = `${req.protocol}://${req.get('host')}/oauth/${platform}/callback`;
+    if (platform === 'salla' && process.env.SALLA_OAUTH_CLIENT_REDIRECT_URI) {
+      redirectUri = process.env.SALLA_OAUTH_CLIENT_REDIRECT_URI;
+    }
     const shopDomain = req.query.shop || null; // لـ Shopify
     if (platform === 'shopify') req.session.oauth_shop = shopDomain;
 
@@ -557,7 +579,8 @@ app.get('/connect/:platform', (req, res) => {
 
     // إذا في mock mode، نمر مباشرة على الـ callback (نحاكي رجوع المنصة)
     if (!adapter.isReady) {
-      return res.redirect(`/oauth/${platform}/callback?code=mock_code&state=${state}${shopDomain ? '&shop=' + shopDomain : ''}`);
+      const mockCallback = platform === 'salla' ? '/oauth/callback' : `/oauth/${platform}/callback`;
+      return res.redirect(`${mockCallback}?code=mock_code&state=${state}${shopDomain ? '&shop=' + shopDomain : ''}`);
     }
 
     res.redirect(authUrl);
@@ -573,13 +596,19 @@ app.get('/oauth/:platform/callback', async (req, res) => {
     const { platform } = req.params;
     const { code, state, shop } = req.query;
     if (!PlatformRegistry.has(platform)) return res.status(404).send('Unknown platform');
+    if (platform === 'zid' || platform === 'shopify') {
+      return res.status(403).send('Zid and Shopify platforms are currently disabled.');
+    }
     if (!code) return res.status(400).send('Missing code');
 
     // (اختياري) تحقق من الـ state — مهم للأمان لكن نتساهل في mock mode
     // if (req.session?.oauth_state && req.session.oauth_state !== state) return res.status(400).send('Invalid state');
 
     const adapter = PlatformRegistry.get(platform);
-    const redirectUri = `${req.protocol}://${req.get('host')}/oauth/${platform}/callback`;
+    let redirectUri = `${req.protocol}://${req.get('host')}/oauth/${platform}/callback`;
+    if (platform === 'salla' && process.env.SALLA_OAUTH_CLIENT_REDIRECT_URI) {
+      redirectUri = process.env.SALLA_OAUTH_CLIENT_REDIRECT_URI;
+    }
     const shopDomain = shop || req.session?.oauth_shop || null;
 
     // 1. استبدل code → access_token + store info
@@ -704,10 +733,21 @@ app.get("/logout", function (req, res) {
 });
 
 function ensureAuthenticated(req, res, next) {
-  if (req.isAuthenticated()) {
+  console.log(`\n=================== [RUNTIME AUTH DEBUG] ===================`);
+  console.log(`- Source Route: ${req.originalUrl}`);
+  console.log(`- Session Tenant (req.user):`, req.user);
+  if (req.isAuthenticated() || (req.user && req.user.merchant && req.user.merchant.id)) {
+    console.log(`- Access Result: GRANTED`);
+    console.log(`- tenant.id (merchant_id): ${req.user.merchant.id}`);
+    console.log(`- platform: ${req.user.platform || 'salla'}`);
+    console.log(`============================================================\n`);
     return next();
   }
-  res.redirect("/login");
+  console.log(`- Access Result: DENIED`);
+  console.log(`- Fallback Reason: No authenticated session found (req.user is undefined or missing merchant ID)`);
+  console.log(`- Action: Redirecting to /connect`);
+  console.log(`============================================================\n`);
+  res.redirect('/connect?error=auth_required');
 }
 
 const http = require('http');
@@ -979,8 +1019,6 @@ app.get("/admin/support", async (req, res) => {
 // Admin Logs (Tenant View)
 app.get("/logs", async (req, res) => {
   try {
-    if (!req.user) req.user = { merchant: { id: 123456789, name: 'Demo Merchant' } };
-
     const db = SallaDatabase.connection;
     const tenant = await db.models.Tenant.findOne({
       where: { salla_merchant_id: req.user.merchant.id },
@@ -1010,7 +1048,6 @@ app.get("/logs", async (req, res) => {
 // 📤 تصدير سجل الرسائل CSV
 app.get("/logs/export", async (req, res) => {
   try {
-    if (!req.user) req.user = { merchant: { id: 123456789, name: 'Demo Merchant' } };
     const db = SallaDatabase.connection;
     const tenant = await db.models.Tenant.findOne({ where: { salla_merchant_id: req.user.merchant.id } });
     if (!tenant) return res.status(404).send('Tenant not found');
@@ -1039,7 +1076,6 @@ app.get("/logs/export", async (req, res) => {
 // GET: View WhatsApp Settings
 app.get("/settings/whatsapp", async (req, res) => {
   try {
-    if (!req.user) req.user = { merchant: { id: 123456789, name: 'Demo Merchant' } };
     const db = SallaDatabase.connection;
 
     const tenant = await db.models.Tenant.findOne({
@@ -2594,7 +2630,7 @@ app.post("/test/send-message", async (req, res) => {
     const activeSub = await connection.models.Subscription.findOne({ where: { tenant_id: tenant.id, status: 'active' } });
     if (!activeSub) {
       console.log("🌱 Creating Trial Subscription for Test User...");
-      const plan = await connection.models.Plan.findOne({ where: { name: 'Basic' } });
+      const plan = await connection.models.Plan.findOne({ where: { name: 'الأساسية' } });
       if (plan) {
         await connection.models.Subscription.create({
           tenant_id: tenant.id,

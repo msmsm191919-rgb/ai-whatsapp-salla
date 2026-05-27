@@ -5,16 +5,45 @@ const { Op } = require('sequelize');
 
 router.get('/', async (req, res) => {
   try {
-    if (!req.user) req.user = { merchant: { id: 123456789, name: 'Demo Merchant' } };
+    console.log(`\n=================== [RUNTIME DASHBOARD LOAD DEBUG] ===================`);
+    console.log(`- Source Route: /dashboard`);
+    console.log(`- Session Tenant (req.user):`, req.user);
+
     const db = SallaDatabase.connection;
+    const merchantId = req.user?.merchant?.id;
+    console.log(`- Tenant Resolver - Querying salla_merchant_id: ${merchantId}`);
 
     const tenant = await db.models.Tenant.findOne({
-      where: { salla_merchant_id: req.user.merchant.id },
+      where: { salla_merchant_id: merchantId },
       include: [
         { model: db.models.Subscription, include: [db.models.Plan] },
         'WhatsAppConfig'
       ]
     });
+
+    if (!tenant) {
+      console.log(`- Tenant Resolver Result: NOT FOUND`);
+      console.log(`  (Fallback Reason: Tenant does not exist in DB for salla_merchant_id: ${merchantId})`);
+      console.log(`======================================================================\n`);
+    } else {
+      console.log(`- Tenant Resolver Result: FOUND`);
+      console.log(`  - Tenant ID: ${tenant.id}`);
+      console.log(`  - Platform: ${tenant.platform}`);
+      console.log(`  - Store Name: ${tenant.store_name}`);
+      console.log(`  - Salla Merchant ID: ${tenant.salla_merchant_id}`);
+      
+      const sub = tenant.Subscription;
+      if (!sub) {
+        console.log(`- Subscription Resolver Result: NOT FOUND`);
+        console.log(`  (Fallback Reason: Tenant has no active Subscription associated)`);
+      } else {
+        console.log(`- Subscription Resolver Result: FOUND`);
+        console.log(`  - Subscription ID: ${sub.id}`);
+        console.log(`  - Plan Name: ${sub.Plan?.name}`);
+        console.log(`  - Subscription Status: ${sub.status}`);
+      }
+      console.log(`======================================================================\n`);
+    }
 
     const isConnected = !!(tenant?.WhatsAppConfig?.access_token);
     const subscription = tenant?.Subscription;

@@ -5,6 +5,14 @@ const SallaDatabase = require('../database/db_instance');
 // Helper to get DB models safely
 const getModels = () => SallaDatabase.connection.models;
 
+// 🔒 حماية مسارات الفواتير البرمجية للعملاء ومنع الدخول العشوائي
+router.use('/billing', (req, res, next) => {
+    if (req.user && req.user.merchant && req.user.merchant.id) {
+        return next();
+    }
+    return res.status(401).json({ status: 'error', message: 'Authentication required' });
+});
+
 // ------------------------------------------------------------------
 // 1. BILLING ROUTES (Client)
 // ------------------------------------------------------------------

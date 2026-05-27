@@ -6,7 +6,6 @@ const planGate = require('../services/planGate');
 // GET: WhatsApp Settings (API — خيار متقدم)
 router.get('/whatsapp', async (req, res) => {
   try {
-    if (!req.user) req.user = { merchant: { id: 123456789, name: 'Demo Merchant' } };
     const db = SallaDatabase.connection;
 
     const tenant = await db.models.Tenant.findOne({
@@ -56,7 +55,6 @@ router.get('/whatsapp', async (req, res) => {
 // POST: Save WhatsApp Settings
 router.post('/whatsapp', async (req, res) => {
   try {
-    if (!req.user) req.user = { merchant: { id: 123456789, name: 'Demo Merchant' } };
     const db = SallaDatabase.connection;
 
     const tenant = await db.models.Tenant.findOne({
@@ -86,7 +84,6 @@ router.post('/whatsapp', async (req, res) => {
 // POST: Generate API Key
 router.post('/generate-api-key', async (req, res) => {
   try {
-    if (!req.user) req.user = { merchant: { id: 123456789, name: 'Demo Merchant' } };
     const db = SallaDatabase.connection;
     const crypto = require('crypto');
 
@@ -122,7 +119,6 @@ router.post('/generate-api-key', async (req, res) => {
 // GET: AI Settings
 router.get('/ai', async (req, res) => {
   try {
-    if (!req.user) req.user = { merchant: { id: 123456789, name: 'Demo Merchant' } };
     const db = SallaDatabase.connection;
     const tenant = await db.models.Tenant.findOne({
       where: { salla_merchant_id: req.user.merchant.id },
@@ -142,7 +138,6 @@ router.get('/ai', async (req, res) => {
 // POST: Save AI Settings
 router.post('/ai', async (req, res) => {
   try {
-    if (!req.user) req.user = { merchant: { id: 123456789, name: 'Demo Merchant' } };
     const db = SallaDatabase.connection;
     const tenant = await db.models.Tenant.findOne({ where: { salla_merchant_id: req.user.merchant.id } });
 

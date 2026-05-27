@@ -128,6 +128,23 @@ class SallaDatabase {
             }
           }
           console.log("🌱 Plans Seeded: الأساسية, النمو, الشركات");
+
+          // الهجرة (Migration): تحديث المستخدمين المستقلين الحاليين الذين يملكون salla_merchant_id فارغاً
+          try {
+            const nonSallaTenants = await this.connection.models.Tenant.findAll({
+              where: {
+                platform: 'standalone',
+                salla_merchant_id: null
+              }
+            });
+            for (const t of nonSallaTenants) {
+              const randomId = Math.floor(100000000 + Math.random() * 900000000);
+              await t.update({ salla_merchant_id: randomId });
+              console.log(`🔧 [MIGRATION] Set unique salla_merchant_id=${randomId} for standalone tenant: ${t.store_name}`);
+            }
+          } catch (migrationErr) {
+            console.error("⚠️ Migration Failed:", migrationErr.message);
+          }
         } catch (e) {
           console.warn("⚠️ Sync Alter Failed (might be locked), trying normal sync...");
           await this.connection.sync();

@@ -34,14 +34,36 @@
             <!-- Platforms Grid -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
                 {% for p in platforms %}
+                {% if p.platform == 'zid' or p.platform == 'shopify' %}
+                <div onclick="alert('قريباً — هذه المنصة تحت التطوير')" class="platform-card rounded-2xl p-6 text-center disabled"
+                   style="background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1); backdrop-filter:blur(8px); cursor:not-allowed; opacity: 0.55;">
+
+                    <!-- Logo placeholder -->
+                    <div class="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center mb-4 text-white text-2xl font-black shadow-lg" style="background:linear-gradient(135deg, {{ p.color }}, {{ p.color_accent }});">
+                        {% if p.platform == 'zid' %}<i class="fa-solid fa-z"></i>
+                        {% elif p.platform == 'shopify' %}<i class="fa-brands fa-shopify"></i>
+                        {% endif %}
+                    </div>
+
+                    <h3 class="text-lg font-black text-white mb-1">{{ p.name_ar }}</h3>
+                    <p class="text-xs mb-3" style="color:#64748b; font-family:Inter,sans-serif;">{{ p.name }}</p>
+                    <p class="text-xs leading-relaxed" style="color:#cbd5e1;">{{ p.description }}</p>
+
+                    <div class="mt-4">
+                        <span class="mock-badge" style="background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3);">⏳ قريباً</span>
+                    </div>
+
+                    <button disabled class="mt-5 w-full py-2.5 rounded-xl text-sm font-bold text-white opacity-50 cursor-not-allowed" style="background:linear-gradient(135deg, {{ p.color }}, {{ p.color_accent }});">
+                        قريباً <i class="fa-solid fa-lock text-xs mr-1"></i>
+                    </button>
+                </div>
+                {% else %}
                 <a href="/connect/{{ p.platform }}" class="platform-card rounded-2xl p-6 text-center {{ 'disabled' if not p.isReady and p.platform != 'standalone' else '' }}"
                    style="background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1); backdrop-filter:blur(8px); text-decoration:none;">
 
                     <!-- Logo placeholder -->
                     <div class="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center mb-4 text-white text-2xl font-black shadow-lg" style="background:linear-gradient(135deg, {{ p.color }}, {{ p.color_accent }});">
                         {% if p.platform == 'salla' %}<i class="fa-solid fa-shop"></i>
-                        {% elif p.platform == 'zid' %}<i class="fa-solid fa-z"></i>
-                        {% elif p.platform == 'shopify' %}<i class="fa-brands fa-shopify"></i>
                         {% else %}<i class="fa-solid fa-globe"></i>
                         {% endif %}
                     </div>
@@ -66,6 +88,7 @@
                         ربط الآن <i class="fa-solid fa-arrow-left text-xs mr-1"></i>
                     </button>
                 </a>
+                {% endif %}
                 {% endfor %}
             </div>
 

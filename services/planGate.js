@@ -1,6 +1,7 @@
 // services/planGate.js
 // بوابة الباقات الشاملة — تحكم بكل الداشبورد (صفحات + مميزات + حدود)
 const SallaDatabase = require('../database/db_instance');
+const { Op } = require('sequelize');
 
 // ═══════════════════════════════════════════════════════════════════
 // 🗺️ خريطة الباقات الكاملة
@@ -165,7 +166,10 @@ async function getTenantPlan(tenantId) {
     if (!db) return null;
 
     const sub = await db.models.Subscription.findOne({
-        where: { tenant_id: tenantId, status: 'active' },
+        where: {
+            tenant_id: tenantId,
+            status: { [Op.in]: ['active', 'trial'] }
+        },
         include: [db.models.Plan]
     });
 
@@ -272,7 +276,8 @@ async function getFullPlanForTenant(tenantId) {
 function requirePage(pageKey) {
     return async (req, res, next) => {
         try {
-            const merchantId = req.user?.merchant?.id || 123456789;
+            const merchantId = req.user?.merchant?.id;
+            if (!merchantId) return res.status(401).send("Unauthorized");
             const db = SallaDatabase.connection;
             const tenant = await db.models.Tenant.findOne({ where: { salla_merchant_id: merchantId } });
             const plan = tenant ? await getTenantPlan(tenant.id) : null;
@@ -309,7 +314,8 @@ function requirePage(pageKey) {
 function requireFeature(featureKey) {
     return async (req, res, next) => {
         try {
-            const merchantId = req.user?.merchant?.id || 123456789;
+            const merchantId = req.user?.merchant?.id;
+            if (!merchantId) return res.status(401).json({ error: 'unauthorized' });
             const db = SallaDatabase.connection;
             const tenant = await db.models.Tenant.findOne({ where: { salla_merchant_id: merchantId } });
             const plan = tenant ? await getTenantPlan(tenant.id) : null;
@@ -334,14 +340,19 @@ function requireFeature(featureKey) {
 function injectPlanContext() {
     return async (req, res, next) => {
         try {
-            const merchantId = req.user?.merchant?.id || 123456789;
-            const db = SallaDatabase.connection;
-            if (db) {
-                const tenant = await db.models.Tenant.findOne({ where: { salla_merchant_id: merchantId } });
-                const plan = tenant ? await getTenantPlan(tenant.id) : null;
-                const planName = plan?.name || DEFAULT_PLAN;
-                res.locals.planContext = getPlanContext(planName);
-                req.tenantPlan = planName;
+            const merchantId = req.user?.merchant?.id;
+            if (merchantId) {
+                const db = SallaDatabase.connection;
+                if (db) {
+                    const tenant = await db.models.Tenant.findOne({ where: { salla_merchant_id: merchantId } });
+                    const plan = tenant ? await getTenantPlan(tenant.id) : null;
+                    const planName = plan?.name || DEFAULT_PLAN;
+                    res.locals.planContext = getPlanContext(planName);
+                    req.tenantPlan = planName;
+                }
+            } else {
+                res.locals.planContext = getPlanContext(DEFAULT_PLAN);
+                req.tenantPlan = DEFAULT_PLAN;
             }
             next();
         } catch (e) { next(); }
