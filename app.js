@@ -632,6 +632,9 @@ app.get('/oauth/:platform/callback', async (req, res) => {
     res.redirect(`/dashboard?welcome=${created ? '1' : '0'}&platform=${platform}`);
   } catch (e) {
     console.error('[oauth callback] error:', e);
+    if (e.message && e.message.includes('disabled')) {
+      return res.status(403).send('Zid and Shopify platforms are currently disabled.');
+    }
     res.status(500).send('OAuth error: ' + e.message);
   }
 });

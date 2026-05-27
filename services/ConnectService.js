@@ -16,6 +16,9 @@ class ConnectService {
      * @returns {Promise<{tenant, created, platform}>}
      */
     async upsertTenantFromOAuth({ platform, tokenData }) {
+        if (platform === 'zid' || platform === 'shopify') {
+            throw new Error(`Platform ${platform} is currently disabled. Connection denied.`);
+        }
         if (!PlatformRegistry.has(platform)) throw new Error(`Unknown platform: ${platform}`);
 
         const {
