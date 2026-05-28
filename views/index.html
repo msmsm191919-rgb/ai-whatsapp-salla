@@ -930,6 +930,15 @@ async function sendDemo() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+  // فرض بدء الصفحة من الأعلى دائماً ومنع المتصفح من استرجاع موضع التمرير القديم تلقائياً
+  if ('scrollRestoration' in history) {
+    history.scrollRestoration = 'manual';
+  }
+  window.scrollTo(0, 0);
+  window.addEventListener('load', () => {
+    window.scrollTo(0, 0);
+  });
+
   renderChips();
   const input = document.getElementById('demoInput');
   if (input) input.addEventListener('keydown', e => { if (e.key === 'Enter') sendDemo(); });
