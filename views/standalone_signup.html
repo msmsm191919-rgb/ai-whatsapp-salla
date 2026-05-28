@@ -3,6 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script>
+        if ('scrollRestoration' in history) {
+            history.scrollRestoration = 'manual';
+        }
+        const resetScroll = function() {
+            const htmlEl = document.documentElement;
+            if (htmlEl) {
+                htmlEl.style.scrollBehavior = 'auto';
+                htmlEl.scrollTop = 0;
+            }
+            document.body.scrollTop = 0;
+            window.scrollTo(0, 0);
+            if (htmlEl) {
+                setTimeout(() => {
+                    htmlEl.style.scrollBehavior = '';
+                }, 50);
+            }
+        };
+        window.scrollTo(0, 0);
+        window.addEventListener('pageshow', resetScroll);
+        window.addEventListener('load', resetScroll);
+    </script>
     <title>تسجيل مستقل | مبهر AI</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;700;800;900&family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
@@ -61,7 +83,7 @@
             </div>
 
             <p class="text-center mt-6">
-                <a href="/connect" class="text-xs" style="color:#94a3b8;">
+                <a href="#" onclick="if(document.referrer.includes('/connect')) { event.preventDefault(); history.back(); } else { window.location.href='/connect'; }" class="text-xs" style="color:#94a3b8;">
                     <i class="fa-solid fa-arrow-right ml-1"></i> العودة لاختيار المنصة
                 </a>
             </p>

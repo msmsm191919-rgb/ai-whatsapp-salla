@@ -3,6 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script>
+        if ('scrollRestoration' in history) {
+            history.scrollRestoration = 'manual';
+        }
+        const resetScroll = function() {
+            const htmlEl = document.documentElement;
+            if (htmlEl) {
+                htmlEl.style.scrollBehavior = 'auto';
+                htmlEl.scrollTop = 0;
+            }
+            document.body.scrollTop = 0;
+            window.scrollTo(0, 0);
+            if (htmlEl) {
+                setTimeout(() => {
+                    htmlEl.style.scrollBehavior = '';
+                }, 50);
+            }
+        };
+        window.scrollTo(0, 0);
+        window.addEventListener('pageshow', resetScroll);
+        window.addEventListener('load', resetScroll);
+    </script>
     <title>اربط متجرك | مبهر AI</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;700;800;900&family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
@@ -26,12 +48,12 @@
 
             <!-- Header -->
             <div class="text-center mb-10">
-                <div class="inline-flex items-center gap-3 mb-4">
-                    <div class="w-12 h-12 rounded-2xl flex items-center justify-center text-white text-xl shadow-lg" style="background:linear-gradient(135deg,#0d9488,#0ea5e9);">
+                <a href="#" onclick="if(document.referrer && (document.referrer.endsWith('/') || document.referrer.includes('localhost') || document.referrer.includes('2.24.130.212'))) { event.preventDefault(); history.back(); } else { window.location.href='/'; }" class="inline-flex items-center gap-3 mb-4 group" style="text-decoration:none;">
+                    <div class="w-12 h-12 rounded-2xl flex items-center justify-center text-white text-xl shadow-lg transition group-hover:scale-105" style="background:linear-gradient(135deg,#0d9488,#0ea5e9);">
                         <i class="fa-solid fa-wand-magic-sparkles"></i>
                     </div>
                     <h1 class="text-3xl font-black text-white">مبهر AI</h1>
-                </div>
+                </a>
                 <h2 class="text-2xl font-black text-white mb-2">اختر منصة متجرك للبدء</h2>
                 <p class="text-sm" style="color:#94a3b8;">اربط متجرك في أقل من دقيقة وابدأ مساعدك الذكي على واتساب</p>
             </div>
