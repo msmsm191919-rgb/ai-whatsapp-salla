@@ -177,7 +177,6 @@ function restoreAll() {
         if (!ids.length) return [];
         console.log(`🔄 [waWeb] استعادة ${ids.length} جلسة محفوظة: ${ids.join(', ')}`);
         ids.forEach((id, i) => setTimeout(() => {
-        ids.forEach((id, i) => setTimeout(() => {
             try { start(id); } catch (e) { console.error(`[waWeb] فشل استعادة ${id}:`, e.message); }
         }, i * 4000)); // 4 ثوانٍ بين كل جلسة لتخفيف الحمل
         return ids;
