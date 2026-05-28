@@ -43,7 +43,7 @@ const passport = require("passport");
 const consolidate = require("consolidate");
 const nunjucks = require("nunjucks");
 const getUnixTimestamp = require("./helpers/getUnixTimestamp");
-const port = process.env.PORT || process.argv[2] || 3000;
+const port = process.env.NODE_ENV === "production" ? 8095 : (process.env.PORT || process.argv[2] || 3000);
 console.log("SERVER PORT:", port);
 
 /*
