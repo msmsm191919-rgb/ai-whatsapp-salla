@@ -688,13 +688,19 @@ app.post('/connect/standalone', async (req, res) => {
       tokenData
     });
 
-    req.user = {
+    const userSession = {
       merchant: { id: tenant.platform_store_id, name: tenant.store_name },
       tenant_id: tenant.id,
       platform: 'standalone'
     };
 
-    res.json({ ok: true, tenant_id: tenant.id, created, redirect: '/dashboard?welcome=1&platform=standalone' });
+    req.login(userSession, function(err) {
+      if (err) {
+        console.error('[standalone login error]:', err);
+        return res.status(500).json({ ok: false, error: 'Login session initialization failed' });
+      }
+      res.json({ ok: true, tenant_id: tenant.id, created, redirect: '/dashboard?welcome=1&platform=standalone' });
+    });
   } catch (e) {
     console.error('[standalone signup] error:', e);
     res.status(500).json({ ok: false, error: e.message });
