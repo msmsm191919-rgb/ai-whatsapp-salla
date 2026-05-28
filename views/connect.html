@@ -13,10 +13,15 @@
         .platform-card:hover { transform: translateY(-4px); }
         .platform-card.disabled { opacity: 0.55; cursor: not-allowed; }
         .mock-badge { background: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.3); font-size: 10px; padding: 3px 10px; border-radius: 999px; font-weight: 700; }
+        @keyframes fadeInPage {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: none; }
+        }
+        .page-fade-in { animation: fadeInPage 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
     </style>
 </head>
 <body>
-    <div class="min-h-screen flex flex-col justify-center p-4 sm:p-6 py-10">
+    <div class="min-h-screen flex flex-col justify-center p-4 sm:p-6 py-10 page-fade-in">
         <div class="max-w-5xl w-full mx-auto">
 
             <!-- Header -->
