@@ -162,7 +162,7 @@
               <i class="fa-solid fa-rocket text-[10px] sm:text-xs"></i> لوحة التحكم
             </a>
             {% else %}
-            <a href="/login" class="inline-flex items-center gap-1.5 px-2 sm:px-4 py-2 text-[12px] sm:text-[13px] text-gray-400 hover:text-white transition">تسجيل الدخول</a>
+            <a href="/login" class="hidden sm:inline-flex items-center gap-1.5 px-2 sm:px-4 py-2 text-[13px] text-gray-400 hover:text-white transition">تسجيل الدخول</a>
             <a href="/connect" class="glow-btn inline-flex items-center gap-1.5 px-3 sm:px-5 py-2 sm:py-2.5 text-white font-bold rounded-xl text-[12px] sm:text-[13px]">
               <i class="fa-solid fa-wand-magic-sparkles text-[9px] sm:text-[10px]"></i> ابدأ مجاناً
             </a>
@@ -173,24 +173,28 @@
           </div>
         </div>
         <div id="mob" class="hidden lg:hidden pb-4 pt-2 space-y-1 border-t border-white/[.06]">
+          {% if isLogin %}
+          <div class="px-2 py-2 mb-2">
+            <a href="/dashboard" class="flex items-center justify-center gap-1.5 px-4 py-2.5 text-sm font-bold text-white bg-gradient-to-r from-teal-500 to-emerald-500 rounded-xl transition text-center shadow-lg shadow-teal-500/10">
+              <i class="fa-solid fa-rocket text-xs"></i> لوحة التحكم
+            </a>
+          </div>
+          {% else %}
+          <div class="grid grid-cols-2 gap-2 px-2 py-2 mb-2">
+            <a href="/login" class="flex items-center justify-center gap-1.5 px-4 py-2.5 text-xs text-gray-300 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition text-center font-bold">
+              <i class="fa-solid fa-right-to-bracket text-[10px]"></i> تسجيل الدخول
+            </a>
+            <a href="/connect" class="flex items-center justify-center gap-1.5 px-4 py-2.5 text-xs font-bold text-white bg-gradient-to-r from-teal-500 to-emerald-500 rounded-xl transition text-center shadow-lg shadow-teal-500/10">
+              <i class="fa-solid fa-wand-magic-sparkles text-[10px]"></i> ابدأ مجاناً
+            </a>
+          </div>
+          {% endif %}
+          <div class="h-px bg-white/[.06] my-2"></div>
           <a href="#features" class="block px-4 py-2.5 text-sm text-gray-400 hover:text-white hover:bg-white/5 rounded-xl transition">المميزات</a>
           <a href="#how" class="block px-4 py-2.5 text-sm text-gray-400 hover:text-white hover:bg-white/5 rounded-xl transition">كيف يعمل</a>
           <a href="#pricing" class="block px-4 py-2.5 text-sm text-gray-400 hover:text-white hover:bg-white/5 rounded-xl transition">الأسعار</a>
           <a href="#testimonials" class="block px-4 py-2.5 text-sm text-gray-400 hover:text-white hover:bg-white/5 rounded-xl transition">آراء العملاء</a>
           <a href="#faq" class="block px-4 py-2.5 text-sm text-gray-400 hover:text-white hover:bg-white/5 rounded-xl transition">الأسئلة الشائعة</a>
-          <div class="h-px bg-white/[.06] my-2"></div>
-          {% if isLogin %}
-          <a href="/dashboard" class="block px-4 py-2.5 text-sm font-bold text-teal-400 hover:text-teal-300 hover:bg-white/5 rounded-xl transition">
-            <i class="fa-solid fa-rocket ml-2"></i> لوحة التحكم
-          </a>
-          {% else %}
-          <a href="/login" class="block px-4 py-2.5 text-sm text-gray-400 hover:text-white hover:bg-white/5 rounded-xl transition">
-            <i class="fa-solid fa-right-to-bracket ml-2"></i> تسجيل الدخول
-          </a>
-          <a href="/connect" class="block px-4 py-2.5 text-sm font-bold text-teal-400 hover:text-teal-300 hover:bg-white/5 rounded-xl transition">
-            <i class="fa-solid fa-wand-magic-sparkles ml-2"></i> ابدأ مجاناً
-          </a>
-          {% endif %}
         </div>
       </div>
     </div>
@@ -930,6 +934,19 @@ document.addEventListener('DOMContentLoaded', () => {
   renderChips();
   const input = document.getElementById('demoInput');
   if (input) input.addEventListener('keydown', e => { if (e.key === 'Enter') sendDemo(); });
+
+  // إغلاق تلقائي للقائمة الجانبية في الجوال عند النقر خارجها أو على روابطها
+  document.addEventListener('click', function(event) {
+    const mobMenu = document.getElementById('mob');
+    const header = document.getElementById('header');
+    if (mobMenu && !mobMenu.classList.contains('hidden')) {
+      const isClickInside = header.contains(event.target);
+      const isLinkClick = event.target.closest('#mob a');
+      if (!isClickInside || isLinkClick) {
+        mobMenu.classList.add('hidden');
+      }
+    }
+  });
 });
 </script>
 </body>
