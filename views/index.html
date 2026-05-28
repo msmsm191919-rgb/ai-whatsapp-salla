@@ -178,6 +178,19 @@
           <a href="#pricing" class="block px-4 py-2.5 text-sm text-gray-400 hover:text-white hover:bg-white/5 rounded-xl transition">الأسعار</a>
           <a href="#testimonials" class="block px-4 py-2.5 text-sm text-gray-400 hover:text-white hover:bg-white/5 rounded-xl transition">آراء العملاء</a>
           <a href="#faq" class="block px-4 py-2.5 text-sm text-gray-400 hover:text-white hover:bg-white/5 rounded-xl transition">الأسئلة الشائعة</a>
+          <div class="h-px bg-white/[.06] my-2"></div>
+          {% if isLogin %}
+          <a href="/dashboard" class="block px-4 py-2.5 text-sm font-bold text-teal-400 hover:text-teal-300 hover:bg-white/5 rounded-xl transition">
+            <i class="fa-solid fa-rocket ml-2"></i> لوحة التحكم
+          </a>
+          {% else %}
+          <a href="/login" class="block px-4 py-2.5 text-sm text-gray-400 hover:text-white hover:bg-white/5 rounded-xl transition">
+            <i class="fa-solid fa-right-to-bracket ml-2"></i> تسجيل الدخول
+          </a>
+          <a href="/connect" class="block px-4 py-2.5 text-sm font-bold text-teal-400 hover:text-teal-300 hover:bg-white/5 rounded-xl transition">
+            <i class="fa-solid fa-wand-magic-sparkles ml-2"></i> ابدأ مجاناً
+          </a>
+          {% endif %}
         </div>
       </div>
     </div>

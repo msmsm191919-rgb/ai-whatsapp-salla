@@ -2,6 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>تسجيل مستقل | مبهر AI</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;700;800;900&family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
@@ -14,8 +15,8 @@
     </style>
 </head>
 <body>
-    <div class="min-h-screen flex items-center justify-center p-6">
-        <div class="max-w-md w-full">
+    <div class="min-h-screen flex flex-col justify-center p-4 sm:p-6 py-10">
+        <div class="max-w-md w-full mx-auto">
 
             <div class="text-center mb-8">
                 <div class="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center text-white text-2xl mb-4 shadow-lg" style="background:linear-gradient(135deg,#0d9488,#14b8a6);">
@@ -25,7 +26,7 @@
                 <p class="text-sm" style="color:#94a3b8;">استخدم مبهر مع موقعك أو تطبيقك الخاص</p>
             </div>
 
-            <div class="rounded-2xl p-7" style="background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1); backdrop-filter:blur(8px);">
+            <div class="rounded-2xl p-5 sm:p-7" style="background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1); backdrop-filter:blur(8px);">
                 <form id="signupForm" onsubmit="return signup(event)">
                     <div class="mb-4">
                         <label class="input-label">اسم نشاطك التجاري <span style="color:#ef4444;">*</span></label>

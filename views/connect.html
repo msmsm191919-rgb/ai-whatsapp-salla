@@ -16,8 +16,8 @@
     </style>
 </head>
 <body>
-    <div class="min-h-screen flex items-center justify-center p-6">
-        <div class="max-w-5xl w-full">
+    <div class="min-h-screen flex flex-col justify-center p-4 sm:p-6 py-10">
+        <div class="max-w-5xl w-full mx-auto">
 
             <!-- Header -->
             <div class="text-center mb-10">
@@ -35,7 +35,7 @@
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
                 {% for p in platforms %}
                 {% if p.platform == 'zid' or p.platform == 'shopify' %}
-                <div onclick="alert('قريباً — هذه المنصة تحت التطوير')" class="platform-card rounded-2xl p-6 text-center disabled"
+                <div onclick="alert('قريباً — هذه المنصة تحت التطوير')" class="platform-card rounded-2xl p-5 sm:p-6 text-center disabled"
                    style="background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1); backdrop-filter:blur(8px); cursor:not-allowed; opacity: 0.55;">
 
                     <!-- Logo placeholder -->
@@ -58,7 +58,7 @@
                     </button>
                 </div>
                 {% else %}
-                <a href="/connect/{{ p.platform }}" class="platform-card rounded-2xl p-6 text-center {{ 'disabled' if not p.isReady and p.platform != 'standalone' else '' }}"
+                <a href="/connect/{{ p.platform }}" class="platform-card rounded-2xl p-5 sm:p-6 text-center {{ 'disabled' if not p.isReady and p.platform != 'standalone' else '' }}"
                    style="background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1); backdrop-filter:blur(8px); text-decoration:none;">
 
                     <!-- Logo placeholder -->
