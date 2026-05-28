@@ -941,8 +941,21 @@ document.addEventListener('DOMContentLoaded', () => {
     if (mobMenu && !mobMenu.classList.contains('hidden')) {
       const isClickInside = header.contains(event.target);
       const isLinkClick = event.target.closest('#mob a');
+      
+      // لتجنب إلغاء الحدث قبل التنقل الفعلي على الجوال، نتجاهل touchstart عند الضغط على الروابط
+      if (event.type === 'touchstart' && isLinkClick) {
+        return;
+      }
+      
       if (!isClickInside || isLinkClick) {
-        mobMenu.classList.add('hidden');
+        if (isLinkClick) {
+          // تأخير بسيط جداً للسماح للمتصفح بالانتقال للرابط قبل إخفاء القائمة
+          setTimeout(() => {
+            mobMenu.classList.add('hidden');
+          }, 150);
+        } else {
+          mobMenu.classList.add('hidden');
+        }
       }
     }
   };
