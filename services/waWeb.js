@@ -103,23 +103,9 @@ function start(tenantId) {
     s.client.on('auth_failure', (m) => { s.status = 'error'; s.error = String(m); console.error(`❌ [waWeb:${k}] فشل المصادقة`, m); });
     s.client.on('disconnected', (r) => { s.status = 'disconnected'; s.qr = ''; s.client = null; console.warn(`⚠️ [waWeb:${k}] انقطع`, r); });
 
-    // 💬 رد تلقائي بالذكاء على الرسائل الواردة (مثل Meta webhook لكن لـ QR)
+    // 💬 رد تلقائي بالذكاء على الرسائل الواردة (مغلق مؤقتاً لسلامة حسابات المستخدم الشخصية أثناء التجربة)
     s.client.on('message', async (msg) => {
-        try {
-            // تجاهل: مجموعات، حالة، رسائلك المُرسَلة
-            if (!msg.from || msg.from.includes('@g.us') || msg.from.includes('status') || msg.fromMe) return;
-            const fromPhone = msg.from.replace('@c.us', '');
-            const ChatService = require('./ChatService');
-            // isSimulated:true → يولّد رد + يسجّل بدون إرسال (سنرسل نحن عبر waWeb)
-            const result = await ChatService.handleIncomingMessage({
-                fromPhone, messageBody: msg.body || '', tenantId: k, isSimulated: true
-            });
-            if (result && result.reply && s.client) {
-                // محاكاة "يكتب الآن..." ثم الرد بعد تأخير بسيط لطبيعية
-                try { const chat = await msg.getChat(); chat.sendStateTyping(); } catch (e) { /* تجاهل */ }
-                setTimeout(async () => { try { await s.client.sendMessage(msg.from, result.reply); } catch (e) { console.error(`[waWeb:${k}] فشل إرسال الرد:`, e.message); } }, 1200);
-            }
-        } catch (e) { console.error(`[waWeb:${k}] خطأ معالجة رسالة واردة:`, e.message); }
+        console.log(`ℹ️ [waWeb:${k}] Received message from ${msg.from}, but Auto-Reply is disabled.`);
     });
 
     s.client.initialize().catch((e) => { s.status = 'error'; s.error = e.message; console.error(`❌ [waWeb:${k}] فشل الإقلاع:`, e.message); });
