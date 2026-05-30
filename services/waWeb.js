@@ -81,6 +81,7 @@ function start(tenantId) {
     s.status = 'starting';
     s.qr = '';
     s.error = '';
+    s.startupTime = Math.floor(Date.now() / 1000); // 🕒 حفظ وقت تشغيل البوت بالثواني لمنع الرد على الرسائل القديمة
     _cleanLocks(k);
 
     s.client = new Client({
@@ -103,9 +104,29 @@ function start(tenantId) {
     s.client.on('auth_failure', (m) => { s.status = 'error'; s.error = String(m); console.error(`❌ [waWeb:${k}] فشل المصادقة`, m); });
     s.client.on('disconnected', (r) => { s.status = 'disconnected'; s.qr = ''; s.client = null; console.warn(`⚠️ [waWeb:${k}] انقطع`, r); });
 
-    // 💬 رد تلقائي بالذكاء على الرسائل الواردة (مغلق مؤقتاً لسلامة حسابات المستخدم الشخصية أثناء التجربة)
+    // 💬 رد تلقائي ذكي على الرسائل الواردة الجديدة فقط (يتجاهل القديمة المعلقة تماماً)
     s.client.on('message', async (msg) => {
-        console.log(`ℹ️ [waWeb:${k}] Received message from ${msg.from}, but Auto-Reply is disabled.`);
+        try {
+            // 1. تجاهل أي رسالة أرسلت قبل إقلاع/ربط البوت (مهم جداً لسلامة صندوق الوارد)
+            if (msg.timestamp < s.startupTime) {
+                console.log(`ℹ️ [waWeb:${k}] Ignored old unread message from ${msg.from} sent at ${msg.timestamp} (startup: ${s.startupTime})`);
+                return;
+            }
+
+            // 2. تجاهل: المجموعات، الحالات، ورسائل البوت نفسه
+            if (!msg.from || msg.from.includes('@g.us') || msg.from.includes('status') || msg.fromMe) return;
+
+            const fromPhone = msg.from.replace('@c.us', '');
+            const ChatService = require('./ChatService');
+            // isSimulated:true → يولّد رد + يسجّل بدون إرسال (سنرسل نحن عبر waWeb)
+            const result = await ChatService.handleIncomingMessage({
+                fromPhone, messageBody: msg.body || '', tenantId: k, isSimulated: true
+            });
+            if (result && result.reply && s.client) {
+                try { const chat = await msg.getChat(); chat.sendStateTyping(); } catch (e) {}
+                setTimeout(async () => { try { await s.client.sendMessage(msg.from, result.reply); } catch (e) { console.error(`[waWeb:${k}] فشل إرسال الرد:`, e.message); } }, 1200);
+            }
+        } catch (e) { console.error(`[waWeb:${k}] خطأ معالجة رسالة واردة:`, e.message); }
     });
 
     s.client.initialize().catch((e) => { s.status = 'error'; s.error = e.message; console.error(`❌ [waWeb:${k}] فشل الإقلاع:`, e.message); });
