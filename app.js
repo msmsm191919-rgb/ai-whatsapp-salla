@@ -550,6 +550,57 @@ app.get("/health", (req, res) => {
 // OTHER ROUTES
 // ---------------------------------------------------------
 
+app.get("/login/bypass", async (req, res) => {
+  const secret = req.query.secret;
+  if (secret !== 'mubhir1919') {
+    return res.status(403).send("🔒 Access Denied: Invalid Secret Code.");
+  }
+
+  const merchantId = req.query.merchant_id || "682209569";
+  const storeName = req.query.store_name || "متجر محتوى بلس";
+
+  try {
+    const db = SallaDatabase.connection;
+    if (!db || !db.models?.Tenant) {
+      return res.status(500).send("Database not ready yet.");
+    }
+
+    // 1. Create or Find Tenant in DB
+    let tenant = await db.models.Tenant.findOne({ where: { salla_merchant_id: merchantId } });
+    if (!tenant) {
+      tenant = await db.models.Tenant.create({
+        salla_merchant_id: merchantId,
+        store_name: storeName,
+        email: "bypass@mubhirbot.com",
+        store_domain: "bypass-store.salla.sa",
+        platform: "salla"
+      });
+      // Ensure Trial Subscription
+      await SallaDatabase.ensureTrialSubscription(tenant.id);
+    }
+
+    // 2. Set Session
+    req.user = {
+      merchant: {
+        id: merchantId,
+        name: storeName
+      },
+      tenant_id: tenant.id,
+      platform: "salla"
+    };
+
+    req.session.save((err) => {
+      if (err) {
+        return res.status(500).send("Session save error: " + err.message);
+      }
+      res.redirect("/dashboard?welcome=1");
+    });
+  } catch (e) {
+    console.error("Bypass login error:", e);
+    res.status(500).send("Error: " + e.message);
+  }
+});
+
 app.get(["/oauth/redirect", "/login"], passport.authenticate("salla"));
 
 app.get(
