@@ -709,7 +709,7 @@ app.get('/oauth/:platform/callback', async (req, res) => {
     console.log(`✅ [${platform}] ${created ? 'NEW' : 'EXISTING'} tenant: ${tenant.store_name} (id=${tenant.id})`);
 
     // 3. اعمل login للجلسة (نضع merchant.id حسب المنصة)
-    req.user = {
+    const userSession = {
       merchant: {
         id: tenant.salla_merchant_id || tenant.platform_store_id,
         name: tenant.store_name
@@ -718,7 +718,15 @@ app.get('/oauth/:platform/callback', async (req, res) => {
       platform
     };
 
-    res.redirect(`/dashboard?welcome=${created ? '1' : '0'}&platform=${platform}`);
+    req.login(userSession, function(err) {
+      if (err) {
+        console.error('[oauth callback session save error]:', err);
+        return res.status(500).send('Login session initialization failed');
+      }
+      req.session.save(() => {
+        res.redirect(`/dashboard?welcome=${created ? '1' : '0'}&platform=${platform}`);
+      });
+    });
   } catch (e) {
     console.error('[oauth callback] error:', e);
     if (e.message && e.message.includes('disabled')) {
