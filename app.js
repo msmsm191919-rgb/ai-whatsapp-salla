@@ -329,7 +329,7 @@ const devOnly = (req, res, next) => {
 app.use([
   '/dashboard', '/settings', '/logs', '/api/whatsapp-numbers', 
   '/automation', '/campaigns', '/ai-settings', '/knowledge-base', 
-  '/scenarios', '/customers', '/billing', '/pricing'
+  '/scenarios', '/customers', '/billing', '/pricing', '/whatsapp-simulator', '/simulator'
 ], ensureAuthenticated);
 
 app.use('/api', apiRoutes);
@@ -2195,6 +2195,12 @@ async function _waTenantId(req) {
 app.get("/whatsapp-web", (req, res) => {
   if (!req.user) req.user = { merchant: { id: 123456789, name: 'Demo Merchant' } };
   res.render("whatsapp_web.html", { user: req.user, activePage: 'wa_web' });
+});
+
+// صفحة محاكي واتساب (Simulator)
+app.get(["/simulator", "/whatsapp-simulator"], (req, res) => {
+  if (!req.user) req.user = { merchant: { id: 123456789, name: 'Demo Merchant' } };
+  res.render("simulator.html", { user: req.user, activePage: 'simulator' });
 });
 
 // بدء الجلسة (يقلع المتصفح ويولّد QR) — لجلسة التاجر الحالي

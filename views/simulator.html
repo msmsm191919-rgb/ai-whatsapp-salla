@@ -402,8 +402,28 @@
         return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
     }
 
+    const socket = io();
     let sending = false;
-    async function sendMessage() {
+
+    socket.on('simulate_typing', () => {
+        showTyping();
+    });
+
+    socket.on('simulate_chat_reply', (reply) => {
+        hideTyping();
+        appendMsg(reply, 'in');
+        sending = false;
+        sendBtn.style.background = '#075e54';
+    });
+
+    socket.on('connect_error', () => {
+        hideTyping();
+        appendMsg('❌ فشل الاتصال بالسيرفر', 'in');
+        sending = false;
+        sendBtn.style.background = '#075e54';
+    });
+
+    function sendMessage() {
         const text = input.value.trim();
         if (!text || sending) return;
         sending = true;
@@ -412,33 +432,7 @@
         input.value = '';
         sendBtn.style.background = '#064f47';
 
-        showTyping();
-
-        try {
-            const res = await fetch('/api/simulator/send', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message: text, phone: '966501234567' })
-            });
-            const data = await res.json();
-
-            setTimeout(() => {
-                hideTyping();
-                if (data.reply) {
-                    appendMsg(data.reply, 'in');
-                } else if (data.error) {
-                    appendMsg('⚠️ ' + data.error, 'in');
-                }
-                sending = false;
-                sendBtn.style.background = '#075e54';
-            }, 800);
-
-        } catch (e) {
-            hideTyping();
-            appendMsg('❌ فشل الاتصال بالسيرفر', 'in');
-            sending = false;
-            sendBtn.style.background = '#075e54';
-        }
+        socket.emit('simulate_chat_msg', text);
     }
 
     sendBtn.onclick = sendMessage;
