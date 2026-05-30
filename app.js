@@ -38,6 +38,7 @@ require("dotenv").config({ path: path.join(__dirname, ".env") }); // Fallback to
 
 const express = require("express");
 const app = express();
+app.set('trust proxy', true);
 const session = require("express-session");
 const passport = require("passport");
 const consolidate = require("consolidate");
@@ -603,7 +604,9 @@ app.get('/connect/:platform', (req, res) => {
     req.session.oauth_platform = platform;
 
     // استخدام المتغير السحابي لسلة إن وجد لضمان مطابقة الـ pre-registered redirect urls
-    let redirectUri = `${req.protocol}://${req.get('host')}/oauth/${platform}/callback`;
+    const isLocal = req.get('host').includes('localhost') || req.get('host').includes('127.0.0.1');
+    const proto = isLocal ? req.protocol : 'https';
+    let redirectUri = `${proto}://${req.get('host')}/oauth/${platform}/callback`;
     if (platform === 'salla' && process.env.SALLA_OAUTH_CLIENT_REDIRECT_URI) {
       redirectUri = process.env.SALLA_OAUTH_CLIENT_REDIRECT_URI;
     }
