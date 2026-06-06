@@ -95,6 +95,24 @@
 {% block content %}
 <div class="space-y-6">
 
+    {# 🔔 تنبيه ربط واتساب — إذا كان غير متصل #}
+    {% if not isConnected %}
+    <div class="rounded-2xl p-5 flex items-center gap-4 animate-in" style="background: linear-gradient(135deg, #fffbeb, #fef3c7); border: 2px solid #fde68a; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.1);">
+        <div class="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 animate-pulse" style="background: #f59e0b; color: #fff;">
+            <i class="fa-brands fa-whatsapp text-2xl"></i>
+        </div>
+        <div class="flex-1">
+            <p class="font-black text-amber-950 text-sm">🔌 خطوة متبقية: ربط حساب واتساب</p>
+            <p class="text-xs text-amber-900 mt-1 leading-relaxed">
+                اربط واتساب الآن لتفعيل **مبهر AI** والبدء في إرسال الرسائل الترحيبية والردود الذكية تلقائياً لعملائك.
+            </p>
+        </div>
+        <a href="/whatsapp-web" class="px-5 py-2.5 rounded-xl text-sm font-bold text-white whitespace-nowrap shadow-lg transition-transform hover:scale-102" style="background: linear-gradient(135deg, #d97706, #f59e0b);">
+            <i class="fa-solid fa-link text-xs ml-1"></i> ربط واتساب الآن
+        </a>
+    </div>
+    {% endif %}
+
     {# 🚦 Usage Limit Warnings — يحترم الباقة #}
     {% if msg_limit and msg_limit > 0 %}
         {% if usage_percent >= 100 %}
