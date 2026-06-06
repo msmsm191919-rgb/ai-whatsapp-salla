@@ -30,9 +30,10 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           port: 22
           script: |
-            cd ~/ai-whatsapp-salla
+            cd /var/www/mobher-ai || cd ~/ai-whatsapp-salla
+            test -f app.js
             git fetch --all
             git reset --hard origin/main
             npm install --omit=dev
-            pm2 restart whatsapp-ai --update-env
+            pm2 startOrGracefulReload ecosystem.config.js --update-env || pm2 restart whatsapp-ai --update-env
             pm2 status
