@@ -19,6 +19,8 @@ const PLANS = {
     // ✗ ذكاء اصطناعي GPT-4o (بدلها GPT-4o Mini) | ✗ حملات تسويقية
     'الأساسية': {
         price_monthly: 79,
+        price_yearly: 759,
+        trial_days: 7,
         pages: [
             'dashboard', 'customers', 'scenarios', 'knowledge_base',
             'ai_settings', 'logs', 'settings', 'account',
@@ -64,6 +66,8 @@ const PLANS = {
     // ✓ ربط 3 أرقام واتساب
     'النمو': {
         price_monthly: 149,
+        price_yearly: 1430,
+        trial_days: 0,
         pages: [
             'dashboard', 'customers', 'scenarios', 'knowledge_base',
             'ai_settings', 'logs', 'settings', 'account',
@@ -109,6 +113,8 @@ const PLANS = {
     // ✓ تنبيه تخفيض السعر | ✓ أرقام واتساب غير محدودة
     'الشركات': {
         price_monthly: 299,
+        price_yearly: 2850,
+        trial_days: 0,
         pages: [
             'dashboard', 'customers', 'scenarios', 'knowledge_base',
             'ai_settings', 'logs', 'settings', 'account',
@@ -341,17 +347,35 @@ function injectPlanContext() {
     return async (req, res, next) => {
         try {
             const merchantId = req.user?.merchant?.id;
-            if (merchantId) {
-                const db = SallaDatabase.connection;
-                if (db) {
-                    const tenant = await db.models.Tenant.findOne({ where: { salla_merchant_id: merchantId } });
-                    const plan = tenant ? await getTenantPlan(tenant.id) : null;
-                    const planName = plan?.name || DEFAULT_PLAN;
-                    res.locals.planContext = getPlanContext(planName);
-                    req.tenantPlan = planName;
+            const db = SallaDatabase.connection;
+            if (merchantId && db) {
+                const tenant = await db.models.Tenant.findOne({
+                    where: { salla_merchant_id: merchantId },
+                    include: [{ model: db.models.Subscription, include: [db.models.Plan] }]
+                });
+                const subscription = tenant?.Subscription;
+                const planName = subscription?.Plan?.name || DEFAULT_PLAN;
+                let subStatus = subscription?.status || null;
+                const subEndDate = subscription?.end_date;
+
+                if (subStatus === 'trial' && subEndDate && new Date(subEndDate) < new Date()) {
+                    subStatus = 'expired';
                 }
+
+                const trialDaysLeft = (subscription?.status === 'trial' && subStatus === 'trial' && subEndDate)
+                    ? Math.ceil((new Date(subEndDate) - new Date()) / (1000 * 60 * 60 * 24))
+                    : null;
+
+                res.locals.planContext = getPlanContext(planName);
+                res.locals.plan_name = planName;
+                res.locals.sub_status = subStatus;
+                res.locals.trial_days_left = (subscription?.status === 'trial' && trialDaysLeft !== null && trialDaysLeft >= 0) ? trialDaysLeft : null;
+                req.tenantPlan = planName;
             } else {
                 res.locals.planContext = getPlanContext(DEFAULT_PLAN);
+                res.locals.plan_name = DEFAULT_PLAN;
+                res.locals.sub_status = null;
+                res.locals.trial_days_left = null;
                 req.tenantPlan = DEFAULT_PLAN;
             }
             next();

@@ -551,6 +551,10 @@ app.get("/health", (req, res) => {
 // ---------------------------------------------------------
 
 app.get("/login/bypass", async (req, res) => {
+  if (process.env.NODE_ENV === 'production') {
+    return res.status(404).json({ ok: false, error: 'Not found' });
+  }
+
   const secret = req.query.secret;
   if (secret !== 'mubhir1919') {
     return res.status(403).send("🔒 Access Denied: Invalid Secret Code.");
@@ -579,8 +583,8 @@ app.get("/login/bypass", async (req, res) => {
       await SallaDatabase.ensureTrialSubscription(tenant.id);
     }
 
-    // 2. Set Session
-    req.user = {
+    // 2. Persist local test session through Passport
+    const userSession = {
       merchant: {
         id: merchantId,
         name: storeName
@@ -589,11 +593,15 @@ app.get("/login/bypass", async (req, res) => {
       platform: "salla"
     };
 
-    req.session.save((err) => {
+    req.login(userSession, (err) => {
       if (err) {
-        return res.status(500).send("Session save error: " + err.message);
+        return res.status(500).send("Login session error: " + err.message);
       }
-      res.redirect("/dashboard?welcome=1");
+
+      req.session.save((saveErr) => {
+        if (saveErr) return res.status(500).send("Session save error: " + saveErr.message);
+        res.redirect("/dashboard?welcome=1");
+      });
     });
   } catch (e) {
     console.error("Bypass login error:", e);
@@ -1798,7 +1806,7 @@ app.get(["/pricing", "/billing"], async (req, res) => {
     const plan = subscription?.Plan;
     const planName = plan?.name || 'الأساسية';
     const msgLimit = plan?.msg_limit_monthly || 1000;
-    const subStatus = subscription?.status || 'trial';
+    const subStatus = subscription?.status || null;
     const subEndDate = subscription?.end_date;
 
     // Usage
@@ -1816,7 +1824,7 @@ app.get(["/pricing", "/billing"], async (req, res) => {
       sub_status: subStatus,
       msg_limit: msgLimit,
       messages_sent: messagesSent,
-      trial_days_left: (subStatus === 'trial' && subEndDate)
+      trial_days_left: (subscription?.status === 'trial' && subStatus === 'trial' && subEndDate)
         ? Math.ceil((new Date(subEndDate) - new Date()) / (1000 * 60 * 60 * 24))
         : null,
     });
@@ -1858,7 +1866,7 @@ app.get("/dashboard", async (req, res) => {
     const msgLimit = plan?.msg_limit_monthly || 1000;
     const priceMonthly = plan?.price_monthly || 0;
     const priceYearly = plan?.price_yearly || 0;
-    const subStatus = subscription?.status || 'trial';
+    const subStatus = subscription?.status || null;
     const isYearly = subscription?.is_yearly || false;
     const subEndDate = subscription?.end_date;
 
@@ -1942,7 +1950,7 @@ app.get("/dashboard", async (req, res) => {
       plan_features: planFeatures,
       sub_status: subStatus,
       renewal_date: renewalDate,
-      trial_days_left: (subStatus === 'trial' && subEndDate)
+      trial_days_left: (subscription?.status === 'trial' && subStatus === 'trial' && subEndDate)
         ? Math.ceil((new Date(subEndDate) - new Date()) / (1000 * 60 * 60 * 24))
         : null,
 
@@ -2891,82 +2899,20 @@ SallaDatabase.connect().then(async (connection) => {
     if (connection && connection.models) {
       const Plan = connection.models.Plan;
       console.log("🌱 Seeding Plans...");
-      const plans = [
-        {
-          name: 'الأساسية',
-          price_monthly: 79,
-          price_yearly: 759,
-          msg_limit_monthly: 10000,
-          trial_days: 7,
-          ai_model_config: { model: 'gpt-4o-mini' },
-          is_active: true,
-          features: {
-            whatsapp_count: 1,
-            campaigns: true,              // ✅ رسائل جماعية مجانية عبر QR
-            whatsapp_qr: true,
-            whatsapp_api: false,
-            automation: true,
-            ai_enabled: true,
-            ai_model: 'GPT-4o Mini',
-            ai_training_docs: 3,
-            team_members: 1,
-            support_level: 'priority',
-            api_access: false,
-            remove_branding: false,
-            scenarios: 'basic'
-          }
-        },
-        {
-          name: 'النمو',
-          price_monthly: 149,
-          price_yearly: 1430,
-          msg_limit_monthly: 35000,
-          ai_model_config: { model: 'gpt-4o' },
-          is_active: true,
-          features: {
-            whatsapp_count: 3,
-            campaigns: true,
-            automation: true,
-            ai_enabled: true,
-            ai_model: 'GPT-4o',
-            ai_training_docs: 10,
-            team_members: 5,
-            support_level: 'priority',
-            api_access: true,
-            remove_branding: false,
-            scenarios: 'advanced',
-            messages_overage_price: 0.02,
-            messages_hard_limit: 50000,
-            fair_use: true
-          }
-        },
-        {
-          name: 'الشركات',
-          price_monthly: 299,
-          price_yearly: 2850,
-          msg_limit_monthly: 100000,
-          ai_model_config: { model: 'gpt-4o' },
-          is_active: true,
-          features: {
-            whatsapp_count: 'unlimited',
-            campaigns: true,
-            automation: true,
-            ai_enabled: true,
-            ai_model: 'GPT-4o (Custom)',
-            ai_training_docs: -1,
-            team_members: 'unlimited',
-            support_level: 'dedicated',
-            api_access: true,
-            remove_branding: true,
-            scenarios: 'advanced',
-            ai_custom: true,
-            priority_support: true,
-            messages_overage_price: 0.015,
-            messages_hard_limit: 150000,
-            fair_use: true
-          }
+      const { PLANS } = require('./services/planGate');
+      const plans = Object.entries(PLANS).map(([name, cfg]) => ({
+        name,
+        price_monthly: cfg.price_monthly,
+        price_yearly: cfg.price_yearly,
+        msg_limit_monthly: cfg.limits.messages_monthly,
+        trial_days: cfg.trial_days,
+        is_active: true,
+        features: {
+          ...cfg.features,
+          limits: cfg.limits,
+          scenarios: cfg.scenarios
         }
-      ];
+      }));
 
       for (const p of plans) {
         const [existingPlan, created] = await Plan.findOrCreate({
@@ -3010,29 +2956,12 @@ SallaDatabase.connect().then(async (connection) => {
           }).catch(err => console.log("⚠️ Seed Config Exists/Error:", err.message));
         }
 
-        // Seed or Fix Subscription (Link Tenant to النمو Plan)
+        // Startup must not mutate subscription plan/status. New tenants are initialized by onboarding/payment flows.
         if (connection.models.Subscription) {
           const Subscription = connection.models.Subscription;
           const existingSub = await Subscription.findOne({ where: { tenant_id: demoTenant.id } });
-          const growthPlan = await Plan.findOne({ where: { name: 'النمو' } });
-
-          if (!existingSub && growthPlan) {
-            console.log("🌱 Seeding Demo Subscription...");
-            await Subscription.create({
-              tenant_id: demoTenant.id,
-              plan_id: growthPlan.id,
-              status: 'active',
-              is_yearly: false,
-              start_date: new Date(),
-              end_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
-            }).catch(err => console.log("⚠️ Seed Subscription Error:", err.message));
-          } else if (existingSub && growthPlan) {
-            // Fix: If linked to old plan (Simulation Pro, Starter, Pro, etc.), switch to النمو
-            const currentPlan = await Plan.findByPk(existingSub.plan_id);
-            if (currentPlan && !['الأساسية', 'النمو', 'الشركات'].includes(currentPlan.name)) {
-              console.log(`🔄 Fixing subscription from "${currentPlan.name}" to "النمو"...`);
-              await existingSub.update({ plan_id: growthPlan.id });
-            }
+          if (!existingSub) {
+            console.log("ℹ️ Demo tenant has no subscription; leaving plan assignment to onboarding/payment flow.");
           }
         }
 

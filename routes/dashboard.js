@@ -53,7 +53,7 @@ router.get('/', async (req, res) => {
     const msgLimit = plan?.msg_limit_monthly || 1000;
     const priceMonthly = plan?.price_monthly || 0;
     const priceYearly = plan?.price_yearly || 0;
-    const subStatus = subscription?.status || 'trial';
+    const subStatus = subscription?.status || null;
     const isYearly = subscription?.is_yearly || false;
     const subEndDate = subscription?.end_date;
 
@@ -105,7 +105,7 @@ router.get('/', async (req, res) => {
       plan_name: planName, plan_price: isYearly ? priceYearly : priceMonthly,
       plan_billing: isYearly ? 'سنوي' : 'شهري', plan_features: planFeatures,
       sub_status: subStatus, renewal_date: renewalDate,
-      trial_days_left: (subStatus === 'trial' && subEndDate)
+      trial_days_left: (subscription?.status === 'trial' && subStatus === 'trial' && subEndDate)
         ? Math.ceil((new Date(subEndDate) - new Date()) / (1000 * 60 * 60 * 24)) : null,
       messages_sent: messagesSent, msg_limit: msgLimit,
       messages_remaining: messagesRemaining, usage_percent: usagePercent,

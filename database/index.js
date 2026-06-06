@@ -55,61 +55,19 @@ class SallaDatabase {
           console.log("✅ Database Synced Successfully.");
 
           // SEED PLANS (SaaS Requirement - Competitive Update)
-          const plansData = [
-            {
-              name: 'الأساسية',
-              price_monthly: 79.00,
-              price_yearly: 759.00,
-              msg_limit_monthly: 10000, // Boosted from 1000
-              trial_days: 7, // 🎁 تجربة مجانية 7 أيام للعملاء الجدد
-              features: {
-                whatsapp_count: 1,
-                scenarios: 'basic',
-                campaigns: true,          // ✅ رسائل جماعية مجانية عبر QR
-                whatsapp_qr: true,
-                whatsapp_api: false,
-                automation: true,
-                ai_enabled: true,
-                ai_advanced: false
-              }
-            },
-            {
-              name: 'النمو', // Internal name, UI shows "التاجر المحترف"
-              price_monthly: 149.00,
-              price_yearly: 1430.00,
-              msg_limit_monthly: -1, // Unlimited
-              features: {
-                whatsapp_count: 3,
-                scenarios: 'advanced',
-                campaigns: true,
-                automation: true,
-                ai_enabled: true,
-                ai_advanced: true,
-                ai_model: 'gpt-4o',
-                api_access: true          // ✅ Pro gets API access
-              }
-            },
-            {
-              name: 'الشركات',
-              price_monthly: 299.00, // Reduced from 439
-              price_yearly: 2850.00,
-              msg_limit_monthly: -1,
-              features: {
-                whatsapp_count: 'multi',
-                scenarios: 'advanced',
-                campaigns: true,
-                automation: true,
-                ai_enabled: true,
-                ai_custom: true,
-                ai_training_docs: -1,
-                team_members: 'unlimited',
-                support_level: 'dedicated',
-                api_access: true,
-                remove_branding: true,
-                priority_support: true
-              }
+          const { PLANS } = require('../services/planGate');
+          const plansData = Object.entries(PLANS).map(([name, cfg]) => ({
+            name,
+            price_monthly: cfg.price_monthly,
+            price_yearly: cfg.price_yearly,
+            msg_limit_monthly: cfg.limits.messages_monthly,
+            trial_days: cfg.trial_days,
+            features: {
+              ...cfg.features,
+              limits: cfg.limits,
+              scenarios: cfg.scenarios
             }
-          ];
+          }));
 
           for (const plan of plansData) {
             const [p, created] = await this.connection.models.Plan.findOrCreate({
@@ -123,6 +81,7 @@ class SallaDatabase {
                 price_monthly: plan.price_monthly,
                 price_yearly: plan.price_yearly,
                 msg_limit_monthly: plan.msg_limit_monthly,
+                trial_days: plan.trial_days,
                 features: plan.features
               });
             }
