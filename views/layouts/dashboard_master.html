@@ -240,7 +240,7 @@
          SIDEBAR
     ══════════════════════════════════════ -->
     <aside id="sidebar"
-        class="fixed lg:static inset-y-0 right-0 z-50 w-60 flex flex-col transform translate-x-full lg:translate-x-0 transition-transform duration-300 overflow-hidden"
+        class="fixed lg:static inset-y-0 -right-60 lg:right-0 z-50 w-60 flex flex-col transition-all duration-300 overflow-hidden"
         style="background: #0f172a;">
 
         <!-- Ambient glows -->
@@ -423,7 +423,8 @@
     function toggleSidebar() {
         const sidebar = document.getElementById('sidebar');
         const overlay = document.getElementById('sidebarOverlay');
-        sidebar.classList.toggle('translate-x-full');
+        sidebar.classList.toggle('-right-60');
+        sidebar.classList.toggle('right-0');
         overlay.classList.toggle('hidden');
     }
 </script>
