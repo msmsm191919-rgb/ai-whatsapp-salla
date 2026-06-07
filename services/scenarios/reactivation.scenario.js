@@ -49,7 +49,7 @@ async function run() {
                 `صالح لمدة 5 أيام فقط ⏰\n\n` +
                 `${tenant.store_name || 'متجرنا'} يفتقدك ❤️`;
 
-            const result = await sender.send(c.phone, msg);
+            const result = await sender.send(c.phone, msg, tenant.id);
 
             // حدّث الـ meta (إذا الجدول يدعم meta)
             try {

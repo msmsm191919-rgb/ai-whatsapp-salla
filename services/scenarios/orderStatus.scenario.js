@@ -59,7 +59,7 @@ async function handle(eventBody) {
         if (trackingUrl) fullMsg += `\n🔗 تتبع الشحنة: ${trackingUrl}`;
         fullMsg += `\n\n${tenant.store_name || 'متجرنا'} 🛒`;
 
-        const result = await sender.send(customerPhone, fullMsg);
+        const result = await sender.send(customerPhone, fullMsg, tenant.id);
 
         await logScenarioRun(
             tenant.id,

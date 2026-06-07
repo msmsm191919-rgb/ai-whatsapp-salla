@@ -48,7 +48,7 @@ async function run() {
                 `صالح 7 أيام فقط — أحلى هدية ننتظرك فيها 💝\n\n` +
                 `${tenant.store_name || 'متجرنا'} 🛍️`;
 
-            const result = await sender.send(c.phone, msg);
+            const result = await sender.send(c.phone, msg, tenant.id);
 
             try {
                 await c.update({

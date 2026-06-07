@@ -81,7 +81,7 @@ async function run() {
                                 `السعر الجديد: *${currentPrice} ر.س* 🎉\n\n` +
                                 (p.url ? `اطلب الآن: ${p.url}\n\n` : '') +
                                 `${tenant.store_name || 'متجرنا'} 🛒`;
-                            const result = await sender.send(c.phone, msg);
+                            const result = await sender.send(c.phone, msg, tenant.id);
                             await logScenarioRun(tenant.id, 'price_drop', c.id,
                                 result.ok ? 'sent' : 'failed',
                                 { product_id: pid, drop_pct: dropPct, simulated: !!result.simulated });
