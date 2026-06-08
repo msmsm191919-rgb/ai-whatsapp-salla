@@ -298,7 +298,8 @@ const devOnly = (req, res, next) => {
 app.use([
   '/dashboard', '/settings', '/logs', '/api/whatsapp-numbers', 
   '/automation', '/campaigns', '/ai-settings', '/knowledge-base', 
-  '/scenarios', '/customers', '/billing', '/pricing', '/whatsapp-simulator', '/simulator'
+  '/scenarios', '/customers', '/billing', '/pricing', '/whatsapp-simulator', '/simulator', '/whatsapp-web', '/api/wa-web/start', '/api/wa-web/status', '/api/wa-web/logout',
+  '/admin', '/admin/*'
 ], ensureAuthenticated);
 
 app.use('/api', apiRoutes);
@@ -2223,7 +2224,10 @@ const waWeb = require('./services/waWeb');
 
 // يحلّ معرّف التاجر الحالي (للجلسة المنفصلة)
 async function _waTenantId(req) {
-  if (!req.user) req.user = { merchant: { id: 123456789, name: 'Demo Merchant' } };
+  if (!req.user) {
+    if (process.env.NODE_ENV === 'production') return null;
+    req.user = { merchant: { id: 123456789, name: 'Demo Merchant' } };
+  }
   const db = SallaDatabase.connection;
   const tenant = await db.models.Tenant.findOne({ where: { salla_merchant_id: req.user.merchant.id } });
   return tenant ? tenant.id : null;
@@ -2231,13 +2235,11 @@ async function _waTenantId(req) {
 
 // صفحة الربط (QR)
 app.get("/whatsapp-web", (req, res) => {
-  if (!req.user) req.user = { merchant: { id: 123456789, name: 'Demo Merchant' } };
   res.render("whatsapp_web.html", { user: req.user, activePage: 'wa_web' });
 });
 
 // صفحة محاكي واتساب (Simulator)
 app.get(["/simulator", "/whatsapp-simulator"], (req, res) => {
-  if (!req.user) req.user = { merchant: { id: 123456789, name: 'Demo Merchant' } };
   res.render("simulator.html", { user: req.user, activePage: 'simulator' });
 });
 
@@ -2279,7 +2281,10 @@ function _normalizePhone(p) {
 }
 
 async function _getCustomerTenant(req) {
-  if (!req.user) req.user = { merchant: { id: 123456789, name: 'Demo Merchant' } };
+  if (!req.user) {
+    if (process.env.NODE_ENV === 'production') return { db: SallaDatabase.connection, tenant: null };
+    req.user = { merchant: { id: 123456789, name: 'Demo Merchant' } };
+  }
   const db = SallaDatabase.connection;
   const tenant = await db.models.Tenant.findOne({ where: { salla_merchant_id: req.user.merchant.id } });
   return { db, tenant };
