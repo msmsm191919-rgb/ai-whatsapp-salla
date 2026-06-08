@@ -18,7 +18,7 @@ const sessions = new Map();
 function _session(tenantId) {
     const k = String(tenantId);
     if (!sessions.has(k)) {
-        sessions.set(k, { client: null, status: 'disconnected', qr: '', error: '', poller: null });
+        sessions.set(k, { client: null, status: 'disconnected', qr: '', error: '', poller: null, autoReplyActivatedTime: 0 });
     }
     return sessions.get(k);
 }
@@ -100,21 +100,32 @@ function start(tenantId) {
     });
     s.client.on('loading_screen', (pct, msg) => console.log(`⏳ [waWeb:${k}] تحميل ${pct}% ${msg || ''}`));
     s.client.on('authenticated', () => { s.status = 'authenticated'; s.qr = ''; console.log(`🔑 [waWeb:${k}] تمت المصادقة`); _startReadyPoller(k); });
-    s.client.on('ready', () => { s.status = 'ready'; s.qr = ''; console.log(`✅ [waWeb:${k}] متصل وجاهز`); });
+    s.client.on('ready', () => {
+        s.status = 'ready';
+        s.qr = '';
+        s.autoReplyActivatedTime = Math.floor(Date.now() / 1000);
+        console.log(`✅ [waWeb:${k}] متصل وجاهز. وقت تفعيل الرد التلقائي: ${s.autoReplyActivatedTime}`);
+    });
     s.client.on('auth_failure', (m) => { s.status = 'error'; s.error = String(m); console.error(`❌ [waWeb:${k}] فشل المصادقة`, m); });
     s.client.on('disconnected', (r) => { s.status = 'disconnected'; s.qr = ''; s.client = null; console.warn(`⚠️ [waWeb:${k}] انقطع`, r); });
 
     // 💬 رد تلقائي ذكي على الرسائل الواردة الجديدة فقط (يتجاهل القديمة المعلقة تماماً)
     s.client.on('message', async (msg) => {
         try {
-            // 1. تجاهل أي رسالة أرسلت قبل إقلاع/ربط البوت (مهم جداً لسلامة صندوق الوارد)
-            if (msg.timestamp < s.startupTime) {
-                console.log(`ℹ️ [waWeb:${k}] Ignored old unread message from ${msg.from} sent at ${msg.timestamp} (startup: ${s.startupTime})`);
+            // 1. التحقق من الشروط الأساسية
+            if (!msg.body || msg.body.trim() === '') return;
+            if (msg.type !== 'chat') return;
+            if (!msg.from || !msg.from.endsWith('@c.us')) return;
+            if (msg.from.includes('@lid')) return;
+            if (msg.from.includes('@g.us')) return;
+            if (msg.from.includes('status')) return;
+            if (msg.fromMe) return;
+
+            // 2. التحقق من وقت التفعيل (أي رسالة تصل بعد ready/الربط)
+            if (!s.autoReplyActivatedTime || msg.timestamp < s.autoReplyActivatedTime) {
+                console.log(`ℹ️ [waWeb:${k}] Ignored old message from ${msg.from} sent at ${msg.timestamp} (activated: ${s.autoReplyActivatedTime})`);
                 return;
             }
-
-            // 2. تجاهل: المجموعات، الحالات، ورسائل البوت نفسه
-            if (!msg.from || msg.from.includes('@g.us') || msg.from.includes('status') || msg.fromMe) return;
 
             const fromPhone = msg.from.replace('@c.us', '');
             const ChatService = require('./ChatService');
