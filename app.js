@@ -299,7 +299,7 @@ app.use([
   '/dashboard', '/settings', '/logs', '/api/whatsapp-numbers', 
   '/automation', '/campaigns', '/ai-settings', '/knowledge-base', 
   '/scenarios', '/customers', '/billing', '/pricing', '/whatsapp-simulator', '/simulator', '/whatsapp-web', '/api/wa-web/start', '/api/wa-web/status', '/api/wa-web/logout',
-  '/admin', '/admin/*'
+  '/admin'
 ], ensureAuthenticated);
 
 app.use('/api', apiRoutes);
