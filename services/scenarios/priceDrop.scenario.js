@@ -84,7 +84,9 @@ async function run() {
                             const result = await sender.send(c.phone, msg, tenant.id);
                             await logScenarioRun(tenant.id, 'price_drop', c.id,
                                 result.ok ? 'sent' : 'failed',
-                                { product_id: pid, drop_pct: dropPct, simulated: !!result.simulated });
+                                { product_id: pid, drop_pct: dropPct, simulated: !!result.simulated },
+                                msg,
+                                c.phone);
                             alerts++;
                         }
                     }

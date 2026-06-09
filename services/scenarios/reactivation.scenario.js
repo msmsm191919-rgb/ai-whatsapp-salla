@@ -60,7 +60,9 @@ async function run() {
 
             await logScenarioRun(tenant.id, 'reactivation', c.id,
                 result.ok ? 'sent' : 'failed',
-                { code, simulated: !!result.simulated });
+                { code, simulated: !!result.simulated },
+                msg,
+                c.phone);
         }
 
         log('reactivation', `${tenant.store_name}: processed ${candidates.length}`);

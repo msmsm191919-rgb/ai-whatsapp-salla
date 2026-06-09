@@ -58,7 +58,9 @@ async function run() {
 
             await logScenarioRun(tenant.id, 'birthday', c.id,
                 result.ok ? 'sent' : 'failed',
-                { code, simulated: !!result.simulated });
+                { code, simulated: !!result.simulated },
+                msg,
+                c.phone);
             sent++;
         }
 
