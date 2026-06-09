@@ -27,7 +27,7 @@
             <div id="qrArea" class="mb-5 flex justify-center">
                 <div id="qrPlaceholder" class="w-56 h-56 rounded-2xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-slate-400 bg-slate-50">
                     <i class="fa-solid fa-qrcode text-4xl mb-2"></i>
-                    <p class="text-xs font-bold px-4">اضغط "ابدأ الربط" لعرض الرمز</p>
+                    <p id="qrPlaceholderText" class="text-xs font-bold px-4">اضغط "ابدأ الربط" لعرض الرمز</p>
                 </div>
                 <img id="qrImage" class="w-56 h-56 rounded-2xl border border-slate-200 hidden" alt="QR">
             </div>
@@ -71,6 +71,9 @@
                 <button id="startBtn" onclick="startWa()" class="px-5 py-2.5 rounded-xl text-white text-sm font-bold shadow-lg" style="background:linear-gradient(135deg,#0d9488,#0ea5e9);">
                     <i class="fa-solid fa-qrcode ml-1"></i> ابدأ الربط
                 </button>
+                <button id="refreshBtn" onclick="poll()" class="hidden px-5 py-2.5 rounded-xl text-white text-sm font-bold shadow-lg hover:opacity-90 transition" style="background:linear-gradient(135deg,#0ea5e9,#0284c7);">
+                    <i class="fa-solid fa-arrows-rotate ml-1"></i> تحديث الحالة
+                </button>
                 <button id="logoutBtn" onclick="logoutWa()" class="hidden px-5 py-2.5 rounded-xl text-sm font-bold border border-red-200 text-red-500 hover:bg-red-50 transition">
                     <i class="fa-solid fa-link-slash ml-1"></i> فصل
                 </button>
@@ -100,22 +103,81 @@
             ready: ['#dcfce7', '#16a34a', 'متصل ✅'],
             error: ['#fee2e2', '#dc2626', 'خطأ — حاول مرة ثانية']
         };
-        const [bg, color, label] = map[state.status] || map.disconnected;
+        const status = state.status || 'disconnected';
+        const [bg, color, defaultLabel] = map[status] || map.disconnected;
+        
+        let label = defaultLabel;
+        if (status === 'error' && state.error) {
+            label = state.error;
+        }
+
         el('statusBadge').style.background = bg;
         el('statusBadge').style.color = color;
         el('statusText').textContent = label;
-        if (state.status === 'qr' && state.qr) {
-            el('qrImage').src = state.qr; el('qrImage').classList.remove('hidden');
-            el('qrPlaceholder').classList.add('hidden'); el('scanSteps').classList.remove('hidden');
-            el('connectedBox').classList.add('hidden'); el('qrArea').classList.remove('hidden');
-            el('startBtn').classList.add('hidden'); el('logoutBtn').classList.remove('hidden');
-        } else if (state.status === 'ready') {
-            el('qrArea').classList.add('hidden'); el('scanSteps').classList.add('hidden');
+
+        if (status === 'qr') {
+            el('qrArea').classList.remove('hidden');
+            if (state.qr) {
+                el('qrImage').src = state.qr;
+                el('qrImage').classList.remove('hidden');
+                el('qrPlaceholder').classList.add('hidden');
+                el('scanSteps').classList.remove('hidden');
+            } else {
+                el('qrImage').classList.add('hidden');
+                el('qrPlaceholder').classList.remove('hidden');
+                el('qrPlaceholderText').textContent = 'جاري تحميل رمز QR...';
+                el('scanSteps').classList.add('hidden');
+            }
+            el('connectedBox').classList.add('hidden');
+        } else if (status === 'ready') {
+            el('qrArea').classList.add('hidden');
+            el('scanSteps').classList.add('hidden');
             el('connectedBox').classList.remove('hidden');
-            el('startBtn').classList.add('hidden'); el('logoutBtn').classList.remove('hidden');
-            if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
-        } else if (['starting', 'authenticated'].includes(state.status)) {
+        } else {
+            el('qrArea').classList.remove('hidden');
+            el('qrImage').classList.add('hidden');
+            el('qrPlaceholder').classList.remove('hidden');
+            el('scanSteps').classList.add('hidden');
+            el('connectedBox').classList.add('hidden');
+
+            if (status === 'disconnected') {
+                el('qrPlaceholderText').textContent = 'اضغط "ابدأ الربط" لعرض الرمز';
+            } else if (status === 'starting') {
+                el('qrPlaceholderText').textContent = 'جاري إعداد المتصفح والاتصال...';
+            } else if (status === 'authenticated') {
+                el('qrPlaceholderText').textContent = 'تمت المصادقة، جاري التجهيز...';
+            } else if (status === 'error') {
+                el('qrPlaceholderText').textContent = label;
+            }
+        }
+
+        if (status === 'disconnected') {
+            el('startBtn').innerHTML = '<i class="fa-solid fa-qrcode ml-1"></i> ابدأ الربط';
+            el('startBtn').classList.remove('hidden');
+        } else if (status === 'error') {
+            el('startBtn').innerHTML = '<i class="fa-solid fa-arrows-rotate ml-1"></i> إعادة المحاولة';
+            el('startBtn').classList.remove('hidden');
+        } else {
             el('startBtn').classList.add('hidden');
+        }
+
+        if (status === 'qr') {
+            el('refreshBtn').classList.remove('hidden');
+        } else {
+            el('refreshBtn').classList.add('hidden');
+        }
+
+        if (status === 'ready' || status === 'qr') {
+            el('logoutBtn').classList.remove('hidden');
+        } else {
+            el('logoutBtn').classList.add('hidden');
+        }
+
+        if (['error', 'disconnected', 'ready'].includes(status)) {
+            if (pollTimer) {
+                clearInterval(pollTimer);
+                pollTimer = null;
+            }
         }
     }
     async function poll() {
