@@ -12,8 +12,11 @@ const qrcode = require('qrcode');
 const WEB_VERSION = 'https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.3000.1040093096-alpha.html';
 
 // خريطة الجلسات: المفتاح = معرّف التاجر، القيمة = حالة جلسته
-// { client, status, qr, error, poller }
+// { client, status, qr, error, poller, autoReplyActivatedTime }
 const sessions = new Map();
+
+// 🔒 قفل داخلي: يمنع تشغيل start() المتزامن لنفس tenantId
+const _starting = new Set();
 
 function _session(tenantId) {
     const k = String(tenantId);
@@ -71,20 +74,50 @@ function _chatId(phone) {
     return s + '@c.us';
 }
 
+async function _destroyClient(k) {
+    const s = sessions.get(k);
+    if (!s) return;
+    if (s.poller) { clearInterval(s.poller); s.poller = null; }
+    if (s.client) {
+        try { await s.client.destroy(); } catch (e) { /* تجاهل أخطاء التدمير */ }
+        s.client = null;
+    }
+}
+
 function start(tenantId) {
     const k = String(tenantId);
     const s = _session(k);
-    // جلسة شغّالة أو قيد الإقلاع → لا نعيد التهيئة
-    if (s.client && ['starting', 'qr', 'authenticated', 'ready'].includes(s.status)) {
+
+    // 🔒 Lock: إذا كانت الجلسة قيد الإقلاع بالفعل → لا ننشئ client ثانٍ
+    if (_starting.has(k)) {
+        console.log(`[waWeb:${k}] start() مستدعى بينما الجلسة قيد الإقلاع — تم التجاهل`);
         return getState(k);
     }
+
+    // 🔒 Guard: جلسة شغّالة فعلاً بـ client حيّ → لا نعيد التهيئة
+    if (s.client && ['starting', 'qr', 'authenticated', 'ready'].includes(s.status)) {
+        console.log(`[waWeb:${k}] start() مستدعى والجلسة جاهزة (${s.status}) — تم التجاهل`);
+        return getState(k);
+    }
+
+    // 🧹 تدمير آمن لأي client قديم قبل إنشاء client جديد
+    if (s.client) {
+        console.log(`[waWeb:${k}] تدمير client قديم قبل إنشاء جديد...`);
+        _destroyClient(k).catch(() => {});
+    } else if (s.poller) {
+        clearInterval(s.poller);
+        s.poller = null;
+    }
+
+    _starting.add(k);
     s.status = 'starting';
     s.qr = '';
     s.error = '';
-    s.startupTime = Math.floor(Date.now() / 1000); // 🕒 حفظ وقت تشغيل البوت بالثواني لمنع الرد على الرسائل القديمة
+    s.autoReplyActivatedTime = 0;
+    s.startupTime = Math.floor(Date.now() / 1000);
     _cleanLocks(k);
 
-    s.client = new Client({
+    const client = new Client({
         authStrategy: new LocalAuth({ clientId: k }),   // 🔑 جلسة منفصلة لكل تاجر
         webVersionCache: { type: 'remote', remotePath: WEB_VERSION },
         puppeteer: {
@@ -92,25 +125,59 @@ function start(tenantId) {
             args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu', '--no-zygote', '--no-first-run']
         }
     });
+    s.client = client;
 
-    s.client.on('qr', (qr) => {
+    client.on('qr', (qr) => {
+        // تأكد أن هذا الـ client لا يزال هو الـ client الفعلي للجلسة
+        if (s.client !== client) return;
         s.status = 'qr';
         qrcode.toDataURL(qr, (err, url) => { if (!err) s.qr = url; });
         console.log(`📱 [waWeb:${k}] QR جاهز`);
     });
-    s.client.on('loading_screen', (pct, msg) => console.log(`⏳ [waWeb:${k}] تحميل ${pct}% ${msg || ''}`));
-    s.client.on('authenticated', () => { s.status = 'authenticated'; s.qr = ''; console.log(`🔑 [waWeb:${k}] تمت المصادقة`); _startReadyPoller(k); });
-    s.client.on('ready', () => {
+
+    client.on('loading_screen', (pct, msg) => {
+        if (s.client !== client) return;
+        console.log(`⏳ [waWeb:${k}] تحميل ${pct}% ${msg || ''}`);
+    });
+
+    client.on('authenticated', () => {
+        if (s.client !== client) return;
+        s.status = 'authenticated';
+        s.qr = '';
+        console.log(`🔑 [waWeb:${k}] تمت المصادقة`);
+        _startReadyPoller(k);
+    });
+
+    client.on('ready', () => {
+        if (s.client !== client) return;
+        _starting.delete(k); // 🔓 رفع القفل
         s.status = 'ready';
         s.qr = '';
         s.autoReplyActivatedTime = Math.floor(Date.now() / 1000);
         console.log(`✅ [waWeb:${k}] متصل وجاهز. وقت تفعيل الرد التلقائي: ${s.autoReplyActivatedTime}`);
     });
-    s.client.on('auth_failure', (m) => { s.status = 'error'; s.error = String(m); console.error(`❌ [waWeb:${k}] فشل المصادقة`, m); });
-    s.client.on('disconnected', (r) => { s.status = 'disconnected'; s.qr = ''; s.client = null; console.warn(`⚠️ [waWeb:${k}] انقطع`, r); });
+
+    client.on('auth_failure', (m) => {
+        if (s.client !== client) return;
+        _starting.delete(k); // 🔓 رفع القفل عند الفشل
+        s.status = 'error';
+        s.error = String(m);
+        console.error(`❌ [waWeb:${k}] فشل المصادقة`, m);
+    });
+
+    client.on('disconnected', (r) => {
+        if (s.client !== client) return; // تجاهل أحداث client قديم
+        _starting.delete(k); // 🔓 رفع القفل عند الانقطاع
+        if (s.poller) { clearInterval(s.poller); s.poller = null; } // 🧹 إيقاف الـ poller
+        s.status = 'disconnected';
+        s.qr = '';
+        s.client = null;
+        console.warn(`⚠️ [waWeb:${k}] انقطع`, r);
+    });
 
     // 💬 رد تلقائي ذكي على الرسائل الواردة الجديدة فقط (يتجاهل القديمة المعلقة تماماً)
-    s.client.on('message', async (msg) => {
+    client.on('message', async (msg) => {
+        if (s.client !== client) return; // تجاهل أحداث client قديم
         try {
             // 1. التحقق من الشروط الأساسية
             if (!msg.body || msg.body.trim() === '') return;
@@ -140,7 +207,14 @@ function start(tenantId) {
         } catch (e) { console.error(`[waWeb:${k}] خطأ معالجة رسالة واردة:`, e.message); }
     });
 
-    s.client.initialize().catch((e) => { s.status = 'error'; s.error = e.message; console.error(`❌ [waWeb:${k}] فشل الإقلاع:`, e.message); });
+    client.initialize().catch((e) => {
+        if (s.client !== client) return;
+        _starting.delete(k); // 🔓 رفع القفل عند خطأ الإقلاع
+        s.status = 'error';
+        s.error = e.message;
+        s.client = null;
+        console.error(`❌ [waWeb:${k}] فشل الإقلاع:`, e.message);
+    });
     return getState(k);
 }
 
@@ -160,23 +234,23 @@ async function sendImage(tenantId, phone, dataUrl, caption = '') {
 }
 
 async function logout(tenantId) {
-    const s = _session(tenantId);
+    const k = String(tenantId);
+    const s = _session(k);
+    _starting.delete(k);
     try { if (s.client) await s.client.logout(); } catch (e) { /* ignore */ }
-    if (s.poller) { clearInterval(s.poller); s.poller = null; }
+    await _destroyClient(k);
     s.status = 'disconnected';
     s.qr = '';
-    s.client = null;
 }
 
 // 🔁 إعادة تشغيل الجلسة (إغلاق المتصفح ثم إقلاع) — تحتفظ بالربط، لإصلاح العالق
 async function restart(tenantId) {
-    const s = _session(tenantId);
-    try { if (s.client) await s.client.destroy(); } catch (e) { /* ignore */ }
-    if (s.poller) { clearInterval(s.poller); s.poller = null; }
-    s.client = null;
-    s.status = 'disconnected';
-    s.qr = '';
-    return start(tenantId);
+    const k = String(tenantId);
+    _starting.delete(k); // 🔓 رفع أي قفل قديم قبل الإعادة
+    await _destroyClient(k);
+    _session(k).status = 'disconnected';
+    _session(k).qr = '';
+    return start(k);
 }
 
 // 🔄 استعادة كل الجلسات المحفوظة عند إقلاع الخادم
