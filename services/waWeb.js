@@ -67,7 +67,11 @@ function _cleanLocks(clientId) {
 
 // توحيد الرقم السعودي → chatId
 function _chatId(phone) {
-    let s = String(phone == null ? '' : phone).replace(/\D/g, '');
+    const sPhone = String(phone == null ? '' : phone).trim();
+    if (sPhone.endsWith('@c.us') || sPhone.endsWith('@lid')) {
+        return sPhone;
+    }
+    let s = sPhone.replace(/\D/g, '');
     if (s.startsWith('00')) s = s.slice(2);
     if (s.startsWith('0')) s = '966' + s.slice(1);
     else if (s.startsWith('5') && s.length === 9) s = '966' + s;
@@ -182,11 +186,17 @@ function start(tenantId) {
             // 1. التحقق من الشروط الأساسية
             if (!msg.body || msg.body.trim() === '') return;
             if (msg.type !== 'chat') return;
-            if (!msg.from || !msg.from.endsWith('@c.us')) return;
-            if (msg.from.includes('@lid')) return;
+            if (!msg.from) return;
+            if (!msg.from.endsWith('@c.us') && !msg.from.endsWith('@lid')) return;
             if (msg.from.includes('@g.us')) return;
             if (msg.from.includes('status')) return;
             if (msg.fromMe) return;
+
+            // ليست مجموعة: لا @g.us ويفضل chat.isGroup !== true إن أمكن
+            try {
+                const chat = await msg.getChat();
+                if (chat && chat.isGroup) return;
+            } catch (e) {}
 
             // 2. التحقق من وقت التفعيل (أي رسالة تصل بعد ready/الربط)
             if (!s.autoReplyActivatedTime || msg.timestamp < s.autoReplyActivatedTime) {
@@ -194,7 +204,10 @@ function start(tenantId) {
                 return;
             }
 
-            const fromPhone = msg.from.replace('@c.us', '');
+            const fromPhone = msg.from.endsWith('@c.us')
+                ? msg.from.replace('@c.us', '')
+                : msg.from;
+
             const ChatService = require('./ChatService');
             // isSimulated:true → يولّد رد + يسجّل بدون إرسال (سنرسل نحن عبر waWeb)
             const result = await ChatService.handleIncomingMessage({
