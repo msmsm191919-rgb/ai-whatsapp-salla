@@ -66,7 +66,9 @@ async function handle(eventBody) {
             'order_status',
             null,
             result.ok ? 'sent' : 'failed',
-            { order_id: orderId, status: newStatus, simulated: !!result.simulated }
+            { order_id: orderId, order_status: newStatus, channel: result.channel || 'qr', simulated: !!result.simulated },
+            fullMsg,
+            customerPhone
         );
 
         log('order_status', `${result.ok ? '✅' : '❌'} ${tenant.store_name} → ${customerPhone} (${newStatus})`);

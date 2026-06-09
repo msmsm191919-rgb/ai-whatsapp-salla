@@ -16,18 +16,23 @@ async function tenantsWithScenarioEnabled(key) {
     return planGate.filterTenantsByScenario(enabled, key);
 }
 
-/** سجّل النشاط في MessageLog */
-async function logScenarioRun(tenantId, scenarioKey, customerId, status = 'sent', meta = {}) {
+async function logScenarioRun(tenantId, scenarioKey, customerId, status = 'sent', meta = {}, content = null, toPhone = null) {
     const db = SallaDatabase.connection;
     if (!db || !db.models.MessageLog) return;
     try {
+        const actualPhone = toPhone || meta.phone || (meta.customer ? meta.customer.phone : null);
+        const actualContent = content || meta.content || null;
+
         await db.models.MessageLog.create({
             tenant_id: tenantId,
-            customer_id: customerId,
-            direction: 'outbound',
-            channel: 'whatsapp',
+            direction: 'out',
             status,
-            meta: { scenario: scenarioKey, ...meta }
+            content: actualContent,
+            to_phone: actualPhone,
+            metadata: {
+                type: scenarioKey,
+                ...meta
+            }
         });
     } catch (e) {
         // MessageLog حقوله ممكن تختلف — نطبع فقط
