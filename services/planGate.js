@@ -409,5 +409,42 @@ module.exports = {
     // Middlewares
     requirePage,
     requireFeature,
-    injectPlanContext
+    injectPlanContext,
+
+    // Salla App Plans Mapping
+    SALLA_PLANS_MAPPING: {
+        get basic() { return process.env.SALLA_PLAN_BASIC_ID || null; },
+        get growth() { return process.env.SALLA_PLAN_GROWTH_ID || null; },
+        get enterprise() { return process.env.SALLA_PLAN_ENTERPRISE_ID || null; }
+    },
+
+    /**
+     * يرجع اسم الباقة الداخلي بمبهر بناءً على معرف باقة سلة (planId)
+     */
+    getPlanNameBySallaPlanId(sallaPlanId) {
+        if (!sallaPlanId) return null;
+
+        const basicId = process.env.SALLA_PLAN_BASIC_ID;
+        const growthId = process.env.SALLA_PLAN_GROWTH_ID;
+        const enterpriseId = process.env.SALLA_PLAN_ENTERPRISE_ID;
+
+        if (basicId && String(sallaPlanId) === String(basicId)) return 'الأساسية';
+        if (growthId && String(sallaPlanId) === String(growthId)) return 'النمو';
+        if (enterpriseId && String(sallaPlanId) === String(enterpriseId)) return 'الشركات';
+
+        return null;
+    },
+
+    /**
+     * يرجع اسم الباقة الداخلي بمبهر بناءً على اسم باقة سلة (planName)
+     */
+    getPlanNameBySallaPlanName(sallaPlanName) {
+        if (!sallaPlanName) return null;
+
+        if (sallaPlanName === 'الأساسية' || sallaPlanName === 'basic') return 'الأساسية';
+        if (sallaPlanName === 'النمو' || sallaPlanName === 'growth') return 'النمو';
+        if (sallaPlanName === 'الشركات' || sallaPlanName === 'enterprise') return 'الشركات';
+
+        return null;
+    }
 };

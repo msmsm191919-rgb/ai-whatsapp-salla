@@ -97,6 +97,60 @@ SallaWebhook.on('order.status.updated', async (data, next) => {
   }
 });
 
+// ── اشتراكات التطبيق الرسمية من سلة (Salla App Plans Subscriptions) ──
+SallaWebhook.on('app.subscription.started', async (data, next) => {
+  try {
+    const merchantId = data.merchant;
+    const planId = data.data?.plan?.id;
+    const planName = data.data?.plan?.name;
+    const subscriptionId = data.data?.id;
+    const status = data.data?.status;
+    const details = {
+      billing_period: data.data?.billing_period || 'monthly',
+      start_date: data.data?.start_date,
+      end_date: data.data?.end_date,
+      promotion: data.data?.promotion
+    };
+
+    console.log(`📩 Webhook [app.subscription.started] received — merchant=${merchantId} planId=${planId} planName=${planName}`);
+    await BillingService.handleSallaSubscriptionUpdate(merchantId, planId, planName, subscriptionId, status, details);
+  } catch (e) {
+    console.error('Error in app.subscription.started listener:', e);
+  }
+});
+
+SallaWebhook.on('app.subscription.renewed', async (data, next) => {
+  try {
+    const merchantId = data.merchant;
+    const planId = data.data?.plan?.id;
+    const planName = data.data?.plan?.name;
+    const subscriptionId = data.data?.id;
+    const status = data.data?.status;
+    const details = {
+      billing_period: data.data?.billing_period || 'monthly',
+      start_date: data.data?.start_date,
+      end_date: data.data?.end_date
+    };
+
+    console.log(`📩 Webhook [app.subscription.renewed] received — merchant=${merchantId} planId=${planId} planName=${planName}`);
+    await BillingService.handleSallaSubscriptionUpdate(merchantId, planId, planName, subscriptionId, status, details);
+  } catch (e) {
+    console.error('Error in app.subscription.renewed listener:', e);
+  }
+});
+
+SallaWebhook.on('app.subscription.expired', async (data, next) => {
+  try {
+    const merchantId = data.merchant;
+    const subscriptionId = data.data?.id;
+
+    console.log(`📩 Webhook [app.subscription.expired] received — merchant=${merchantId}`);
+    await BillingService.handleSallaSubscriptionExpired(merchantId, subscriptionId);
+  } catch (e) {
+    console.error('Error in app.subscription.expired listener:', e);
+  }
+});
+
 
 const SallaAPI = new SallaAPIFactory({
   clientID: SALLA_OAUTH_CLIENT_ID,
@@ -1659,32 +1713,22 @@ app.get("/api/scenarios/trigger/:key", devOnly, async (req, res) => {
 const BillingService = require('./services/BillingService');
 const TapService = require('./services/TapService');
 
-// POST /billing/checkout — يبدأ جلسة دفع Tap
+// POST /billing/checkout — يوجّه التاجر إلى صفحة التطبيق في متجر سلة لاختيار الباقة والترقية
 app.post('/billing/checkout', async (req, res) => {
   try {
     if (!req.user) req.user = { merchant: { id: 123456789, name: 'Demo Merchant' } };
-    const { plan_name, billing_period } = req.body;
-    if (!plan_name) return res.status(400).json({ ok: false, error: 'plan_name required' });
+    const { plan_name } = req.body; // plan_name still parsed, but we redirect to Salla App Store generally
 
     const db = SallaDatabase.connection;
-    const plan = await db.models.Plan.findOne({ where: { name: plan_name } });
-    if (!plan) return res.status(404).json({ ok: false, error: 'Plan not found' });
-
     const tenant = await db.models.Tenant.findOne({ where: { salla_merchant_id: req.user.merchant.id } });
     if (!tenant) return res.status(404).json({ ok: false, error: 'Tenant not found' });
 
-    const baseUrl = `${req.protocol}://${req.get('host')}`;
-    const result = await BillingService.initiateTapCheckout({
-      tenantId: tenant.id,
-      planId: plan.id,
-      billingPeriod: (billing_period === 'yearly') ? 'yearly' : 'monthly',
-      baseUrl
-    });
+    const checkoutUrl = process.env.SALLA_APP_UPGRADE_URL || 'https://s.salla.sa/apps';
 
-    console.log(`💳 Checkout initiated — tenant ${tenant.id} → ${plan_name} (${result.mock ? 'MOCK' : 'TAP'})`);
-    res.json({ ok: true, ...result });
+    console.log(`💳 Redirecting tenant ${tenant.id} to Salla App Store to upgrade to ${plan_name || 'selected plan'}`);
+    res.json({ ok: true, checkoutUrl });
   } catch (e) {
-    console.error('Checkout error:', e);
+    console.error('Checkout redirect error:', e);
     res.status(500).json({ ok: false, error: e.message });
   }
 });

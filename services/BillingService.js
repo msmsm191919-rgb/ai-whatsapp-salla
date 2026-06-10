@@ -164,6 +164,169 @@ class BillingService {
             throw error;
         }
     }
+
+    /**
+     * معالجة تحديث اشتراك التطبيق من ويب هوك سلة
+     */
+    async handleSallaSubscriptionUpdate(merchantId, sallaPlanId, sallaPlanName, subscriptionId, status, details = {}) {
+        const t = await this.db.transaction();
+        try {
+            // 1. Verify merchantId is present
+            if (!merchantId) {
+                console.warn(`⚠️ [Salla Subscription] Missing merchantId`);
+                await t.rollback();
+                return { status: 'merchant_id_missing' };
+            }
+
+            // 2. Reject activation if status is not active or paid
+            if (status !== 'active' && status !== 'paid') {
+                console.warn(`⚠️ [Salla Subscription] Invalid status received: ${status} for merchant: ${merchantId}`);
+                await t.rollback();
+                return { status: 'invalid_status' };
+            }
+
+            // 3. Find Tenant
+            const Tenant = this.db.models.Tenant;
+            const tenant = await Tenant.findOne({
+                where: { salla_merchant_id: merchantId },
+                transaction: t
+            });
+            if (!tenant) {
+                console.warn(`⚠️ [Salla Subscription] Tenant not found for merchant ID: ${merchantId}`);
+                await t.rollback();
+                return { status: 'tenant_not_found' };
+            }
+
+            // 4. Map plan using planId first, then planName fallback
+            const planGate = require('./planGate');
+            let planName = null;
+
+            if (sallaPlanId) {
+                planName = planGate.getPlanNameBySallaPlanId(sallaPlanId);
+            }
+
+            if (!planName && sallaPlanName) {
+                planName = planGate.getPlanNameBySallaPlanName(sallaPlanName);
+            }
+
+            if (!planName) {
+                console.warn(`⚠️ [Salla Subscription] Plan unrecognized (planId: '${sallaPlanId}', planName: '${sallaPlanName}') for merchant: ${merchantId}`);
+                await t.rollback();
+                return { status: 'plan_not_mapped' };
+            }
+
+            const Plan = this.db.models.Plan;
+            const plan = await Plan.findOne({
+                where: { name: planName },
+                transaction: t
+            });
+            if (!plan) {
+                console.error(`❌ [Salla Subscription] Mapped Plan '${planName}' not found in DB`);
+                await t.rollback();
+                return { status: 'plan_not_found' };
+            }
+
+            // 5. Calculate correct amount based on billing period (monthly vs yearly)
+            const billingPeriod = details.billing_period || 'monthly';
+            const amount = billingPeriod === 'yearly' ? (plan.price_yearly || 0) : (plan.price_monthly || 0);
+
+            // 6. Record Payment
+            const payment = await this.db.models.Payment.create({
+                tenant_id: tenant.id,
+                plan_id: plan.id,
+                amount,
+                currency: 'SAR',
+                status: 'paid',
+                provider: 'salla',
+                provider_payment_id: subscriptionId || `sub_${merchantId}_${Date.now()}`,
+                metadata: { salla_plan_id: sallaPlanId, event_details: details }
+            }, { transaction: t });
+
+            // 4. Update/Create Subscription
+            const startDate = details.start_date ? new Date(details.start_date) : new Date();
+            const endDate = details.end_date ? new Date(details.end_date) : new Date();
+            if (!details.end_date) {
+                if (billingPeriod === 'yearly') {
+                    endDate.setFullYear(endDate.getFullYear() + 1);
+                } else {
+                    endDate.setMonth(endDate.getMonth() + 1);
+                }
+            }
+
+            const [sub, created] = await this.db.models.Subscription.findOrCreate({
+                where: { tenant_id: tenant.id },
+                defaults: {
+                    plan_id: plan.id,
+                    status: 'active',
+                    is_yearly: billingPeriod === 'yearly',
+                    start_date: startDate,
+                    end_date: endDate
+                },
+                transaction: t
+            });
+
+            if (!created) {
+                sub.plan_id = plan.id;
+                sub.status = 'active';
+                sub.is_yearly = billingPeriod === 'yearly';
+                sub.start_date = startDate;
+                sub.end_date = endDate;
+                await sub.save({ transaction: t });
+            }
+
+            // 5. Unblock Tenant
+            if (tenant.status !== 'active') {
+                tenant.status = 'active';
+                await tenant.save({ transaction: t });
+            }
+
+            await t.commit();
+            console.log(`✅ [Salla Subscription] Subscription updated successfully for tenant ${tenant.id} to plan ${planName}`);
+            return { status: 'success', tenant_id: tenant.id, plan_name: planName };
+        } catch (error) {
+            await t.rollback();
+            console.error('❌ [Salla Subscription] Error handling update:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * معالجة انتهاء اشتراك التطبيق من ويب هوك سلة
+     */
+    async handleSallaSubscriptionExpired(merchantId, subscriptionId) {
+        const t = await this.db.transaction();
+        try {
+            const Tenant = this.db.models.Tenant;
+            const tenant = await Tenant.findOne({
+                where: { salla_merchant_id: merchantId },
+                transaction: t
+            });
+            if (!tenant) {
+                console.warn(`⚠️ [Salla Subscription Expired] Tenant not found for merchant ID: ${merchantId}`);
+                await t.rollback();
+                return { status: 'tenant_not_found' };
+            }
+
+            const Subscription = this.db.models.Subscription;
+            const sub = await Subscription.findOne({
+                where: { tenant_id: tenant.id },
+                transaction: t
+            });
+
+            if (sub) {
+                sub.status = 'expired';
+                await sub.save({ transaction: t });
+            }
+
+            await t.commit();
+            console.log(`⚠️ [Salla Subscription Expired] Subscription set to expired for tenant ${tenant.id}`);
+            return { status: 'success', tenant_id: tenant.id };
+        } catch (error) {
+            await t.rollback();
+            console.error('❌ [Salla Subscription Expired] Error handling expiration:', error);
+            throw error;
+        }
+    }
 }
 
 module.exports = new BillingService();
