@@ -303,7 +303,9 @@ app.use([
 ], ensureAuthenticated);
 
 // 🔒 حماية المسارات الإدارية للمسؤولين فقط
-app.use(['/admin', '/admin/*', '/api/admin', '/api/admin/*'], requireAdmin);
+// ملاحظة: app.use في Express يطابق كل المسارات الفرعية تلقائياً (prefix match)
+// '/admin' يغطي /admin و/admin/plans و/admin/subscriptions وما تحتها
+app.use(['/admin', '/api/admin'], requireAdmin);
 
 app.use('/api', apiRoutes);
 app.use('/dashboard', dashboardRoutes);
