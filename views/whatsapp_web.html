@@ -98,6 +98,7 @@
         const map = {
             disconnected: ['#fef3c7', '#b45309', 'غير متصل'],
             starting: ['#dbeafe', '#1d4ed8', 'جاري الإقلاع...'],
+            initializing_recovery: ['#fef3c7', '#b45309', 'جاري إعادة تهيئة ربط واتساب... يرجى الانتظار'],
             qr: ['#dbeafe', '#1d4ed8', 'امسح الرمز من جوالك'],
             authenticated: ['#dbeafe', '#1d4ed8', 'جاري المصادقة...'],
             ready: ['#dcfce7', '#16a34a', 'متصل ✅'],
@@ -144,6 +145,8 @@
                 el('qrPlaceholderText').textContent = 'اضغط "ابدأ الربط" لعرض الرمز';
             } else if (status === 'starting') {
                 el('qrPlaceholderText').textContent = 'جاري إعداد المتصفح والاتصال...';
+            } else if (status === 'initializing_recovery') {
+                el('qrPlaceholderText').textContent = 'جاري إعادة تهيئة ربط واتساب... يرجى الانتظار';
             } else if (status === 'authenticated') {
                 el('qrPlaceholderText').textContent = 'تمت المصادقة، جاري التجهيز...';
             } else if (status === 'error') {

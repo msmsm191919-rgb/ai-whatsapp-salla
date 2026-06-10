@@ -21,7 +21,7 @@ const _starting = new Set();
 function _session(tenantId) {
     const k = String(tenantId);
     if (!sessions.has(k)) {
-        sessions.set(k, { client: null, status: 'disconnected', qr: '', error: '', poller: null, autoReplyActivatedTime: 0 });
+        sessions.set(k, { client: null, status: 'disconnected', qr: '', error: '', poller: null, autoReplyActivatedTime: 0, initTries: 0 });
     }
     return sessions.get(k);
 }
@@ -134,6 +134,7 @@ function start(tenantId) {
     client.on('qr', (qr) => {
         // تأكد أن هذا الـ client لا يزال هو الـ client الفعلي للجلسة
         if (s.client !== client) return;
+        s.initTries = 0; // Reset retry counter on successful QR generation
         s.status = 'qr';
         qrcode.toDataURL(qr, (err, url) => { if (!err) s.qr = url; });
         console.log(`📱 [waWeb:${k}] QR جاهز`);
@@ -155,6 +156,7 @@ function start(tenantId) {
     client.on('ready', () => {
         if (s.client !== client) return;
         _starting.delete(k); // 🔓 رفع القفل
+        s.initTries = 0; // Reset retry counter on successful connection
         s.status = 'ready';
         s.qr = '';
         s.autoReplyActivatedTime = Math.floor(Date.now() / 1000);
@@ -220,13 +222,68 @@ function start(tenantId) {
         } catch (e) { console.error(`[waWeb:${k}] خطأ معالجة رسالة واردة:`, e.message); }
     });
 
-    client.initialize().catch((e) => {
+    client.initialize().catch(async (e) => {
         if (s.client !== client) return;
         _starting.delete(k); // 🔓 رفع القفل عند خطأ الإقلاع
+
+        // Check if error is context destruction or navigation related
+        const isContextError = /context was destroyed|navigation|Protocol error/i.test(e.message);
+
+        if (isContextError && (!s.initTries || s.initTries < 3)) {
+            s.initTries = (s.initTries || 0) + 1;
+            
+            // Set intermediate state so user sees "initializing_recovery" message instead of error
+            s.status = 'initializing_recovery';
+            s.qr = '';
+            s.error = '';
+
+            // Log detailed error stack trace along with metadata
+            const errorTime = new Date().toISOString();
+            console.warn(`[RECOVERY] [waWeb:${k}] Attempt ${s.initTries}/3 failed at ${errorTime} during initialization phase.`);
+            console.warn(`Error Stack trace:\n${e.stack || e}`);
+
+            // Clean up current client to prevent resource/Chrome leak
+            try {
+                await client.destroy();
+            } catch (err) {
+                console.error(`[waWeb:${k}] Error destroying client during recovery:`, err.message);
+            }
+            s.client = null;
+
+            // Delete corrupted session directory only for context/navigation errors
+            try {
+                const fs = require('fs');
+                const path = require('path');
+                const sessDir = path.join(process.cwd(), '.wwebjs_auth', 'session-' + k);
+                if (fs.existsSync(sessDir)) {
+                    fs.rmSync(sessDir, { recursive: true, force: true });
+                    console.log(`[RECOVERY] [waWeb:${k}] Successfully deleted corrupted session directory: ${sessDir}`);
+                }
+            } catch (err) {
+                console.error(`[waWeb:${k}] Error deleting session directory:`, err.message);
+            }
+
+            // Retry startup after 3 seconds
+            setTimeout(() => {
+                start(k);
+            }, 3000);
+            return;
+        }
+
+        // Final failure after 3 attempts or for general errors
+        s.initTries = 0;
         s.status = 'error';
         s.error = e.message;
         s.client = null;
-        console.error(`❌ [waWeb:${k}] فشل الإقلاع:`, e.message);
+        
+        const finalErrorTime = new Date().toISOString();
+        console.error(`❌ [waWeb:${k}] Final initialization failure at ${finalErrorTime}. Stack trace:\n${e.stack || e}`);
+
+        try {
+            await client.destroy();
+        } catch (err) {
+            // ignore
+        }
     });
     return getState(k);
 }
