@@ -28,7 +28,8 @@ async function handle(eventBody) {
         if (!db) return log('order_status', 'DB not ready');
 
         const merchantId = eventBody.merchant;
-        const order = eventBody.data || {};
+        const data = eventBody.data || {};
+        const order = data.order || data || {};
 
         // اعثر على المتجر
         const tenant = await db.models.Tenant.findOne({
