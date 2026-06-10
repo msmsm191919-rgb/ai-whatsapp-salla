@@ -1634,10 +1634,16 @@ app.get('/billing/return', async (req, res) => {
     const { tap_id, status, mock } = req.query;
     if (!tap_id) return res.redirect('/billing?status=error&reason=missing_id');
 
-    // تحقق من Tap (أو نقبل mock مباشرة)
+    // تحقق من Tap (أو نقبل mock مباشرة في بيئة التطوير فقط)
     let chargeStatus = status;
-    if (!mock) {
+    const isProduction = process.env.NODE_ENV === 'production';
+
+    if (isProduction || !mock) {
       const charge = await TapService.retrieveCharge(tap_id);
+      if (isProduction && (charge.mock || String(tap_id).startsWith('chg_mock'))) {
+        console.warn(`⚠️ [SECURITY] Blocked mock payment attempt in production: ${tap_id}`);
+        return res.redirect('/billing?status=error&reason=mock_payment_blocked');
+      }
       chargeStatus = charge.status;
     }
 

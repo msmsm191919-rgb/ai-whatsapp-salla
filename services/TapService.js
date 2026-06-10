@@ -12,8 +12,9 @@ class TapService {
         this.secretKey = process.env.TAP_SECRET_KEY || '';
         this.publicKey = process.env.TAP_PUBLIC_KEY || '';
         this.webhookSecret = process.env.TAP_WEBHOOK_SECRET || '';
-        // إذا ما فيه مفتاح، نشتغل في وضع Mock للتطوير
-        this.isMockMode = !this.secretKey || this.secretKey.startsWith('mock');
+        // إذا ما فيه مفتاح، نشتغل في وضع Mock للتطوير (يُعطّل في الإنتاج لأسباب أمنية)
+        const isProduction = process.env.NODE_ENV === 'production';
+        this.isMockMode = (!this.secretKey || this.secretKey.startsWith('mock')) && !isProduction;
     }
 
     /**
@@ -60,10 +61,11 @@ class TapService {
      * التحقق من توقيع الـ Webhook (hash اختياري من Tap)
      */
     verifyWebhookSignature(body, signature) {
-        if (this.isMockMode) return true;
+        const isProduction = process.env.NODE_ENV === 'production';
+        if (this.isMockMode && !isProduction) return true;
         if (!this.webhookSecret) {
             console.warn('⚠️ TAP_WEBHOOK_SECRET not set — webhook signature not verified');
-            return true; // allow for now, but log
+            return !isProduction; // ارفض في الإنتاج إذا كان المفتاح مفقوداً حماية للبوابات
         }
         const crypto = require('crypto');
         const computed = crypto.createHmac('sha256', this.webhookSecret).update(body).digest('hex');
