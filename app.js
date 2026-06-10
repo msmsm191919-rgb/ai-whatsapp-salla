@@ -388,15 +388,47 @@ app.post("/webhook", (req, res) => {
 
   // 3. Process Logic Safely in Background
   try {
+    const signature = req.headers['x-salla-signature'];
     const token = req.headers.authorization;
-    if (!token && !process.env.SALLA_WEBHOOK_SECRET) {
-      console.warn("⚠️ Webhook Warning: No Authorization header found and no SECRET set. Continuing anyway for test.");
+    let isValid = false;
+
+    if (signature && SALLA_WEBHOOK_SECRET) {
+      // 1. Verify via Signature Strategy (Real Salla Webhooks)
+      const crypto = require('crypto');
+      const calculated = crypto
+        .createHmac('sha256', SALLA_WEBHOOK_SECRET)
+        .update(JSON.stringify(req.body))
+        .digest('hex');
+      try {
+        isValid = crypto.timingSafeEqual(
+          Buffer.from(calculated, 'utf8'),
+          Buffer.from(signature, 'utf8')
+        );
+      } catch (e) {
+        isValid = false;
+      }
+      if (!isValid) {
+        console.error("❌ Webhook Signature Verification Failed.");
+      }
+    } else if (token && SALLA_WEBHOOK_SECRET) {
+      // 2. Verify via Token Strategy (Fallback for Local Simulation)
+      isValid = (token === SALLA_WEBHOOK_SECRET);
+      if (!isValid) {
+        console.error("❌ Webhook Authorization Token Mismatch.");
+      }
+    } else if (!SALLA_WEBHOOK_SECRET) {
+      // 3. Dev Mode (No secret set)
+      console.warn("⚠️ Webhook Warning: SALLA_WEBHOOK_SECRET is not set. Skipping verification.");
+      isValid = true;
     }
 
-    // Pass to Salla logic (it might verify internaly, but we already responded 200)
-    SallaWebhook.checkActions(req.body, token, {
-      /* userArgs */
-    });
+    if (isValid) {
+      SallaWebhook.checkActions(req.body, SALLA_WEBHOOK_SECRET || token, {
+        /* userArgs */
+      });
+    } else {
+      console.error("❌ Webhook Verification Failed: Skipping event execution.");
+    }
   } catch (error) {
     console.error("❌ Exception inside Webhook logic:", error.message);
   }
