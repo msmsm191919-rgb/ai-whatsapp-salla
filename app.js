@@ -302,6 +302,9 @@ app.use([
   '/admin'
 ], ensureAuthenticated);
 
+// 🔒 حماية المسارات الإدارية للمسؤولين فقط
+app.use(['/admin', '/admin/*', '/api/admin', '/api/admin/*'], requireAdmin);
+
 app.use('/api', apiRoutes);
 app.use('/dashboard', dashboardRoutes);
 app.use('/settings', settingsRoutes);
@@ -863,6 +866,63 @@ function ensureAuthenticated(req, res, next) {
   console.log(`- Action: Redirecting to /connect`);
   console.log(`============================================================\n`);
   res.redirect('/connect?error=auth_required');
+}
+
+async function requireAdmin(req, res, next) {
+  if (!req.isAuthenticated() && !(req.user && req.user.merchant && req.user.merchant.id)) {
+    if (req.xhr || req.headers.accept?.includes('json') || req.originalUrl.startsWith('/api') || req.method === 'POST') {
+      return res.status(403).json({ ok: false, error: 'Unauthorized: Admin privileges required' });
+    }
+    return res.redirect('/connect?error=auth_required');
+  }
+
+  try {
+    const merchantId = String(req.user.merchant.id);
+    const adminEmails = process.env.ADMIN_EMAILS
+      ? process.env.ADMIN_EMAILS.split(',').map(e => e.trim().toLowerCase())
+      : [];
+    const adminMerchantIds = process.env.ADMIN_MERCHANT_IDS
+      ? process.env.ADMIN_MERCHANT_IDS.split(',').map(id => id.trim())
+      : [];
+
+    // 1. Check Merchant ID
+    if (adminMerchantIds.includes(merchantId)) {
+      return next();
+    }
+
+    // 2. Check Email (Session or DB)
+    let email = (req.user.merchant.email || req.user.email || '').toLowerCase().trim();
+    if (!email) {
+      const db = SallaDatabase.connection;
+      if (db && db.models?.Tenant) {
+        const tenant = await db.models.Tenant.findOne({
+          where: {
+            [require('sequelize').Op.or]: [
+              { salla_merchant_id: merchantId },
+              { platform_store_id: merchantId }
+            ]
+          }
+        });
+        if (tenant && tenant.email) {
+          email = tenant.email.toLowerCase().trim();
+        }
+      }
+    }
+
+    if (email && adminEmails.includes(email)) {
+      return next();
+    }
+
+    console.warn(`[SECURITY] Unauthorized admin access attempt: ${req.originalUrl}`);
+
+    if (req.xhr || req.headers.accept?.includes('json') || req.originalUrl.startsWith('/api') || req.method === 'POST') {
+      return res.status(403).json({ ok: false, error: 'Access Denied: Admin privileges required' });
+    }
+    return res.redirect('/dashboard?error=admin_only');
+  } catch (err) {
+    console.error("Error in requireAdmin middleware:", err);
+    return res.status(500).send("Internal Server Error");
+  }
 }
 
 const http = require('http');
