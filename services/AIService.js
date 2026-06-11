@@ -70,12 +70,28 @@ class AIService {
             const kbConfig = tenantSettings.knowledge_base || {};
             const aiConfig = tenantSettings.ai_config || {};
 
+            // Priority logic for shipping policy
+            let shippingPolicy = null;
+            if (aiConfig.shipping_time && aiConfig.shipping_time.trim().length > 0) {
+                shippingPolicy = aiConfig.shipping_time.trim();
+            } else if (kbConfig.shipping_policy && kbConfig.shipping_policy.trim().length > 0) {
+                shippingPolicy = kbConfig.shipping_policy.trim();
+            }
+
+            // Priority logic for return policy
+            let returnPolicy = null;
+            if (aiConfig.policy_return && aiConfig.policy_return.trim().length > 0) {
+                returnPolicy = aiConfig.policy_return.trim();
+            } else if (kbConfig.return_policy && kbConfig.return_policy.trim().length > 0) {
+                returnPolicy = kbConfig.return_policy.trim();
+            }
+
             const storeInfo = {
                 name: tenant.store_name,
                 domain: tenant.store_domain,
-                shipping_policy: kbConfig.shipping_policy,
-                return_policy: kbConfig.return_policy,
-                custom_instructions: kbConfig.custom_text
+                shipping_policy: shippingPolicy,
+                return_policy: returnPolicy,
+                custom_text: kbConfig.custom_text
             };
 
             const config = {
