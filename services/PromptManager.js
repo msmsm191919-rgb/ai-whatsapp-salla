@@ -25,7 +25,7 @@ class PromptManager {
      * @returns {string} The constructed system prompt.
      */
     buildSalesAgentPrompt(storeInfo, config) {
-        const toneDesc = this.tones[config.bot_tone] || this.tones['friendly'];
+        const toneDesc = this.tones[config.bot_tone] || config.bot_tone || this.tones['friendly'];
         const botName = config.bot_name || 'مبهر';
 
         return `

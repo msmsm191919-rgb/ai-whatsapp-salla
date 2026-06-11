@@ -1,14 +1,14 @@
 {% extends "layouts/dashboard_master.html" %}
 
-{% block title %}إعدادات الذكاء | مبهر AI{% endblock %}
+{% block title %}إعدادات المساعد الذكي | مبهر AI{% endblock %}
 {% block header_title %}شخصية المساعد{% endblock %}
-{% block header_subtitle %}خصّص هوية وأسلوب الذكاء الاصطناعي لمتجرك{% endblock %}
+{% block header_subtitle %}خصّص هوية وأسلوب المساعد الذكي لمتجرك{% endblock %}
 
 {% block styles %}
 <style>
     .field-label {
         display: block;
-        font-size: 13px;
+        font-size: 13.5px;
         font-weight: 700;
         color: #374151;
         margin-bottom: 7px;
@@ -31,94 +31,22 @@
         background: #fff;
         box-shadow: 0 0 0 3px rgba(20,184,166,0.10);
     }
-    .tone-card {
-        border: 2px solid #e2e8f0;
-        border-radius: 14px;
-        padding: 16px;
-        cursor: pointer;
-        transition: all 0.18s;
-        background: #f8fafc;
-        text-align: center;
+    .section-title {
+        font-size: 16px;
+        font-weight: 800;
+        color: #1e293b;
+        margin-bottom: 15px;
+        padding-bottom: 8px;
+        border-bottom: 2px solid #f1f5f9;
+        display: flex;
+        align-items: center;
+        gap: 8px;
     }
-    .tone-card:hover { border-color: #94a3b8; background: #fff; }
-    .tone-card.selected {
-        border-color: #14b8a6;
-        background: #f0fdfa;
-        box-shadow: 0 0 0 3px rgba(20,184,166,0.10);
-    }
-    .tone-radio { display: none; }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="max-w-3xl mx-auto space-y-5">
-
-    <!-- AI Model Status Card (يحترم الباقة) -->
-    {% set ai_model = (planContext.plan_limits.ai_model if planContext and planContext.plan_limits else 'GPT-4o Mini') %}
-    {% set ai_advanced = (planContext.can.ai_advanced if planContext and planContext.can else false) %}
-    {% set is_custom = 'Custom' in ai_model %}
-    <div class="card p-6 relative overflow-hidden" style="background:linear-gradient(135deg, {{ '#faf5ff,#f3e8ff' if is_custom else ('#f0fdfa,#ecfeff' if ai_advanced else '#fffbeb,#fef3c7') }}); border:1px solid {{ '#d8b4fe' if is_custom else ('#5eead4' if ai_advanced else '#fde68a') }};">
-        <div class="flex items-center justify-between gap-4 flex-wrap">
-            <div class="flex items-center gap-4">
-                <div class="w-14 h-14 rounded-2xl flex items-center justify-center text-white shadow-lg" style="background:linear-gradient(135deg, {{ '#7c3aed,#a855f7' if is_custom else ('#0d9488,#0ea5e9' if ai_advanced else '#f59e0b,#fbbf24') }});">
-                    <i class="fa-solid {{ 'fa-brain' if is_custom else ('fa-bolt' if ai_advanced else 'fa-microchip') }} text-xl"></i>
-                </div>
-                <div>
-                    <p class="text-[10px] font-bold uppercase tracking-widest" style="color:{{ '#7c3aed' if is_custom else ('#0d9488' if ai_advanced else '#92400e') }};">
-                        نموذج الذكاء الاصطناعي النشط
-                    </p>
-                    <h3 class="font-black text-slate-900 text-xl mt-1" style="font-family:Inter,Cairo,sans-serif;">{{ ai_model }}</h3>
-                    <p class="text-xs text-slate-600 mt-1">
-                        مفعّل تلقائياً مع باقة <strong style="color:{{ '#7c3aed' if is_custom else ('#0d9488' if ai_advanced else '#92400e') }};">{{ plan_name }}</strong>
-                    </p>
-                </div>
-            </div>
-
-            {% if is_custom %}
-            <div class="text-left">
-                <span class="chip" style="background:#fff; border:1px solid #d8b4fe; color:#7c3aed; font-size:11px; font-weight:700;">
-                    <i class="fa-solid fa-crown text-[10px] ml-1"></i> الأقوى
-                </span>
-                <p class="text-[10px] text-purple-700 font-bold mt-2">قابل للتدريب على بياناتك</p>
-            </div>
-            {% elif ai_advanced %}
-            <div class="text-left">
-                <span class="chip" style="background:#fff; border:1px solid #5eead4; color:#0d9488; font-size:11px; font-weight:700;">
-                    <i class="fa-solid fa-sparkles text-[10px] ml-1"></i> الأذكى
-                </span>
-                <p class="text-[10px] text-teal-700 font-bold mt-2">دقة فهم أعلى + ردود أكثر طبيعية</p>
-            </div>
-            {% else %}
-            <a href="/pricing" class="text-left no-underline group">
-                <span class="chip" style="background:#fff; border:1px solid #fde68a; color:#92400e; font-size:11px; font-weight:700;">
-                    <i class="fa-solid fa-arrow-up text-[10px] ml-1"></i> رفّع للنمو
-                </span>
-                <p class="text-[10px] text-amber-700 font-bold mt-2 group-hover:underline">احصل على GPT-4o بـ 149 ر.س/شهر</p>
-            </a>
-            {% endif %}
-        </div>
-
-        <!-- Model Comparison Bar -->
-        <div class="mt-5 pt-5 border-t" style="border-color:rgba(0,0,0,0.06);">
-            <div class="grid grid-cols-3 gap-3 text-center">
-                <div class="p-3 rounded-xl {{ '' if ai_advanced or is_custom else 'ring-2 ring-amber-400' }}" style="background:rgba(255,255,255,0.5);">
-                    <p class="text-[10px] font-bold text-slate-500">الأساسية</p>
-                    <p class="text-sm font-black text-slate-800 mt-1" style="font-family:Inter,sans-serif;">GPT-4o Mini</p>
-                    <p class="text-[9px] text-slate-400 mt-1">سريع + اقتصادي</p>
-                </div>
-                <div class="p-3 rounded-xl {{ 'ring-2 ring-teal-400' if ai_advanced and not is_custom else '' }}" style="background:rgba(255,255,255,0.5);">
-                    <p class="text-[10px] font-bold text-slate-500">النمو</p>
-                    <p class="text-sm font-black text-slate-800 mt-1" style="font-family:Inter,sans-serif;">GPT-4o</p>
-                    <p class="text-[9px] text-slate-400 mt-1">دقة عالية</p>
-                </div>
-                <div class="p-3 rounded-xl {{ 'ring-2 ring-purple-400' if is_custom else '' }}" style="background:rgba(255,255,255,0.5);">
-                    <p class="text-[10px] font-bold text-slate-500">الشركات</p>
-                    <p class="text-sm font-black text-slate-800 mt-1" style="font-family:Inter,sans-serif;">GPT-4o Custom</p>
-                    <p class="text-[9px] text-slate-400 mt-1">قابل للتدريب</p>
-                </div>
-            </div>
-        </div>
-    </div>
 
     <!-- Tip Banner -->
     <div class="flex items-start gap-4 p-5 rounded-2xl" style="background: #eff6ff; border: 1px solid #bfdbfe;">
@@ -126,119 +54,128 @@
             <i class="fa-solid fa-wand-magic-sparkles text-sm"></i>
         </div>
         <div>
-            <p class="text-sm font-bold text-blue-900">اجعل البوت يعبّر عن هوية متجرك</p>
+            <p class="text-sm font-bold text-blue-900">اجعل المساعد الذكي يعبّر عن هوية متجرك</p>
             <p class="text-xs text-blue-700 mt-1 leading-relaxed">التخصيص يجعل العملاء يشعرون أنهم يتحدثون مع فريق المتجر لا روبوت عام. كلما أضفت تفاصيل أكثر، كانت الردود أدق وأكثر فائدة.</p>
         </div>
     </div>
 
     <form action="/settings/ai" method="POST" id="settingsForm" class="space-y-5">
+        <!-- Hidden field for original custom instructions which will be built by JS -->
+        <input type="hidden" name="custom_instructions" id="real_custom_instructions" value="{{ config.custom_instructions or '' }}">
 
-        <!-- Identity Card -->
+        <!-- Assistant Personality & Identity Card -->
         <div class="card p-7 relative overflow-hidden">
             <div class="absolute top-0 right-0 w-1 h-full" style="background: linear-gradient(to bottom, #3b82f6, #8b5cf6);"></div>
+
             <div class="flex items-center gap-3 mb-6">
                 <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background: #eff6ff; color: #1d4ed8;">
-                    <i class="fa-solid fa-fingerprint text-base"></i>
+                    <i class="fa-solid fa-robot text-base"></i>
                 </div>
                 <div>
-                    <h3 class="font-bold text-slate-800 text-sm">هوية المساعد</h3>
-                    <p class="text-xs text-slate-400 mt-0.5">الاسم والأسلوب العام للمساعد</p>
+                    <h3 class="font-bold text-slate-800 text-sm">إعدادات المساعد الذكي</h3>
+                    <p class="text-xs text-slate-400 mt-0.5">اسم المساعد، أسلوب الكلام والردود وطريقة الإقناع</p>
                 </div>
             </div>
 
             <!-- Bot Name -->
             <div class="mb-5">
-                <label class="field-label">اسم المساعد الذكي</label>
+                <label class="field-label">اسم المساعد</label>
                 <div class="relative">
-                    <input type="text" name="bot_name" value="{{ config.bot_name or 'مبهر AI' }}"
+                    <input type="text" name="bot_name" value="{{ config.bot_name or 'مبهر' }}"
                         class="input-field" placeholder="مثال: مساعد المتجر، نور، سالم"
-                        style="padding-right: 42px;">
-                    <i class="fa-solid fa-robot absolute right-4 top-1/2 -translate-y-1/2 text-slate-300 text-sm"></i>
+                        style="padding-right: 42px;" required>
+                    <i class="fa-solid fa-signature absolute right-4 top-1/2 -translate-y-1/2 text-slate-300 text-sm"></i>
                 </div>
-                <p class="field-hint">هذا الاسم سيعرّف به المساعد نفسه في أول رسالة للعميل.</p>
+                <p class="field-hint">الاسم الذي سيعرّف به المساعد نفسه للعملاء.</p>
             </div>
 
-            <!-- Bot Tone -->
+            <!-- Bot Tone (Free-form text input) -->
+            <div class="mb-5">
+                <label class="field-label">كيف تريد أن يتحدث المساعد؟</label>
+                {% set mapped_tone = config.bot_tone %}
+                {% if config.bot_tone == 'friendly' %}
+                    {% set mapped_tone = 'تحدث بأسلوب ودود ومرح واحترافي.' %}
+                {% elif config.bot_tone == 'formal' %}
+                    {% set mapped_tone = 'تحدث بأسلوب رسمي ومهني.' %}
+                {% elif config.bot_tone == 'funny' %}
+                    {% set mapped_tone = 'تحدث بأسلوب خفيف وودود دون مبالغة.' %}
+                {% endif %}
+                <input type="text" name="bot_tone" value="{{ mapped_tone or '' }}"
+                    class="input-field" placeholder="مثال: تحدث باللهجة السعودية البيضاء، كن ودوداً ومحترفاً، واختصر الردود." required>
+                <p class="field-hint">أسلوب الحديث ونبرة الصوت التي يتحدث بها المساعد الذكي.</p>
+            </div>
+
+            <!-- How to Sell/Persuade -->
+            <div class="mb-5">
+                <label class="field-label">كيف تريد أن يبيع أو يقنع العميل؟</label>
+                <textarea id="sales_instructions" rows="3" class="input-field"
+                    style="resize: vertical; line-height: 1.6;"
+                    placeholder="مثال: تصرف كمسوق محترف وركز على فوائد المنتج واطرح أسئلة مبادرة دائماً."></textarea>
+                <p class="field-hint">توجيهات تركز على أسلوب البيع وعرض قيمة المنتجات.</p>
+            </div>
+
+            <!-- What NOT to say -->
             <div>
-                <label class="field-label">نبرة وأسلوب الحديث</label>
-                <div class="grid grid-cols-3 gap-3">
-                    <label class="tone-card {{ 'selected' if config.bot_tone == 'friendly' or not config.bot_tone }}">
-                        <input type="radio" name="bot_tone" value="friendly" class="tone-radio"
-                            {{ 'checked' if config.bot_tone == 'friendly' or not config.bot_tone }}>
-                        <div class="text-2xl mb-2">😊</div>
-                        <p class="font-bold text-slate-800 text-xs">ودود ومرح</p>
-                        <p class="text-[10px] text-slate-400 mt-1">الأنسب لمعظم المتاجر</p>
-                    </label>
-                    <label class="tone-card {{ 'selected' if config.bot_tone == 'formal' }}">
-                        <input type="radio" name="bot_tone" value="formal" class="tone-radio"
-                            {{ 'checked' if config.bot_tone == 'formal' }}>
-                        <div class="text-2xl mb-2">💼</div>
-                        <p class="font-bold text-slate-800 text-xs">رسمي ومهني</p>
-                        <p class="text-[10px] text-slate-400 mt-1">مناسب للشركات</p>
-                    </label>
-                    <label class="tone-card {{ 'selected' if config.bot_tone == 'funny' }}">
-                        <input type="radio" name="bot_tone" value="funny" class="tone-radio"
-                            {{ 'checked' if config.bot_tone == 'funny' }}>
-                        <div class="text-2xl mb-2">😂</div>
-                        <p class="font-bold text-slate-800 text-xs">فكاهي وخفيف</p>
-                        <p class="text-[10px] text-slate-400 mt-1">لمتاجر الشباب</p>
-                    </label>
-                </div>
+                <label class="field-label">ما الذي يجب ألا يقوله المساعد؟</label>
+                <textarea id="negative_instructions" rows="3" class="input-field"
+                    style="resize: vertical; line-height: 1.6;"
+                    placeholder="مثال: لا تعطِ خصومات بدون مبرر، ولا تعد بشيء غير مؤكد، ولا تتحدث في مواضيع خارج المتجر."></textarea>
+                <p class="field-hint">المحظورات والقيود التي تضمن عدم تقديم معلومات خاطئة.</p>
             </div>
         </div>
 
-        <!-- Knowledge Card -->
+        <!-- Store Information Card -->
         <div class="card p-7 relative overflow-hidden">
             <div class="absolute top-0 right-0 w-1 h-full" style="background: linear-gradient(to bottom, #14b8a6, #10b981);"></div>
-            <div class="flex items-center gap-3 mb-6">
-                <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background: #f0fdfa; color: #0d9488;">
-                    <i class="fa-solid fa-brain text-base"></i>
-                </div>
-                <div>
-                    <h3 class="font-bold text-slate-800 text-sm">معلومات المتجر</h3>
-                    <p class="text-xs text-slate-400 mt-0.5">البيانات التي سيستخدمها الذكاء للإجابة بدقة</p>
-                </div>
+
+            <h3 class="section-title">
+                <i class="fa-solid fa-store text-teal-500 text-sm"></i>
+                معلومات المتجر المهمة
+            </h3>
+
+            <!-- Store Custom Text (Knowledge Base) -->
+            <div class="mb-5">
+                <label class="field-label">معلومات المتجر وقاعدة المعرفة</label>
+                <textarea name="custom_text" id="custom_text" rows="5" class="input-field"
+                    style="resize: vertical; line-height: 1.6;"
+                    placeholder="اكتب هنا معلومات مهمة عن متجرك: أوقات العمل، طريقة التواصل البديلة، تفاصيل المنتجات المميزة، العروض الحالية... كل معلومة هنا ستساعد المساعد الذكي على إجابة العميل بدقة.">{{ kb.custom_text or '' }}</textarea>
+                <p class="field-hint">البيانات والمعلومات التي يعتمد عليها المساعد للإجابة بذكاء.</p>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-5">
                 <div>
-                    <label class="field-label">مدة التوصيل</label>
+                    <label class="field-label">مدة الشحن / سياسة الشحن</label>
                     <input type="text" name="shipping_time" value="{{ config.shipping_time or '' }}"
-                        placeholder="مثال: 3-5 أيام داخل الرياض" class="input-field">
-                    <p class="field-hint">سيستخدمها المساعد للرد على أسئلة الشحن.</p>
+                        placeholder="مثال: الشحن خلال 3-5 أيام عمل" class="input-field">
+                    <p class="field-hint">تحديد مدة التوصيل للعملاء عند الاستفسار.</p>
                 </div>
                 <div>
-                    <label class="field-label">سياسة الاسترجاع</label>
+                    <label class="field-label">سياسة الاسترجاع والاستبدال</label>
                     <input type="text" name="policy_return" value="{{ config.policy_return or '' }}"
-                        placeholder="مثال: خلال 7 أيام من الاستلام" class="input-field">
-                    <p class="field-hint">يوضحها المساعد للعميل عند السؤال.</p>
+                        placeholder="مثال: الاسترجاع متاح خلال 7 أيام" class="input-field">
+                    <p class="field-hint">سياسة الاستبدال والاسترجاع المعتمدة بمتجرك.</p>
                 </div>
             </div>
 
             <div>
-                <label class="field-label">تعليمات خاصة <span class="text-slate-400 font-normal">(Custom Instructions)</span></label>
-                <textarea name="custom_instructions" rows="5" class="input-field"
+                <label class="field-label">تعليمات خاصة</label>
+                <textarea id="other_instructions" rows="4" class="input-field"
                     style="resize: vertical; line-height: 1.6;"
-                    placeholder="أضف أي تعليمات إضافية تريد من المساعد الالتزام بها...&#10;&#10;مثلاً:&#10;- لا تعطِ أسعار الجملة للأفراد&#10;- دائماً اقترح منتجات بديلة عند نفاذ المخزون&#10;- لا ترد على أسئلة خارج نطاق المتجر">{{ config.custom_instructions or '' }}</textarea>
-                <p class="field-hint">تُدمج هذه التعليمات مباشرة في System Prompt للذكاء الاصطناعي.</p>
+                    placeholder="مثال:&#10;- دائماً اقترح منتجات بديلة عند نفاذ المخزون&#10;- إذا سأل العميل عن منتج غير متوفر، وجهه للتسجيل في قائمة الانتظار"></textarea>
+                <p class="field-hint">أي تعليمات إضافية ترغب في التزام المساعد الذكي بها.</p>
             </div>
         </div>
 
-        <!-- Preview Card -->
-        <div class="card p-6" style="background: #0f172a; border-color: #1e293b;">
-            <div class="flex items-center gap-2 mb-4">
-                <i class="fa-solid fa-eye text-teal-400 text-sm"></i>
-                <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">معاينة الـ System Prompt</p>
-            </div>
-            <div id="prompt-preview" style="font-family: Inter, monospace; font-size: 11px; color: #94a3b8; line-height: 1.7; white-space: pre-wrap;"></div>
-        </div>
-
-        <!-- Save Button -->
-        <div class="flex justify-end">
+        <!-- Note banner & Action Buttons -->
+        <div class="flex flex-col sm:flex-row items-center justify-between gap-4 p-5 rounded-2xl" style="background: #f8fafc; border: 1px solid #e2e8f0;">
+            <p class="text-xs text-slate-500 text-center sm:text-right">
+                <i class="fa-solid fa-circle-info text-teal-500 ml-1"></i>
+                بعد الحفظ، جرّب إرسال رسالة من واتساب آخر للتأكد من أسلوب الرد.
+            </p>
             <button type="submit"
-                class="flex items-center gap-2 px-8 py-3 rounded-xl text-sm font-bold text-white shadow-lg transition"
+                class="flex items-center gap-2 px-8 py-3 rounded-xl text-sm font-bold text-white shadow-lg transition w-full sm:w-auto justify-center"
                 style="background: linear-gradient(135deg, #1d4ed8, #3b82f6); box-shadow: 0 4px 16px rgba(59,130,246,0.3);">
-                <i class="fa-solid fa-floppy-disk"></i> حفظ التغييرات
+                <i class="fa-solid fa-floppy-disk"></i> حفظ الإعدادات
             </button>
         </div>
 
@@ -248,48 +185,56 @@
 
 {% block scripts %}
 <script>
-    // Tone card interactive selection
-    document.querySelectorAll('.tone-card').forEach(card => {
-        card.addEventListener('click', () => {
-            document.querySelectorAll('.tone-card').forEach(c => c.classList.remove('selected'));
-            card.classList.add('selected');
-            card.querySelector('input[type="radio"]').checked = true;
-            updatePreview();
-        });
+    // Parse custom_instructions into separate textareas on load
+    window.addEventListener('DOMContentLoaded', () => {
+        const raw = document.getElementById('real_custom_instructions').value || '';
+        let salesVal = '';
+        let negativeVal = '';
+        let otherVal = '';
+
+        if (raw.includes('[طريقة البيع]:') || raw.includes('[محظورات]:') || raw.includes('[تعليمات إضافية]:')) {
+            const salesMatch = raw.match(/\[طريقة البيع\]:\s*([\s\S]*?)(?=\n\s*\[|$)/);
+            const negativeMatch = raw.match(/\[محظورات\]:\s*([\s\S]*?)(?=\n\s*\[|$)/);
+            const otherMatch = raw.match(/\[تعليمات إضافية\]:\s*([\s\S]*?)(?=\n\s*\[|$)/);
+
+            if (salesMatch) salesVal = salesMatch[1].trim();
+            if (negativeMatch) negativeVal = negativeMatch[1].trim();
+            if (otherMatch) otherVal = otherMatch[1].trim();
+        } else {
+            // Unstructured or legacy text
+            otherVal = raw.trim();
+        }
+
+        document.getElementById('sales_instructions').value = salesVal;
+        document.getElementById('negative_instructions').value = negativeVal;
+        document.getElementById('other_instructions').value = otherVal;
     });
 
-    function updatePreview() {
-        const name = document.querySelector('[name="bot_name"]').value || 'مبهر AI';
-        const tone = document.querySelector('[name="bot_tone"]:checked')?.value || 'friendly';
-        const shipping = document.querySelector('[name="shipping_time"]').value || '—';
-        const policy = document.querySelector('[name="policy_return"]').value || '—';
-        const custom = document.querySelector('[name="custom_instructions"]').value || '—';
-        const tones = { friendly: 'ودود ومرح', formal: 'رسمي ومهني', funny: 'فكاهي وخفيف الظل' };
+    // Assemble textareas into custom_instructions input on form submit
+    document.getElementById('settingsForm').addEventListener('submit', (e) => {
+        const sales = document.getElementById('sales_instructions').value.trim();
+        const negative = document.getElementById('negative_instructions').value.trim();
+        const other = document.getElementById('other_instructions').value.trim();
 
-        document.getElementById('prompt-preview').textContent =
-`أنت مساعد ذكي اسمك "${name}".
-أسلوبك: ${tones[tone] || 'ودود'}.
-مدة التوصيل: ${shipping}
-سياسة الاسترجاع: ${policy}
+        let combined = '';
+        if (sales) {
+            combined += `[طريقة البيع]:\n${sales}\n\n`;
+        }
+        if (negative) {
+            combined += `[محظورات]:\n${negative}\n\n`;
+        }
+        if (other) {
+            combined += `[تعليمات إضافية]:\n${other}\n\n`;
+        }
 
-تعليمات خاصة:
-${custom}
-
-وظيفتك الرد على استفسارات عملاء المتجر بدقة واحترافية.`;
-    }
-
-    // Live update
-    document.querySelectorAll('input, textarea').forEach(el => {
-        el.addEventListener('input', updatePreview);
+        document.getElementById('real_custom_instructions').value = combined.trim();
     });
 
-    updatePreview();
-
-    // Toast on save
+    // Toast status notice
     const p = new URLSearchParams(window.location.search);
     if (p.get('status') === 'saved') {
         const toast = document.createElement('div');
-        toast.innerHTML = '<i class="fa-solid fa-circle-check ml-2"></i> تم حفظ الإعدادات بنجاح!';
+        toast.innerHTML = '<i class="fa-solid fa-circle-check ml-2"></i> تم حفظ إعدادات المساعد بنجاح!';
         Object.assign(toast.style, {
             position: 'fixed', top: '24px', right: '24px', zIndex: 9999,
             background: '#f0fdf4', border: '1px solid #bbf7d0', color: '#15803d',

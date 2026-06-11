@@ -2891,8 +2891,9 @@ app.get("/ai-settings", async (req, res) => {
 
     const plan = tenant?.Subscription?.Plan;
     const aiConfig = (tenant && tenant.settings && tenant.settings.ai_config) ? tenant.settings.ai_config : {};
+    const kbConfig = (tenant && tenant.settings && tenant.settings.knowledge_base) ? tenant.settings.knowledge_base : {};
 
-    res.render("ai_settings.html", { config: aiConfig, user: req.user, activePage: 'ai_settings', plan_name: plan?.name || 'الأساسية' });
+    res.render("ai_settings.html", { config: aiConfig, kb: kbConfig, user: req.user, activePage: 'ai_settings', plan_name: plan?.name || 'الأساسية' });
   } catch (e) {
     res.status(500).send(e.message);
   }
@@ -2916,6 +2917,11 @@ app.post("/settings/ai", async (req, res) => {
         policy_return: req.body.policy_return,
         shipping_time: req.body.shipping_time
       };
+
+      if (!currentSettings.knowledge_base) {
+        currentSettings.knowledge_base = {};
+      }
+      currentSettings.knowledge_base.custom_text = req.body.custom_text || '';
 
       // Update DB (Force update for JSON field)
       tenant.settings = currentSettings;
