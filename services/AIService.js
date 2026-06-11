@@ -26,6 +26,13 @@ class AIService {
 
     async generateReply(tenantId, userMessage, customerName = 'عميلنا', previousMessages = []) {
         try {
+            const planGate = require('./planGate');
+            const access = await planGate.checkTenantAccess(tenantId);
+            if (!access.allowed) {
+                console.log(`[planGate] blocked tenant ${tenantId} reason=${access.reason}`);
+                throw new Error(`Plan Gate Blocked: ${access.reason}`);
+            }
+
             const db = SallaDatabase.connection;
             if (!db) throw new Error("Database connection not established");
 
@@ -115,6 +122,7 @@ class AIService {
             return aiReply;
 
         } catch (error) {
+            if (error.message.includes("Plan Gate Blocked")) throw error;
             console.error("❌ AI Service Error:", error.message);
             return this.mockResponse(userMessage, "المتجر");
         }
@@ -122,6 +130,13 @@ class AIService {
 
     async generateOrderNotification(tenantId, customerName, orderId, orderTotal) {
         try {
+            const planGate = require('./planGate');
+            const access = await planGate.checkTenantAccess(tenantId);
+            if (!access.allowed) {
+                console.log(`[planGate] blocked tenant ${tenantId} reason=${access.reason}`);
+                throw new Error(`Plan Gate Blocked: ${access.reason}`);
+            }
+
             const db = SallaDatabase.connection;
             if (!db) return `أهلاً ${customerName}، شكراً لطلبك رقم #${orderId} بقيمة ${orderTotal}. سنسعد بخدمتك!`;
 
@@ -152,6 +167,7 @@ class AIService {
 
             return completion.choices[0].message.content;
         } catch (e) {
+            if (e.message.includes("Plan Gate Blocked")) throw e;
             console.error("AI Order Msg Error:", e.message);
             return `أهلاً ${customerName}، تم استلام طلبك #${orderId} بقيمة ${orderTotal}. شكراً لتسوقك معنا! 📦`;
         }
@@ -159,6 +175,13 @@ class AIService {
 
     async generateCartRecovery(tenantId, customerName, cartTotal, cartItems = []) {
         try {
+            const planGate = require('./planGate');
+            const access = await planGate.checkTenantAccess(tenantId);
+            if (!access.allowed) {
+                console.log(`[planGate] blocked tenant ${tenantId} reason=${access.reason}`);
+                throw new Error(`Plan Gate Blocked: ${access.reason}`);
+            }
+
             const db = SallaDatabase.connection;
             // Fallback message if DB or AI fails
             const fallbackMsg = `أهلاً ${customerName} 👋\nسلّتك تنتظرك! 🛒\nقيمة الطلب: ${cartTotal}\nلا تفوتك منتجاتنا المميزة! ✨`;
@@ -205,6 +228,7 @@ class AIService {
             return completion.choices[0].message.content;
 
         } catch (e) {
+            if (e.message.includes("Plan Gate Blocked")) throw e;
             console.error("AI Cart Recovery Error:", e.message);
             return `أهلاً ${customerName} 👋\nسلّتك الغالية تنتظرك! 🛒\nقيمة الطلب: ${cartTotal}\nكمل طلبك الآن قبل يروح عليك! 🏃‍♂️`;
         }
@@ -212,6 +236,13 @@ class AIService {
 
     async generateReviewRequest(tenantId, customerName, orderId, orderTotal) {
         try {
+            const planGate = require('./planGate');
+            const access = await planGate.checkTenantAccess(tenantId);
+            if (!access.allowed) {
+                console.log(`[planGate] blocked tenant ${tenantId} reason=${access.reason}`);
+                throw new Error(`Plan Gate Blocked: ${access.reason}`);
+            }
+
             const db = SallaDatabase.connection;
             const fallbackMsg = `شكراً لتسوقك معنا ${customerName} 🌹\nنقدر لك ثقتك فينا، ويهمنا جداً نسمع رأيك في تجربتك!`;
 
@@ -250,6 +281,7 @@ class AIService {
             return completion.choices[0].message.content;
 
         } catch (e) {
+            if (e.message.includes("Plan Gate Blocked")) throw e;
             console.error("AI Review Request Error:", e.message);
             return `شكراً لتسوقك معنا ${customerName} 🌹\nنتمتى لك تجربة سعيدة!`;
         }

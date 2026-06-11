@@ -21,6 +21,13 @@ async function run() {
     const todayMD = `${mm}-${dd}`;
 
     for (const tenant of tenants) {
+        const planGate = require('../planGate');
+        const access = await planGate.checkTenantAccess(tenant.id, null, 'birthday');
+        if (!access.allowed) {
+            console.log(`[planGate] blocked tenant ${tenant.id} reason=${access.reason}`);
+            continue;
+        }
+
         const customers = await db.models.Customer.findAll({
             where: { tenant_id: tenant.id, status: 'active' }
         });

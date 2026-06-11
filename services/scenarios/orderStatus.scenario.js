@@ -42,8 +42,11 @@ async function handle(eventBody) {
         if (!settings.order_status) return log('order_status', `Disabled for ${tenant.store_name}`);
 
         // 🔒 تحقق إن الباقة تدعم السيناريو
-        const allowed = await planGate.canTenantUseScenario(tenant.id, 'order_status');
-        if (!allowed) return log('order_status', `🔒 Plan does not allow order_status for ${tenant.store_name}`);
+        const access = await planGate.checkTenantAccess(tenant.id, null, 'order_status');
+        if (!access.allowed) {
+            console.log(`[planGate] blocked tenant ${tenant.id} reason=${access.reason}`);
+            return log('order_status', `🔒 Plan does not allow order_status for ${tenant.store_name}`);
+        }
 
         // استخرج بيانات العميل والحالة
         const customerName = order?.customer?.first_name || order?.customer?.name || 'عميلنا الكريم';

@@ -205,12 +205,90 @@ function getScenariosForPlan(planName) {
 }
 
 /**
+ * التحقق المركزي من صلاحية التاجر والاشتراك وتاريخ الانتهاء
+ * @param {number|string} tenantId - معرّف التاجر الداخلي
+ * @param {string} [featureKey] - اختياري: الميزة المطلوب التحقق منها
+ * @param {string} [scenarioKey] - اختياري: السيناريو المطلوب التحقق منه
+ * @returns {Promise<{allowed: boolean, reason: string}>}
+ */
+async function checkTenantAccess(tenantId, featureKey = null, scenarioKey = null) {
+    try {
+        const db = SallaDatabase.connection;
+        if (!db) {
+            return { allowed: false, reason: 'database_disconnected' };
+        }
+
+        // 1. جلب التاجر مع الاشتراك والباقة
+        const tenant = await db.models.Tenant.findByPk(tenantId, {
+            include: [
+                {
+                    model: db.models.Subscription,
+                    as: 'Subscription',
+                    include: ['Plan']
+                }
+            ]
+        });
+
+        if (!tenant) {
+            return { allowed: false, reason: 'tenant_not_found' };
+        }
+
+        // 2. التحقق من حالة التاجر (Tenant.status)
+        if (tenant.status !== 'active') {
+            return { allowed: false, reason: `tenant_status_${tenant.status}` };
+        }
+
+        // 3. التحقق من الاشتراك
+        const subscription = tenant.Subscription;
+        if (!subscription) {
+            return { allowed: false, reason: 'no_subscription' };
+        }
+
+        // التحقق من حالة الاشتراك
+        let subStatus = subscription.status;
+        const subEndDate = subscription.end_date;
+
+        // إذا كان نشط أو تجريبي ومنتهي الصلاحية تاريخياً
+        if ((subStatus === 'trial' || subStatus === 'active') && subEndDate && new Date(subEndDate) < new Date()) {
+            // تحديث حالة الاشتراك في قاعدة البيانات تلقائياً دون فصل واتساب مادياً في هذه المرحلة
+            await subscription.update({ status: 'expired' });
+            subStatus = 'expired';
+            console.log(`[planGate] Automatically expired subscription for tenant ${tenantId} as end_date ${subEndDate} has passed.`);
+        }
+
+        if (subStatus !== 'active' && subStatus !== 'trial') {
+            return { allowed: false, reason: `subscription_${subStatus}` };
+        }
+
+        // 4. التحقق من الباقة
+        const plan = subscription.Plan;
+        if (!plan) {
+            return { allowed: false, reason: 'plan_not_found' };
+        }
+
+        // 5. التحقق من الميزة (إذا تم تمريرها)
+        if (featureKey && !isFeatureAllowed(plan.name, featureKey)) {
+            return { allowed: false, reason: `feature_locked_${featureKey}` };
+        }
+
+        // 6. التحقق من السيناريو (إذا تم تمريرها)
+        if (scenarioKey && !isScenarioAllowed(plan.name, scenarioKey)) {
+            return { allowed: false, reason: `scenario_locked_${scenarioKey}` };
+        }
+
+        return { allowed: true, reason: 'allowed' };
+    } catch (e) {
+        console.error(`[checkTenantAccess] error for tenant ${tenantId}:`, e);
+        return { allowed: false, reason: 'error_occurred' };
+    }
+}
+
+/**
  * تحقق سريع من tenant_id — استخدمها في السيناريوهات
  */
 async function canTenantUseScenario(tenantId, scenarioKey) {
-    const plan = await getTenantPlan(tenantId);
-    if (!plan) return false;
-    return isScenarioAllowed(plan.name, scenarioKey);
+    const access = await checkTenantAccess(tenantId, null, scenarioKey);
+    return access.allowed;
 }
 
 /**
@@ -403,6 +481,7 @@ module.exports = {
     isScenarioAllowed,
     getLimit,
     getScenariosForPlan,
+    checkTenantAccess,
     canTenantUseScenario,
     filterTenantsByScenario,
 

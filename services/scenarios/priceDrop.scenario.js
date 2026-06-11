@@ -31,6 +31,13 @@ async function run() {
     log('price_drop', `Running for ${tenants.length} tenants`);
 
     for (const tenant of tenants) {
+        const planGate = require('../planGate');
+        const access = await planGate.checkTenantAccess(tenant.id, null, 'price_drop');
+        if (!access.allowed) {
+            console.log(`[planGate] blocked tenant ${tenant.id} reason=${access.reason}`);
+            continue;
+        }
+
         try {
             // Salla OAuth token
             const oauth = await db.models.SallaOAuth.findOne({ where: { tenant_id: tenant.id } });

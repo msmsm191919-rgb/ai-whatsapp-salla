@@ -32,6 +32,7 @@ const SallaAPIFactory = require("@salla.sa/passport-strategy");
 // Database Singleton (Centralized)
 const SallaDatabase = require("./database/db_instance");
 const SallaWebhook = require("@salla.sa/webhooks-actions");
+const waWeb = require('./services/waWeb');
 
 if (SALLA_WEBHOOK_SECRET) {
   SallaWebhook.setSecret(SALLA_WEBHOOK_SECRET);
@@ -542,6 +543,14 @@ app.post("/webhook/meta", async (req, res) => {
                 where: { phone_number_id: phoneNumberId }
               });
               if (config) {
+                // Check Plan Gate first
+                const planGate = require('./services/planGate');
+                const access = await planGate.checkTenantAccess(config.tenant_id, 'whatsapp_api');
+                if (!access.allowed) {
+                  console.log(`[planGate] blocked tenant ${config.tenant_id} reason=${access.reason}`);
+                  return res.status(200).send("PLAN_GATE_BLOCKED");
+                }
+
                 // 🚦 LIMIT CHECK — قبل أي إرسال
                 const limitCheck = await checkLimit(config.tenant_id, connection.models, 'ai_reply', 1);
 
@@ -2364,7 +2373,7 @@ app.get("/customers", async (req, res) => {
 // ═══════════════════════════════════════════════════════════════════
 // 📱 ربط واتساب عبر QR (whatsapp-web.js) — للتجربة
 // ═══════════════════════════════════════════════════════════════════
-const waWeb = require('./services/waWeb');
+// waWeb imported at top of file
 
 // يحلّ معرّف التاجر الحالي (للجلسة المنفصلة)
 async function _waTenantId(req) {
@@ -2525,6 +2534,16 @@ async function dispatchCampaign(campaignId, campaignImage = null) {
   if (!campaign) return;
   const tenant = await db.models.Tenant.findByPk(campaign.tenant_id);
   if (!tenant) return;
+
+  // Plan Gate check
+  const planGate = require('./services/planGate');
+  const access = await planGate.checkTenantAccess(tenant.id, 'campaigns');
+  if (!access.allowed) {
+    console.log(`[planGate] blocked tenant ${tenant.id} reason=${access.reason}`);
+    await campaign.update({ status: 'failed', metadata: { block_reason: access.reason } });
+    return;
+  }
+
   await campaign.update({ status: 'processing' });
 
   const audience = campaign.target_group;
@@ -2640,6 +2659,14 @@ app.post("/api/campaigns/send", async (req, res) => {
     // Find Tenant
     const tenant = await db.models.Tenant.findOne({ where: { salla_merchant_id: req.user.merchant.id } });
     if (!tenant) return res.status(404).json({ error: "Tenant not found" });
+
+    // --- CHECK PLAN GATE ---
+    const planGate = require('./services/planGate');
+    const access = await planGate.checkTenantAccess(tenant.id, 'campaigns');
+    if (!access.allowed) {
+      console.log(`[planGate] blocked tenant ${tenant.id} reason=${access.reason}`);
+      return res.status(403).json({ error: "PLAN_GATE_BLOCKED", message: `غير مسموح لك بإرسال هذه الحملة. السبب: ${access.reason}` });
+    }
 
     // --- ENFORCE PLAN LIMITS ---
     const { checkLimit } = require('./helpers/limitsEngine');

@@ -36,7 +36,17 @@ async function send(phone, message, tenantId = null) {
     const normalized = normalizePhone(phone);
     if (!normalized) return { ok: false, error: 'Invalid phone' };
 
-    // 1. إذا تم تمرير tenantId، نقوم بالتوجيه الذكي المبني على باقة التاجر
+    // 1. التحقق من بوابة الاشتراكات وصلاحية المتجر قبل أي إرسال
+    if (tenantId) {
+        const planGate = require('./planGate');
+        const access = await planGate.checkTenantAccess(tenantId);
+        if (!access.allowed) {
+            console.log(`[planGate] blocked tenant ${tenantId} reason=${access.reason}`);
+            return { ok: false, error: `Plan Gate Blocked: ${access.reason}` };
+        }
+    }
+
+    // 2. إذا تم تمرير tenantId، نقوم بالتوجيه الذكي المبني على باقة التاجر
     if (tenantId) {
         const planGate = require('./planGate');
         let planName = 'الأساسية';

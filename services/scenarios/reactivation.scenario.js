@@ -17,6 +17,13 @@ async function run() {
     log('reactivation', `Running for ${tenants.length} tenants`);
 
     for (const tenant of tenants) {
+        const planGate = require('../planGate');
+        const access = await planGate.checkTenantAccess(tenant.id, null, 'reactivation');
+        if (!access.allowed) {
+            console.log(`[planGate] blocked tenant ${tenant.id} reason=${access.reason}`);
+            continue;
+        }
+
         const inactiveBefore = new Date(Date.now() - INACTIVE_DAYS * 86400000);
         const cooldownBefore = new Date(Date.now() - COOLDOWN_DAYS * 86400000);
 

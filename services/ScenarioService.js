@@ -24,6 +24,14 @@ class ScenarioService {
             const tenant = await db.models.Tenant.findOne({ where: { salla_merchant_id: merchantId } });
             if (!tenant) return console.warn(`⚠️ Tenant not found for merchant ID: ${merchantId}`);
 
+            // 1.5 Check Plan Gate
+            const planGate = require('./planGate');
+            const access = await planGate.checkTenantAccess(tenant.id, null, 'abandoned_cart');
+            if (!access.allowed) {
+                console.log(`[planGate] blocked tenant ${tenant.id} reason=${access.reason}`);
+                return;
+            }
+
             // 2. Check Settings
             const settings = tenant.settings || {};
             // If settings.abandoned_cart is undefined, default to true for testing, or check strictly
@@ -134,6 +142,14 @@ class ScenarioService {
             });
 
             if (!tenant) return console.warn(`⚠️ Tenant not found for merchant ID: ${merchantId}`);
+
+            // 1.5 Check Plan Gate
+            const planGate = require('./planGate');
+            const access = await planGate.checkTenantAccess(tenant.id, null, 'review_request');
+            if (!access.allowed) {
+                console.log(`[planGate] blocked tenant ${tenant.id} reason=${access.reason}`);
+                return;
+            }
 
             // 2. Check Settings
             const settings = tenant.settings || {};
