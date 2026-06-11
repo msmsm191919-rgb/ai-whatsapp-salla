@@ -8,14 +8,14 @@
 <div class="max-w-md mx-auto">
     <div class="card overflow-hidden">
         <!-- Header -->
-        <div class="px-6 py-5 text-center text-white" style="background:linear-gradient(135deg,#0d9488,#0ea5e9);">
+        <div class="px-4 sm:px-6 py-5 text-center text-white" style="background:linear-gradient(135deg,#0d9488,#0ea5e9);">
             <span class="inline-block bg-white/20 text-[10px] font-bold px-3 py-1 rounded-full mb-2">⭐ الطريقة الأساسية — مجانية</span>
             <i class="fa-brands fa-whatsapp text-3xl mb-1 block"></i>
             <h1 class="text-lg font-black">ربط واتساب عبر QR</h1>
             <p class="text-xs opacity-90 mt-0.5">اربط رقم جوالك وأرسل رسائل جماعية لعملائك مجاناً 🚀</p>
         </div>
 
-        <div class="p-7 text-center">
+        <div class="p-4 sm:p-7 text-center">
             <!-- الحالة -->
             <div id="statusBadge" class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold mb-5"
                 style="background:#fef3c7; color:#b45309;">
@@ -67,14 +67,14 @@
             </div>
 
             <!-- أزرار -->
-            <div class="flex gap-2 justify-center">
-                <button id="startBtn" onclick="startWa()" class="px-5 py-2.5 rounded-xl text-white text-sm font-bold shadow-lg" style="background:linear-gradient(135deg,#0d9488,#0ea5e9);">
+            <div class="flex flex-col sm:flex-row gap-2 justify-center items-stretch sm:items-center">
+                <button id="startBtn" onclick="startWa()" class="px-5 py-2.5 rounded-xl text-white text-sm font-bold shadow-lg w-full sm:w-auto text-center flex items-center justify-center" style="background:linear-gradient(135deg,#0d9488,#0ea5e9);">
                     <i class="fa-solid fa-qrcode ml-1"></i> ابدأ الربط
                 </button>
-                <button id="refreshBtn" onclick="poll()" class="hidden px-5 py-2.5 rounded-xl text-white text-sm font-bold shadow-lg hover:opacity-90 transition" style="background:linear-gradient(135deg,#0ea5e9,#0284c7);">
+                <button id="refreshBtn" onclick="poll()" class="hidden px-5 py-2.5 rounded-xl text-white text-sm font-bold shadow-lg hover:opacity-90 transition w-full sm:w-auto text-center flex items-center justify-center" style="background:linear-gradient(135deg,#0ea5e9,#0284c7);">
                     <i class="fa-solid fa-arrows-rotate ml-1"></i> تحديث الحالة
                 </button>
-                <button id="logoutBtn" onclick="logoutWa()" class="hidden px-5 py-2.5 rounded-xl text-sm font-bold border border-red-200 text-red-500 hover:bg-red-50 transition">
+                <button id="logoutBtn" onclick="logoutWa()" class="hidden px-5 py-2.5 rounded-xl text-sm font-bold border border-red-200 text-red-500 hover:bg-red-50 transition w-full sm:w-auto text-center flex items-center justify-center">
                     <i class="fa-solid fa-link-slash ml-1"></i> فصل
                 </button>
             </div>

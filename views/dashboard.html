@@ -97,17 +97,17 @@
 
     {# 🔔 تنبيه ربط واتساب — إذا كان غير متصل #}
     {% if not isConnected %}
-    <div class="rounded-2xl p-5 flex items-center gap-4 animate-in" style="background: linear-gradient(135deg, #fffbeb, #fef3c7); border: 2px solid #fde68a; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.1);">
-        <div class="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 animate-pulse" style="background: #f59e0b; color: #fff;">
+    <div class="rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-stretch sm:items-center gap-4 animate-in" style="background: linear-gradient(135deg, #fffbeb, #fef3c7); border: 2px solid #fde68a; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.1);">
+        <div class="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 animate-pulse mx-auto sm:mx-0" style="background: #f59e0b; color: #fff;">
             <i class="fa-brands fa-whatsapp text-2xl"></i>
         </div>
-        <div class="flex-1">
+        <div class="flex-1 text-center sm:text-right">
             <p class="font-black text-amber-950 text-sm">🔌 خطوة متبقية: ربط حساب واتساب</p>
             <p class="text-xs text-amber-900 mt-1 leading-relaxed">
                 اربط واتساب الآن لتفعيل **مبهر AI** والبدء في إرسال الرسائل الترحيبية والردود الذكية تلقائياً لعملائك.
             </p>
         </div>
-        <a href="/whatsapp-web" class="px-5 py-2.5 rounded-xl text-sm font-bold text-white whitespace-nowrap shadow-lg transition-transform hover:scale-102" style="background: linear-gradient(135deg, #d97706, #f59e0b);">
+        <a href="/whatsapp-web" class="px-5 py-2.5 rounded-xl text-sm font-bold text-white whitespace-nowrap shadow-lg transition-transform hover:scale-102 w-full sm:w-auto text-center flex items-center justify-center" style="background: linear-gradient(135deg, #d97706, #f59e0b);">
             <i class="fa-solid fa-link text-xs ml-1"></i> ربط واتساب الآن
         </a>
     </div>
@@ -116,8 +116,8 @@
     {# 🚦 Usage Limit Warnings — يحترم الباقة #}
     {% if msg_limit and msg_limit > 0 %}
         {% if usage_percent >= 100 %}
-        <div class="rounded-2xl p-5 flex items-center gap-4" style="background:linear-gradient(135deg,#fef2f2,#fee2e2); border:2px solid #fca5a5;">
-            <div class="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0" style="background:#dc2626; color:#fff;">
+        <div class="rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-stretch sm:items-center gap-4 text-center sm:text-right" style="background:linear-gradient(135deg,#fef2f2,#fee2e2); border:2px solid #fca5a5;">
+            <div class="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 mx-auto sm:mx-0" style="background:#dc2626; color:#fff;">
                 <i class="fa-solid fa-circle-xmark text-xl"></i>
             </div>
             <div class="flex-1">
@@ -126,13 +126,13 @@
                     استهلكت <strong style="font-family:Inter,sans-serif;">{{ messages_sent }}</strong> من أصل <strong style="font-family:Inter,sans-serif;">{{ msg_limit }}</strong> رسالة. تم إيقاف الردود التلقائية حتى ترقّي باقتك أو يبدأ الشهر الجديد.
                 </p>
             </div>
-            <a href="/pricing" class="px-5 py-2.5 rounded-xl text-sm font-bold text-white whitespace-nowrap shadow-lg" style="background:linear-gradient(135deg,#dc2626,#ef4444);">
+            <a href="/pricing" class="px-5 py-2.5 rounded-xl text-sm font-bold text-white whitespace-nowrap shadow-lg w-full sm:w-auto text-center flex items-center justify-center" style="background:linear-gradient(135deg,#dc2626,#ef4444);">
                 <i class="fa-solid fa-arrow-up text-xs ml-1"></i> ترقية الباقة
             </a>
         </div>
         {% elif usage_percent >= 80 %}
-        <div class="rounded-2xl p-5 flex items-center gap-4" style="background:linear-gradient(135deg,#fffbeb,#fef3c7); border:2px solid #fde68a;">
-            <div class="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0" style="background:#f59e0b; color:#fff;">
+        <div class="rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-stretch sm:items-center gap-4 text-center sm:text-right" style="background:linear-gradient(135deg,#fffbeb,#fef3c7); border:2px solid #fde68a;">
+            <div class="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 mx-auto sm:mx-0" style="background:#f59e0b; color:#fff;">
                 <i class="fa-solid fa-triangle-exclamation text-xl"></i>
             </div>
             <div class="flex-1">
@@ -141,7 +141,7 @@
                     استهلكت <strong style="font-family:Inter,sans-serif;">{{ messages_sent }}</strong> من أصل <strong style="font-family:Inter,sans-serif;">{{ msg_limit }}</strong> رسالة. متبقي <strong style="font-family:Inter,sans-serif;">{{ messages_remaining }}</strong> فقط — فكّر بالترقية قبل أن ينقطع الإرسال.
                 </p>
             </div>
-            <a href="/pricing" class="px-5 py-2.5 rounded-xl text-sm font-bold whitespace-nowrap" style="background:#fff; color:#92400e; border:1px solid #fde68a;">
+            <a href="/pricing" class="px-5 py-2.5 rounded-xl text-sm font-bold whitespace-nowrap w-full sm:w-auto text-center flex items-center justify-center" style="background:#fff; color:#92400e; border:1px solid #fde68a;">
                 <i class="fa-solid fa-arrow-up text-xs ml-1"></i> ترقية الآن
             </a>
         </div>
@@ -149,11 +149,11 @@
     {% endif %}
 
     <!-- ══ HERO BANNER ══ -->
-    <div class="hero-card p-7 text-white">
+    <div class="hero-card p-5 sm:p-7 text-white">
         <div class="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
 
             <!-- Left: Welcome -->
-            <div>
+            <div class="w-full lg:flex-1">
                 <p class="text-slate-400 text-sm font-medium mb-1">مرحباً بعودتك 👋</p>
                 <h1 class="text-2xl font-bold text-white mb-3">{{ user.merchant.name or 'متجرك' }}</h1>
                 <p class="text-slate-400 text-sm max-w-md leading-relaxed">
@@ -171,14 +171,14 @@
                         <span class="text-slate-400 font-bold">لا يوجد اشتراك مفعل</span>
                     {% endif %}
                 </div>
-                <div class="flex flex-wrap gap-2.5 mt-5">
+                <div class="flex flex-col sm:flex-row gap-2.5 mt-5">
                     <a href="/campaigns/create"
-                        class="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition shadow-lg"
+                        class="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition shadow-lg w-full sm:w-auto text-center"
                         style="background: linear-gradient(135deg, #0d9488, #14b8a6); color: white; box-shadow: 0 4px 20px rgba(20,184,166,0.35);">
                         <i class="fa-solid fa-plus text-xs"></i> إنشاء حملة
                     </a>
                     <a href="/ai-settings"
-                        class="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold border transition"
+                        class="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold border transition w-full sm:w-auto text-center"
                         style="background: rgba(255,255,255,0.07); border-color: rgba(255,255,255,0.12); color: #e2e8f0;">
                         <i class="fa-solid fa-robot text-xs"></i> إعدادات الذكاء
                     </a>
@@ -186,7 +186,7 @@
             </div>
 
             <!-- Right: Plan Card -->
-            <div class="plan-pill p-5 min-w-[200px] text-center flex-shrink-0">
+            <div class="plan-pill p-5 w-full lg:w-auto min-w-0 lg:min-w-[200px] text-center flex-shrink-0">
                 <p class="text-[10px] text-slate-400 uppercase tracking-widest font-bold mb-2">الباقة الحالية</p>
                 <p class="text-2xl font-black text-teal-300 mb-1">{{ plan_name }}</p>
                 {% if sub_status == 'active' or sub_status == 'trial' %}
@@ -218,7 +218,7 @@
     </div>
 
     <!-- ══ USAGE BAR ══ -->
-    <div class="card p-6">
+    <div class="card p-4 sm:p-6">
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
             <div class="flex items-center gap-3">
                 <div class="metric-icon" style="background: #f0fdfa; color: #0d9488;">
@@ -229,7 +229,7 @@
                     <p class="text-xs text-slate-400 mt-0.5">تجديد: {{ renewal_date }}</p>
                 </div>
             </div>
-            <div class="flex items-center gap-6">
+            <div class="flex items-center justify-between sm:justify-start gap-4 sm:gap-6 w-full sm:w-auto">
                 <div class="text-center">
                     <p class="text-xl font-black text-slate-800" style="font-family: Inter, sans-serif;">{{ messages_sent }}</p>
                     <p class="text-[10px] text-slate-400 font-bold uppercase mt-0.5">مُرسل</p>
@@ -332,7 +332,7 @@
     <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
 
         <!-- Chart — 3 cols -->
-        <div class="card p-6 lg:col-span-3">
+        <div class="card p-4 sm:p-6 lg:col-span-3">
             <div class="flex items-center justify-between mb-6">
                 <div class="flex items-center gap-3">
                     <div class="metric-icon" style="background: #eff6ff; color: #1d4ed8;">
@@ -353,7 +353,7 @@
         </div>
 
         <!-- Recent Activity — 2 cols -->
-        <div class="card p-6 lg:col-span-2">
+        <div class="card p-4 sm:p-6 lg:col-span-2">
             <div class="flex items-center justify-between mb-5">
                 <h3 class="text-sm font-bold text-slate-700 flex items-center gap-2">
                     <i class="fa-solid fa-clock-rotate-left text-teal-500 text-xs"></i>
@@ -393,7 +393,7 @@
     </div>
 
     <!-- ══ PLAN FEATURES ══ -->
-    <div class="card p-6">
+    <div class="card p-4 sm:p-6">
         <div class="flex items-center justify-between mb-5">
             <div class="flex items-center gap-3">
                 <div class="metric-icon" style="background: #ede9fe; color: #7c3aed;">

@@ -149,11 +149,16 @@
             background: #ffffff;
             border-radius: 16px;
             border: 1px solid #e2e8f0;
-            padding: 24px;
+            padding: 16px;
             transition: all 0.22s ease;
             cursor: default;
             overflow: hidden;
             position: relative;
+        }
+        @media (min-width: 640px) {
+            .stat-card {
+                padding: 24px;
+            }
         }
         .stat-card:hover {
             transform: translateY(-3px);
@@ -166,6 +171,23 @@
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
             border-bottom: 1px solid #e2e8f0;
+        }
+        @media (max-width: 1023px) {
+            .topbar {
+                position: fixed;
+                top: 0;
+                right: 0;
+                left: 0;
+                width: 100%;
+                z-index: 30;
+                transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            }
+            .header-hidden {
+                transform: translateY(-100%);
+            }
+            #pageContentContainer {
+                padding-top: 4rem; /* h-16 = 64px */
+            }
         }
 
         /* ── Gradients ── */
@@ -368,7 +390,7 @@
     <main class="flex-1 flex flex-col h-screen overflow-hidden min-w-0">
 
         <!-- ── Top Bar ── -->
-        <header class="topbar h-16 flex items-center justify-between px-6 lg:px-8 z-20 sticky top-0 flex-shrink-0">
+        <header id="topHeader" class="topbar h-16 flex items-center justify-between px-4 sm:px-6 lg:px-8 z-20 sticky top-0 flex-shrink-0">
             <div class="flex items-center gap-4">
                 <button onclick="toggleSidebar()" class="lg:hidden w-9 h-9 flex items-center justify-center rounded-lg hover:bg-slate-100 transition text-slate-600">
                     <i class="fa-solid fa-bars text-base"></i>
@@ -411,8 +433,8 @@
         </header>
 
         <!-- ── Page Content ── -->
-        <div class="flex-1 overflow-y-auto">
-            <div class="p-6 lg:p-8 max-w-7xl mx-auto animate-in">
+        <div class="flex-1 overflow-y-auto" id="pageContentContainer">
+            <div class="p-3 sm:p-6 lg:p-8 max-w-7xl mx-auto animate-in">
                 {% block content %}{% endblock %}
             </div>
         </div>
@@ -427,6 +449,34 @@
         sidebar.classList.toggle('right-0');
         overlay.classList.toggle('hidden');
     }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const contentContainer = document.getElementById('pageContentContainer');
+        const headerEl = document.getElementById('topHeader');
+        if (!contentContainer || !headerEl) return;
+
+        let lastScrollY = contentContainer.scrollTop;
+
+        contentContainer.addEventListener('scroll', () => {
+            const currentScrollY = contentContainer.scrollTop;
+
+            // Don't hide if scrolled less than 20px
+            if (currentScrollY < 20) {
+                headerEl.classList.remove('header-hidden');
+                lastScrollY = currentScrollY;
+                return;
+            }
+
+            if (currentScrollY > lastScrollY + 5) {
+                // Scrolling down -> Hide header
+                headerEl.classList.add('header-hidden');
+            } else if (currentScrollY < lastScrollY - 5) {
+                // Scrolling up -> Show header
+                headerEl.classList.remove('header-hidden');
+            }
+            lastScrollY = currentScrollY;
+        }, { passive: true });
+    });
 </script>
 
 {% block scripts %}{% endblock %}

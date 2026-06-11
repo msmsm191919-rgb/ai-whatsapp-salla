@@ -101,9 +101,9 @@
 
     <!-- Scenario 1: Abandoned Cart -->
     {% set ac_locked = locked_scenarios and 'abandoned_cart' in locked_scenarios %}
-    <div class="card scenario-card p-6 {% if settings.abandoned_cart and not ac_locked %}active{% endif %} {% if ac_locked %}locked{% endif %}">
+    <div class="card scenario-card p-4 sm:p-6 {% if settings.abandoned_cart and not ac_locked %}active{% endif %} {% if ac_locked %}locked{% endif %}">
         <div class="absolute top-0 right-0 w-1 h-full rounded-r-2xl" style="background: linear-gradient(to bottom, #f97316, #fb923c);"></div>
-        <div class="flex items-start justify-between gap-4">
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-start justify-between gap-4">
             <div class="flex gap-4 flex-1">
                 <div class="w-12 h-12 rounded-2xl flex items-center justify-center text-xl flex-shrink-0" style="background: #fff7ed; color: #ea580c;">
                     <i class="fa-solid fa-cart-shopping"></i>
@@ -117,7 +117,7 @@
                     <p class="text-xs text-slate-500 leading-relaxed max-w-lg">
                         إرسال رسالة تذكير ذكية وتلقائية للعميل الذي ترك سلة الشراء دون إتمامها، لاقتراح المساعدة أو تقديم عرض خاص.
                     </p>
-                    <div class="flex items-center gap-4 mt-3">
+                    <div class="flex flex-wrap items-center gap-x-4 gap-y-2 mt-3">
                         <div class="flex items-center gap-1.5 text-[11px] text-slate-400">
                             <i class="fa-solid fa-clock text-orange-400"></i>
                             <span>يُرسل بعد ساعة من ترك السلة</span>
@@ -129,7 +129,7 @@
                     </div>
                 </div>
             </div>
-            <div class="flex flex-col items-end gap-2 flex-shrink-0">
+            <div class="flex flex-row sm:flex-col items-center sm:items-end justify-between sm:justify-start gap-2 pt-4 sm:pt-0 border-t border-slate-100 sm:border-t-0 w-full sm:w-auto flex-shrink-0">
                 <label class="toggle-wrap" title="تفعيل / إيقاف">
                     <input type="checkbox" name="abandoned_cart" id="toggle_cart"
                         {% if settings.abandoned_cart %}checked{% endif %} onchange="saveScenarios()">
@@ -145,9 +145,9 @@
 
     <!-- Scenario 2: Review Request -->
     {% set rr_locked = locked_scenarios and 'review_request' in locked_scenarios %}
-    <div class="card scenario-card p-6 {% if settings.review_request and not rr_locked %}active{% endif %} {% if rr_locked %}locked{% endif %}">
+    <div class="card scenario-card p-4 sm:p-6 {% if settings.review_request and not rr_locked %}active{% endif %} {% if rr_locked %}locked{% endif %}">
         <div class="absolute top-0 right-0 w-1 h-full rounded-r-2xl" style="background: linear-gradient(to bottom, #eab308, #facc15);"></div>
-        <div class="flex items-start justify-between gap-4">
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-start justify-between gap-4">
             <div class="flex gap-4 flex-1">
                 <div class="w-12 h-12 rounded-2xl flex items-center justify-center text-xl flex-shrink-0" style="background: #fefce8; color: #ca8a04;">
                     <i class="fa-solid fa-star"></i>
@@ -161,7 +161,7 @@
                     <p class="text-xs text-slate-500 leading-relaxed max-w-lg">
                         إرسال رسالة شكر دافئة بعد اكتمال الطلب تطلب من العميل تقييم تجربته، مما يرفع ثقة العملاء الجدد في متجرك.
                     </p>
-                    <div class="flex items-center gap-4 mt-3">
+                    <div class="flex flex-wrap items-center gap-x-4 gap-y-2 mt-3">
                         <div class="flex items-center gap-1.5 text-[11px] text-slate-400">
                             <i class="fa-solid fa-clock text-yellow-500"></i>
                             <span>يُرسل بعد تسليم الطلب بيوم</span>
@@ -173,7 +173,7 @@
                     </div>
                 </div>
             </div>
-            <div class="flex flex-col items-end gap-2 flex-shrink-0">
+            <div class="flex flex-row sm:flex-col items-center sm:items-end justify-between sm:justify-start gap-2 pt-4 sm:pt-0 border-t border-slate-100 sm:border-t-0 w-full sm:w-auto flex-shrink-0">
                 <label class="toggle-wrap" title="تفعيل / إيقاف">
                     <input type="checkbox" name="review_request" id="toggle_review"
                         {% if settings.review_request %}checked{% endif %} onchange="saveScenarios()">
@@ -196,9 +196,9 @@
     ] %}
     {% for s in extras %}
     {% set is_locked = locked_scenarios and s.key in locked_scenarios %}
-    <div class="card scenario-card p-6 {% if settings[s.key] and not is_locked %}active{% endif %} {% if is_locked %}locked{% endif %}">
+    <div class="card scenario-card p-4 sm:p-6 {% if settings[s.key] and not is_locked %}active{% endif %} {% if is_locked %}locked{% endif %}">
         <div class="absolute top-0 right-0 w-1 h-full rounded-r-2xl" style="background: linear-gradient(to bottom, {{ s.accentFrom }}, {{ s.accentTo }});"></div>
-        <div class="flex items-start justify-between gap-4">
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-start justify-between gap-4">
             <div class="flex gap-4 flex-1">
                 <div class="w-12 h-12 rounded-2xl flex items-center justify-center text-xl flex-shrink-0" style="background: {{ s.bg }}; color: {{ s.color }};">
                     <i class="fa-solid {{ s.icon }}"></i>
@@ -210,7 +210,7 @@
                         {% if is_locked %}<span class="lock-badge"><i class="fa-solid fa-lock"></i> ترقّى لتفعيلها</span>{% endif %}
                     </div>
                     <p class="text-xs text-slate-500 leading-relaxed max-w-lg">{{ s.desc }}</p>
-                    <div class="flex items-center gap-4 mt-3 flex-wrap">
+                    <div class="flex flex-wrap items-center gap-x-4 gap-y-2 mt-3">
                         <div class="flex items-center gap-1.5 text-[11px] text-slate-400">
                             <i class="fa-solid {{ s.metaIcon1 }}" style="color: {{ s.color }};"></i>
                             <span>{{ s.meta1 }}</span>
@@ -223,7 +223,7 @@
                     {% if is_locked %}<a href="/pricing" class="upgrade-cta"><i class="fa-solid fa-arrow-up-right-from-square"></i> رفّع الباقة لفتح هذه الميزة</a>{% endif %}
                 </div>
             </div>
-            <div class="flex flex-col items-end gap-2 flex-shrink-0">
+            <div class="flex flex-row sm:flex-col items-center sm:items-end justify-between sm:justify-start gap-2 pt-4 sm:pt-0 border-t border-slate-100 sm:border-t-0 w-full sm:w-auto flex-shrink-0">
                 <label class="toggle-wrap" title="{% if is_locked %}غير متاح في باقتك{% else %}تفعيل / إيقاف{% endif %}">
                     <input type="checkbox" name="{{ s.key }}" id="toggle_{{ s.key }}"
                         {% if settings[s.key] and not is_locked %}checked{% endif %}
