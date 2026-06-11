@@ -46,7 +46,15 @@
         </div>
 
         <div class="flex items-center justify-between pt-2 border-t border-slate-100">
-            <span id="kbStatus" class="text-xs font-bold"></span>
+            <div class="flex flex-col">
+                <span id="kbStatus" class="text-xs font-bold"></span>
+                <span class="text-xs text-slate-500 font-medium mt-1">
+                    المستندات المستخدمة:
+                    <span id="kbCount" class="font-bold text-slate-700">{{ current_docs }}</span>
+                    من
+                    <span class="font-bold text-slate-700">{% if limit_docs == -1 %}غير محدود{% else %}{{ limit_docs }}{% endif %}</span>
+                </span>
+            </div>
             <button id="kbSaveBtn" onclick="saveKnowledge()" class="px-6 py-3 rounded-xl text-sm font-bold text-white transition shadow-lg" style="background: linear-gradient(135deg, #0d9488, #0ea5e9);">
                 <i class="fa-solid fa-floppy-disk ml-1"></i> حفظ المعلومات
             </button>
@@ -96,9 +104,60 @@
 </div>
 
 <script>
+    function getDocCount() {
+        const shipping = document.getElementById('shipping_policy').value.trim();
+        const returnPol = document.getElementById('return_policy').value.trim();
+        const custom = document.getElementById('custom_text').value.trim();
+
+        let count = 0;
+        if (shipping.length > 0) count++;
+        if (returnPol.length > 0) count++;
+        if (custom.length > 0) {
+            const paragraphs = custom.split(/\n\s*\n/).filter(p => p.trim().length > 0);
+            count += paragraphs.length;
+        }
+        return count;
+    }
+
+    const limitDocs = parseInt("{{ limit_docs }}");
+
+    function checkLimits() {
+        const currentCount = getDocCount();
+        const countEl = document.getElementById('kbCount');
+        if (countEl) countEl.textContent = currentCount;
+
+        const saveBtn = document.getElementById('kbSaveBtn');
+        const status = document.getElementById('kbStatus');
+
+        if (limitDocs !== -1 && currentCount > limitDocs) {
+            status.textContent = `⚠️ تجاوزت الحد المسموح (${limitDocs} مستندات)`;
+            status.style.color = '#dc2626';
+            if (saveBtn) saveBtn.disabled = true;
+        } else {
+            status.textContent = '';
+            if (saveBtn) saveBtn.disabled = false;
+        }
+    }
+
+    document.getElementById('shipping_policy').addEventListener('input', checkLimits);
+    document.getElementById('return_policy').addEventListener('input', checkLimits);
+    document.getElementById('custom_text').addEventListener('input', checkLimits);
+
+    // Initial check
+    checkLimits();
+
     async function saveKnowledge() {
         const btn = document.getElementById('kbSaveBtn');
         const status = document.getElementById('kbStatus');
+
+        // Final UI and client-side check
+        const currentCount = getDocCount();
+        if (limitDocs !== -1 && currentCount > limitDocs) {
+            status.textContent = `⚠️ تجاوزت الحد المسموح (${limitDocs} مستندات)`;
+            status.style.color = '#dc2626';
+            return;
+        }
+
         const orig = btn.innerHTML;
         btn.disabled = true;
         btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin ml-1"></i> جاري الحفظ...';
@@ -116,6 +175,10 @@
             if (data.status === 'success') {
                 status.textContent = '✅ تم الحفظ بنجاح';
                 status.style.color = '#16a34a';
+                // Update dynamic counts
+                if (document.getElementById('kbCount')) {
+                    document.getElementById('kbCount').textContent = currentCount;
+                }
             } else {
                 status.textContent = '❌ ' + (data.error || 'فشل الحفظ');
                 status.style.color = '#dc2626';

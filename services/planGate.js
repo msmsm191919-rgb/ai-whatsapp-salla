@@ -419,6 +419,44 @@ function requireFeature(featureKey) {
 }
 
 /**
+ * Middleware: تحقق من ميزة معيّنة ويوجّه لصفحة الترقية إذا لم تكن متوفرة
+ */
+function requireFeaturePage(featureKey) {
+    return async (req, res, next) => {
+        try {
+            const merchantId = req.user?.merchant?.id;
+            if (!merchantId) return res.status(401).send("Unauthorized");
+            const db = SallaDatabase.connection;
+            const tenant = await db.models.Tenant.findOne({ where: { salla_merchant_id: merchantId } });
+            const plan = tenant ? await getTenantPlan(tenant.id) : null;
+            const planName = plan?.name || DEFAULT_PLAN;
+
+            if (!isFeatureAllowed(planName, featureKey)) {
+                // ضمان وجود user object للـ layout
+                const safeUser = req.user || { merchant: { id: merchantId, name: tenant?.store_name || 'متجرك' } };
+                if (!safeUser.merchant) safeUser.merchant = { id: merchantId, name: tenant?.store_name || 'متجرك' };
+
+                return res.status(403).render('upgrade_required.html', {
+                    user: safeUser,
+                    plan_name: planName,
+                    locked_feature: featureKey,
+                    activePage: 'settings',
+                    planContext: getPlanContext(planName),
+                    ...getPlanContext(planName)
+                });
+            }
+
+            req.tenantPlan = planName;
+            req.planContext = getPlanContext(planName);
+            next();
+        } catch (e) {
+            console.error('[requireFeaturePage] error:', e);
+            next();
+        }
+    };
+}
+
+/**
  * Middleware: يحقن planContext لكل request (للسايدبار والـ views)
  */
 function injectPlanContext() {
@@ -488,6 +526,7 @@ module.exports = {
     // Middlewares
     requirePage,
     requireFeature,
+    requireFeaturePage,
     injectPlanContext,
 
     // Salla App Plans Mapping

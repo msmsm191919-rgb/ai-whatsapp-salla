@@ -357,6 +357,12 @@ app.use([
   '/admin'
 ], ensureAuthenticated);
 
+// 🔒 منع الحسابات المنتهية من الوصول للمسارات التشغيلية وتحويلهم لصفحة الاشتراك
+app.use([
+  '/dashboard', '/logs', '/customers', '/scenarios', '/whatsapp-web', '/automation',
+  '/api/wa-web', '/api/customers', '/api/scenarios'
+], ensureSubscriptionActive);
+
 // 🔒 حماية المسارات الإدارية للمسؤولين فقط
 // ملاحظة: app.use في Express يطابق كل المسارات الفرعية تلقائياً (prefix match)
 // '/admin' يغطي /admin و/admin/plans و/admin/subscriptions وما تحتها
@@ -933,6 +939,55 @@ function ensureAuthenticated(req, res, next) {
   res.redirect('/connect?error=auth_required');
 }
 
+async function ensureSubscriptionActive(req, res, next) {
+  try {
+    const merchantId = req.user?.merchant?.id;
+    if (!merchantId) return next();
+
+    const db = SallaDatabase.connection;
+    if (!db) return next();
+
+    const tenant = await db.models.Tenant.findOne({
+      where: { salla_merchant_id: merchantId },
+      include: [{ model: db.models.Subscription }]
+    });
+
+    if (!tenant || !tenant.Subscription) {
+      if (req.xhr || req.headers.accept?.includes('json') || req.originalUrl.startsWith('/api')) {
+        return res.status(403).json({
+          error: 'no_subscription',
+          message: 'يرجى الاشتراك في إحدى الباقات لتفعيل حسابك.'
+        });
+      }
+      return res.redirect('/pricing?error=subscription_required');
+    }
+
+    let subStatus = tenant.Subscription.status;
+    const subEndDate = tenant.Subscription.end_date;
+
+    // Automatically expire if historical end date has passed
+    if ((subStatus === 'trial' || subStatus === 'active') && subEndDate && new Date(subEndDate) < new Date()) {
+      await tenant.Subscription.update({ status: 'expired' });
+      subStatus = 'expired';
+    }
+
+    if (subStatus === 'expired') {
+      if (req.xhr || req.headers.accept?.includes('json') || req.originalUrl.startsWith('/api')) {
+        return res.status(403).json({
+          error: 'subscription_expired',
+          message: 'انتهت صلاحية اشتراكك. يرجى الترقية أو تجديد الاشتراك للمتابعة.'
+        });
+      }
+      return res.redirect('/pricing?error=subscription_expired');
+    }
+
+    next();
+  } catch (e) {
+    console.error('[ensureSubscriptionActive] error:', e);
+    next();
+  }
+}
+
 async function requireAdmin(req, res, next) {
   if (!req.isAuthenticated() && !(req.user && req.user.merchant && req.user.merchant.id)) {
     if (req.xhr || req.headers.accept?.includes('json') || req.originalUrl.startsWith('/api') || req.method === 'POST') {
@@ -1314,7 +1369,7 @@ app.get("/logs/export", async (req, res) => {
 // ---------------------------------------------------------
 
 // GET: View WhatsApp Settings
-app.get("/settings/whatsapp", async (req, res) => {
+app.get("/settings/whatsapp", require('./services/planGate').requireFeaturePage('whatsapp_api'), async (req, res) => {
   try {
     const db = SallaDatabase.connection;
 
@@ -1488,7 +1543,7 @@ app.post('/api/whatsapp-numbers/:id/make-primary', async (req, res) => {
 });
 
 // POST: Save WhatsApp Settings
-app.post("/settings/whatsapp", async (req, res) => {
+app.post("/settings/whatsapp", require('./services/planGate').requireFeature('whatsapp_api'), async (req, res) => {
   try {
     if (!req.user) req.user = { merchant: { id: 123456789, name: 'Demo Merchant' } };
     const db = SallaDatabase.connection;
@@ -1867,10 +1922,29 @@ app.get("/knowledge-base", async (req, res) => {
     });
 
     const plan = tenant?.Subscription?.Plan;
+    const planName = plan?.name || 'الأساسية';
+    const planGate = require('./services/planGate');
+    const planContext = planGate.getPlanContext(planName);
+    const limitDocs = planGate.getLimit(planName, 'knowledge_docs');
+
     const settings = tenant?.settings || {};
     const kb = settings.knowledge_base || {};
 
-    res.render("knowledge_base.html", { kb, user: req.user, activePage: 'knowledge_base', plan_name: plan?.name || 'الأساسية' });
+    // Calculate current docs
+    const shippingDoc = kb.shipping_policy && kb.shipping_policy.trim().length > 0 ? 1 : 0;
+    const returnDoc = kb.return_policy && kb.return_policy.trim().length > 0 ? 1 : 0;
+    const customDocs = kb.custom_text ? kb.custom_text.split(/\n\s*\n/).filter(p => p.trim().length > 0).length : 0;
+    const currentDocs = shippingDoc + returnDoc + customDocs;
+
+    res.render("knowledge_base.html", {
+      kb,
+      user: req.user,
+      activePage: 'knowledge_base',
+      plan_name: planName,
+      planContext,
+      current_docs: currentDocs,
+      limit_docs: limitDocs
+    });
 
   } catch (e) {
     console.error("KB Route Error:", e);
@@ -1885,10 +1959,29 @@ app.post("/api/knowledge-base/save", async (req, res) => {
 
     const db = SallaDatabase.connection;
     const tenant = await db.models.Tenant.findOne({
-      where: { salla_merchant_id: req.user.merchant.id }
+      where: { salla_merchant_id: req.user.merchant.id },
+      include: [{ model: db.models.Subscription, include: [db.models.Plan] }]
     });
 
     if (tenant) {
+      // Enforce plan limits on knowledge base documents
+      const shippingDoc = shipping_policy && shipping_policy.trim().length > 0 ? 1 : 0;
+      const returnDoc = return_policy && return_policy.trim().length > 0 ? 1 : 0;
+      const customDocs = custom_text ? custom_text.split(/\n\s*\n/).filter(p => p.trim().length > 0).length : 0;
+      const totalDocs = shippingDoc + returnDoc + customDocs;
+
+      const planGate = require('./services/planGate');
+      const plan = tenant.Subscription?.Plan;
+      const planName = plan?.name || 'الأساسية';
+      const limit = planGate.getLimit(planName, 'knowledge_docs');
+
+      if (limit !== -1 && totalDocs > limit) {
+        return res.status(403).json({
+          status: 'error',
+          error: `لقد تجاوزت الحد الأقصى للمستندات المسموح بها في باقتك الحالية (${limit} مستندات). المحاولة تحتوي على ${totalDocs} مستند. يرجى الترقية لحفظ المزيد.`
+        });
+      }
+
       const currentSettings = tenant.settings || {};
 
       // Update KB section
@@ -2480,7 +2573,7 @@ app.delete("/api/customers/:id", async (req, res) => {
 });
 
 // 📥 استيراد عملاء دفعة واحدة (من CSV/Excel — تُرسل كمصفوفة JSON من المتصفح)
-app.post("/api/customers/import", async (req, res) => {
+app.post("/api/customers/import", require('./services/planGate').requireFeature('customers_import'), async (req, res) => {
   try {
     const { db, tenant } = await _getCustomerTenant(req);
     if (!tenant) return res.status(404).json({ ok: false, error: 'Tenant not found' });

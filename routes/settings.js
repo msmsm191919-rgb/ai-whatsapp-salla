@@ -4,7 +4,7 @@ const SallaDatabase = require('../database/db_instance');
 const planGate = require('../services/planGate');
 
 // GET: WhatsApp Settings (API — خيار متقدم)
-router.get('/whatsapp', async (req, res) => {
+router.get('/whatsapp', planGate.requireFeaturePage('whatsapp_api'), async (req, res) => {
   try {
     const db = SallaDatabase.connection;
 
@@ -19,18 +19,6 @@ router.get('/whatsapp', async (req, res) => {
     const plan = tenant?.Subscription?.Plan;
     const planFeatures = plan?.features || {};
 
-    // 🔒 WhatsApp API غير متاح في الباقة الأساسية — يحتاج النمو فأعلى
-    const planName = plan?.name || planGate.DEFAULT_PLAN;
-    if (!planGate.isFeatureAllowed(planName, 'whatsapp_api')) {
-      return res.status(403).render('upgrade_required.html', {
-        user: req.user,
-        plan_name: planName,
-        locked_feature: 'whatsapp_api',
-        activePage: 'settings',
-        planContext: planGate.getPlanContext(planName),
-        ...planGate.getPlanContext(planName)
-      });
-    }
     const config = tenant?.WhatsAppConfig || {};
     const apiKey = tenant?.settings?.api_key || '';
     const hasApiAccess = planFeatures.api_access === true;
@@ -53,7 +41,7 @@ router.get('/whatsapp', async (req, res) => {
 });
 
 // POST: Save WhatsApp Settings
-router.post('/whatsapp', async (req, res) => {
+router.post('/whatsapp', planGate.requireFeature('whatsapp_api'), async (req, res) => {
   try {
     const db = SallaDatabase.connection;
 
