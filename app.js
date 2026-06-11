@@ -702,6 +702,9 @@ const ConnectService = require('./services/ConnectService');
 
 // GET /connect — صفحة اختيار المنصة
 app.get('/connect', (req, res) => {
+  if (req.isAuthenticated() || (req.user && req.user.merchant && req.user.merchant.id)) {
+    return res.redirect('/dashboard');
+  }
   const platforms = PlatformRegistry.list();
   res.render('connect.html', {
     activePage: 'connect',
@@ -934,9 +937,9 @@ function ensureAuthenticated(req, res, next) {
   }
   console.log(`- Access Result: DENIED`);
   console.log(`- Fallback Reason: No authenticated session found (req.user is undefined or missing merchant ID)`);
-  console.log(`- Action: Redirecting to /connect`);
+  console.log(`- Action: Redirecting to /login`);
   console.log(`============================================================\n`);
-  res.redirect('/connect?error=auth_required');
+  res.redirect('/login');
 }
 
 async function ensureSubscriptionActive(req, res, next) {
@@ -993,7 +996,7 @@ async function requireAdmin(req, res, next) {
     if (req.xhr || req.headers.accept?.includes('json') || req.originalUrl.startsWith('/api') || req.method === 'POST') {
       return res.status(403).json({ ok: false, error: 'Unauthorized: Admin privileges required' });
     }
-    return res.redirect('/connect?error=auth_required');
+    return res.redirect('/login');
   }
 
   try {
@@ -1784,8 +1787,32 @@ app.post('/billing/checkout', async (req, res) => {
     const { plan_name } = req.body; // plan_name still parsed, but we redirect to Salla App Store generally
 
     const db = SallaDatabase.connection;
-    const tenant = await db.models.Tenant.findOne({ where: { salla_merchant_id: req.user.merchant.id } });
+    const tenant = await db.models.Tenant.findOne({
+      where: { salla_merchant_id: req.user.merchant.id },
+      include: [{ model: db.models.Subscription, include: [db.models.Plan] }]
+    });
     if (!tenant) return res.status(404).json({ ok: false, error: 'Tenant not found' });
+
+    if (tenant.platform === 'standalone') {
+      if (!process.env.TAP_SECRET_KEY) {
+        return res.status(400).json({ ok: false, error: 'بوابة الدفع غير مفعّلة حالياً لهذا الحساب. يرجى التواصل مع الدعم الفني.' });
+      }
+      const plan = await db.models.Plan.findOne({ where: { name: plan_name } });
+      if (!plan) return res.status(404).json({ ok: false, error: 'Plan not found' });
+
+      const billingPeriod = req.body.billing_period || 'monthly';
+      const baseUrl = `${req.protocol}://${req.get('host')}`;
+
+      // Call initiateTapCheckout
+      const checkoutResult = await BillingService.initiateTapCheckout({
+        tenantId: tenant.id,
+        planId: plan.id,
+        billingPeriod,
+        baseUrl
+      });
+
+      return res.json({ ok: true, checkoutUrl: checkoutResult.checkoutUrl, mock: checkoutResult.mock });
+    }
 
     const checkoutUrl = process.env.SALLA_APP_UPGRADE_URL || 'https://s.salla.sa/apps';
 

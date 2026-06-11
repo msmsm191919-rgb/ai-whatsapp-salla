@@ -618,12 +618,13 @@
         btn.disabled = true;
         btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري التحويل...';
 
+        let succeeded = false;
         try {
-            const isYearly = document.getElementById('billingToggle')?.checked || false;
+            const selectedPeriod = isYearly ? 'yearly' : 'monthly';
             const r = await fetch('/billing/checkout', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ plan_name: planName, billing_period: isYearly ? 'yearly' : 'monthly' })
+                body: JSON.stringify({ plan_name: planName, billing_period: selectedPeriod })
             });
             const data = await r.json();
             if (data.ok && data.checkoutUrl) {
@@ -632,13 +633,17 @@
                     console.log('🧪 MOCK mode — لو ما عندك Tap key، الدفع تلقائي ناجح');
                 }
                 window.location.href = data.checkoutUrl;
+                succeeded = true;
             } else {
                 alert('❌ فشل بدء الدفع: ' + (data.error || 'خطأ غير معروف'));
-                btn.disabled = false; btn.innerHTML = orig;
             }
         } catch (e) {
             alert('❌ خطأ في الاتصال: ' + e.message);
-            btn.disabled = false; btn.innerHTML = orig;
+        } finally {
+            if (!succeeded) {
+                btn.disabled = false;
+                btn.innerHTML = orig;
+            }
         }
     }
 </script>

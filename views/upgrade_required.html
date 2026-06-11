@@ -65,6 +65,7 @@
         const orig = btn.innerHTML;
         btn.disabled = true;
         btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري التحويل...';
+        let succeeded = false;
         try {
             const r = await fetch('/billing/checkout', {
                 method: 'POST',
@@ -74,13 +75,17 @@
             const data = await r.json();
             if (data.ok && data.checkoutUrl) {
                 window.location.href = data.checkoutUrl;
+                succeeded = true;
             } else {
                 alert('❌ فشل بدء الدفع: ' + (data.error || 'خطأ'));
-                btn.disabled = false; btn.innerHTML = orig;
             }
         } catch (e) {
             alert('❌ ' + e.message);
-            btn.disabled = false; btn.innerHTML = orig;
+        } finally {
+            if (!succeeded) {
+                btn.disabled = false;
+                btn.innerHTML = orig;
+            }
         }
     }
     </script>
