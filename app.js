@@ -2076,14 +2076,22 @@ app.get("/dashboard", async (req, res) => {
     // --- Plan Data ---
     const subscription = tenant?.Subscription;
     const plan = subscription?.Plan;
-    const planName = plan?.name || 'الأساسية';
-    const planFeatures = plan?.features || {};
-    const msgLimit = plan?.msg_limit_monthly || 1000;
+    const subStatus = subscription?.status || 'no_subscription';
+
+    const hasAccess = subscription && (subStatus === 'active' || subStatus === 'trial');
+    const planName = plan?.name || (subStatus === 'expired' ? 'اشتراك منتهي' : (subStatus === 'no_subscription' ? 'لا يوجد اشتراك' : 'الأساسية'));
+    const planFeatures = hasAccess ? (plan?.features || {}) : {};
+    const msgLimit = hasAccess ? (plan?.msg_limit_monthly || 1000) : 0;
     const priceMonthly = plan?.price_monthly || 0;
     const priceYearly = plan?.price_yearly || 0;
-    const subStatus = subscription?.status || null;
     const isYearly = subscription?.is_yearly || false;
     const subEndDate = subscription?.end_date;
+
+    let daysLeft = null;
+    if (subEndDate) {
+      const diff = new Date(subEndDate) - new Date();
+      daysLeft = Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
+    }
 
     // Get Usage
     const currentPeriod = new Date().toISOString().slice(0, 7);
@@ -2162,12 +2170,11 @@ app.get("/dashboard", async (req, res) => {
       plan_billing: isYearly ? 'سنوي' : 'شهري',
       plan_features: planFeatures,
       sub_status: subStatus,
-      plan_features: planFeatures,
-      sub_status: subStatus,
       renewal_date: renewalDate,
-      trial_days_left: (subscription?.status === 'trial' && subStatus === 'trial' && subEndDate)
-        ? Math.ceil((new Date(subEndDate) - new Date()) / (1000 * 60 * 60 * 24))
-        : null,
+      days_left: daysLeft,
+      is_trial: subStatus === 'trial',
+      start_date: subscription?.start_date || null,
+      end_date: subEndDate || null,
 
       // Usage
       messages_sent: messagesSent,
