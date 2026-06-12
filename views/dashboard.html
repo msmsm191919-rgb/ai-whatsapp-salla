@@ -450,7 +450,15 @@
                     <span class="text-xs font-semibold text-slate-600">نموذج الذكاء</span>
                 </div>
                 {% if plan_features.ai_enabled %}
-                <span class="chip" style="background: #ede9fe; color: #6d28d9; font-size: 10px; padding: 2px 8px;">{{ plan_features.ai_model or 'GPT-3.5' }}</span>
+                <span class="chip" style="background: #ede9fe; color: #6d28d9; font-size: 10px; padding: 2px 8px;">
+                    {% if plan_features.ai_model == 'gpt-4o' or plan_features.ai_model == 'gpt-4' %}
+                    ذكاء اصطناعي متقدم
+                    {% elif plan_features.ai_model and ('custom' in plan_features.ai_model or 'special' in plan_features.ai_model) %}
+                    ذكاء اصطناعي مخصص
+                    {% else %}
+                    ذكاء اصطناعي سريع وفعال
+                    {% endif %}
+                </span>
                 {% else %}
                 <span class="text-xs text-red-400 font-bold"><i class="fa-solid fa-lock ml-1"></i>مقفل</span>
                 {% endif %}
