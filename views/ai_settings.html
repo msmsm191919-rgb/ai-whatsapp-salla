@@ -135,11 +135,20 @@
 
             <!-- Store Custom Text (Knowledge Base) -->
             <div class="mb-5">
-                <label class="field-label">معلومات المتجر وقاعدة المعرفة</label>
+                <label class="field-label">معلومات مهمة لتدريب المساعد</label>
                 <textarea name="custom_text" id="custom_text" rows="5" class="input-field"
                     style="resize: vertical; line-height: 1.6;"
-                    placeholder="اكتب هنا معلومات مهمة عن متجرك: أوقات العمل، طريقة التواصل البديلة، تفاصيل المنتجات المميزة، العروض الحالية... كل معلومة هنا ستساعد المساعد الذكي على إجابة العميل بدقة.">{{ kb.custom_text or '' }}</textarea>
-                <p class="field-hint">البيانات والمعلومات التي يعتمد عليها المساعد للإجابة بذكاء.</p>
+                    placeholder="مثال:
+نبيع عطوراً أصلية وثابتة، نوفر شحناً لجميع مدن المملكة، ولدينا ضمان على المنتجات.
+أهم منتجاتنا: عطور رجالية، عطور نسائية، وباقات هدايا.
+إذا سأل العميل عن هدية، اقترح عليه باقة الهدايا.">{{ kb.custom_text or '' }}</textarea>
+                <p class="field-hint">
+                    مبهر يستخدم اسم متجرك ورابطه من سلة تلقائياً، لكن تفاصيل المنتجات والخدمات والأسعار المهمة لا تُقرأ تلقائياً حالياً. اكتب هنا أهم المنتجات أو الخدمات أو ما يميز متجرك حتى يرد المساعد بدقة.
+                </p>
+                <p class="field-hint mt-1.5" style="color: #64748b;">
+                    <i class="fa-solid fa-lightbulb text-amber-500 ml-1"></i>
+                    إذا لم تكن متأكداً مما تكتب، يمكنك الاستعانة بأدوات الذكاء الاصطناعي لصياغة وصف مختصر ثم لصقه هنا.
+                </p>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-5">

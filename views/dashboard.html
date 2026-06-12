@@ -95,8 +95,113 @@
 {% block content %}
 <div class="space-y-6">
 
+    {# 🚀 قائمة إعداد الحساب لأول استخدام (First-use Onboarding Checklist) #}
+    {% if completed_steps < 3 %}
+    <div class="card p-5 sm:p-6 border border-slate-100 rounded-2xl bg-white shadow-sm relative overflow-hidden">
+        <!-- خط تدرج علوي خفيف للجمالية -->
+        <div class="absolute top-0 right-0 left-0 h-1.5" style="background: linear-gradient(to left, #0d9488, #14b8a6, #3b82f6);"></div>
+
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+            <div>
+                <h3 class="font-extrabold text-slate-800 text-sm flex items-center gap-2">
+                    <i class="fa-solid fa-list-check text-teal-600 text-base"></i>
+                    جهّز مساعدك الذكي خلال دقائق ⚡
+                </h3>
+                <p class="text-xs text-slate-500 mt-1">أكمل الخطوات التالية لتفعيل المساعد الذكي والبدء باستعادة مبيعاتك المتروكة.</p>
+            </div>
+            <div class="flex items-center gap-3 self-start sm:self-auto">
+                <span class="text-xs font-bold text-slate-600">اكتمل {{ completed_steps }} من 3</span>
+                <div class="w-24 sm:w-32 h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                    <div class="h-full bg-gradient-to-r from-teal-500 to-emerald-400 rounded-full transition-all duration-500" style="width: {{ completion_percent }}%"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4">
+            <!-- الخطوة 1: ربط واتساب -->
+            <div class="flex items-center justify-between p-4 rounded-xl border {% if isConnected %}bg-emerald-50/30 border-emerald-100{% else %}bg-slate-50/50 border-slate-100{% endif %}">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-full flex items-center justify-center text-sm {% if isConnected %}bg-emerald-500 text-white{% else %}bg-slate-200 text-slate-400{% endif %} font-bold">
+                        {% if isConnected %}
+                        <i class="fa-solid fa-check text-xs"></i>
+                        {% else %}
+                        1
+                        {% endif %}
+                    </div>
+                    <div>
+                        <p class="text-xs font-black text-slate-800">ربط واتساب</p>
+                        <p class="text-[10px] text-slate-500 mt-0.5">{% if isConnected %}متصل بنجاح ✅{% else %}غير متصل 🔌{% endif %}</p>
+                    </div>
+                </div>
+                {% if not isConnected %}
+                <a href="/whatsapp-web" class="px-3.5 py-1.5 rounded-lg text-xs font-bold text-white shadow-md hover:scale-102 transition duration-150" style="background: linear-gradient(135deg, #0d9488, #14b8a6);">
+                    ربط واتساب الآن
+                </a>
+                {% endif %}
+            </div>
+
+            <!-- الخطوة 2: تدريب المساعد على متجرك -->
+            <div class="flex items-center justify-between p-4 rounded-xl border {% if is_persona_configured %}bg-emerald-50/30 border-emerald-100{% else %}bg-slate-50/50 border-slate-100{% endif %}">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-full flex items-center justify-center text-sm {% if is_persona_configured %}bg-emerald-500 text-white{% else %}bg-slate-200 text-slate-400{% endif %} font-bold">
+                        {% if is_persona_configured %}
+                        <i class="fa-solid fa-check text-xs"></i>
+                        {% else %}
+                        2
+                        {% endif %}
+                    </div>
+                    <div>
+                        <p class="text-xs font-black text-slate-800">تدريب المساعد على متجرك</p>
+                        <p class="text-[10px] text-slate-500 mt-0.5">{% if is_persona_configured %}تم تدريب المساعد ✅{% else %}لم تكتمل تهيئة البيانات ✍️{% endif %}</p>
+                    </div>
+                </div>
+                {% if not is_persona_configured %}
+                <a href="/ai-settings" class="px-3.5 py-1.5 rounded-lg text-xs font-bold text-white shadow-md hover:scale-102 transition duration-150" style="background: linear-gradient(135deg, #0d9488, #14b8a6);">
+                    تدريب المساعد على متجرك
+                </a>
+                {% endif %}
+            </div>
+
+            <!-- الخطوة 3: تفعيل السيناريوهات -->
+            <div class="flex items-center justify-between p-4 rounded-xl border {% if is_scenarios_configured %}bg-emerald-50/30 border-emerald-100{% else %}bg-slate-50/50 border-slate-100{% endif %}">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-full flex items-center justify-center text-sm {% if is_scenarios_configured %}bg-emerald-500 text-white{% else %}bg-slate-200 text-slate-400{% endif %} font-bold">
+                        {% if is_scenarios_configured %}
+                        <i class="fa-solid fa-check text-xs"></i>
+                        {% else %}
+                        3
+                        {% endif %}
+                    </div>
+                    <div>
+                        <p class="text-xs font-black text-slate-800">تفعيل السيناريوهات</p>
+                        <p class="text-[10px] text-slate-500 mt-0.5">{% if is_scenarios_configured %}مفعّلة ونشطة 🚀{% else %}غير مفعّلة ⚙️{% endif %}</p>
+                    </div>
+                </div>
+                {% if not is_scenarios_configured %}
+                <a href="/scenarios" class="px-3.5 py-1.5 rounded-lg text-xs font-bold text-white shadow-md hover:scale-102 transition duration-150" style="background: linear-gradient(135deg, #0d9488, #14b8a6);">
+                    تفعيل السيناريوهات
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <!-- مبهر جاهز للعمل ✅ -->
+    <div class="rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-stretch sm:items-center gap-4 animate-in" style="background: linear-gradient(135deg, #ecfdf5, #d1fae5); border: 2px solid #a7f3d0; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.08);">
+        <div class="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 mx-auto sm:mx-0" style="background: #10b981; color: #fff;">
+            <i class="fa-solid fa-circle-check text-2xl"></i>
+        </div>
+        <div class="flex-1 text-center sm:text-right">
+            <p class="font-extrabold text-emerald-950 text-sm">مبهر جاهز للعمل ✅</p>
+            <p class="text-xs text-emerald-900 mt-1 leading-relaxed">
+                مساعدك الذكي وجميع السيناريوهات مهيئة وتعمل بكفاءة الآن في الخلفية لزيادة مبيعات متجرك.
+            </p>
+        </div>
+    </div>
+    {% endif %}
+
     {# 🔔 تنبيه ربط واتساب — إذا كان غير متصل #}
-    {% if not isConnected %}
+    {% if completed_steps >= 3 and not isConnected %}
     <div class="rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-stretch sm:items-center gap-4 animate-in" style="background: linear-gradient(135deg, #fffbeb, #fef3c7); border: 2px solid #fde68a; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.1);">
         <div class="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 animate-pulse mx-auto sm:mx-0" style="background: #f59e0b; color: #fff;">
             <i class="fa-brands fa-whatsapp text-2xl"></i>

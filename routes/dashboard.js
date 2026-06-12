@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const SallaDatabase = require('../database/db_instance');
 const { Op } = require('sequelize');
+const waWeb = require('../services/waWeb');
 
 router.get('/', async (req, res) => {
   try {
@@ -45,7 +46,7 @@ router.get('/', async (req, res) => {
       console.log(`======================================================================\n`);
     }
 
-    const isConnected = !!(tenant?.WhatsAppConfig?.access_token);
+    const isConnected = !!(tenant?.WhatsAppConfig?.access_token) || (tenant ? waWeb.isReady(tenant.id) : false);
     const subscription = tenant?.Subscription;
     const plan = subscription?.Plan;
     const subStatus = subscription?.status || 'no_subscription';
@@ -108,6 +109,31 @@ router.get('/', async (req, res) => {
       ? new Date(subEndDate).toLocaleDateString('ar-SA', { year: 'numeric', month: 'long', day: 'numeric' })
       : 'غير محدد';
 
+    const settings = tenant?.settings || {};
+    const aiConfig = settings.ai_config || {};
+    const kb = settings.knowledge_base || {};
+
+    // Check if customized (must have a real value in custom_instructions or custom_text)
+    const cleanInstructions = String(aiConfig.custom_instructions || '')
+      .replace(/\[طريقة البيع\]:/g, '')
+      .replace(/\[محظورات\]:/g, '')
+      .replace(/\[تعليمات إضافية\]:/g, '')
+      .trim();
+
+    const hasRealInstructions = cleanInstructions.length > 0;
+    const hasKnowledgeText = !!(kb.custom_text && kb.custom_text.trim());
+
+    const isPersonaConfigured = hasRealInstructions || hasKnowledgeText;
+
+    const isScenariosConfigured = !!(settings.abandoned_cart || settings.order_status);
+
+    let completedSteps = 0;
+    if (isConnected) completedSteps++;
+    if (isPersonaConfigured) completedSteps++;
+    if (isScenariosConfigured) completedSteps++;
+
+    const completionPercent = Math.round((completedSteps / 3) * 100);
+
     res.render('dashboard.html', {
       tenant, user: req.user, activePage: 'dashboard', isConnected,
       plan_name: planName, plan_price: isYearly ? priceYearly : priceMonthly,
@@ -121,6 +147,10 @@ router.get('/', async (req, res) => {
       ai_replies: aiRequests, ai_growth: growthPercent.toFixed(1),
       campaigns_count: campaignsCount, contacts_count: contactsCount,
       recentLogs, chartLabels: JSON.stringify(chartLabels), chartData: JSON.stringify(chartData),
+      is_persona_configured: isPersonaConfigured,
+      is_scenarios_configured: isScenariosConfigured,
+      completed_steps: completedSteps,
+      completion_percent: completionPercent
     });
   } catch (e) {
     console.error(e);
