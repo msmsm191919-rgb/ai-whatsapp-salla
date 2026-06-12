@@ -752,7 +752,7 @@ app.get(
   "/oauth/callback",
   passport.authenticate("salla", { failureRedirect: "/login" }),
   function (req, res) {
-    res.redirect("/");
+    res.redirect("/dashboard?welcome=1");
   }
 );
 

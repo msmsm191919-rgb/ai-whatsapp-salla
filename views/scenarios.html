@@ -246,43 +246,96 @@
 {% block scripts %}
 <script>
     async function saveScenarios() {
-        const abandoned_cart = document.getElementById('toggle_cart').checked;
-        const review_request = document.getElementById('toggle_review').checked;
+        const checkboxes = document.querySelectorAll('.scenario-card input[type="checkbox"]');
+        const data = {};
 
-        // Update status labels
-        document.getElementById('cart_status').textContent = abandoned_cart ? 'مفعّل' : 'معطّل';
-        document.getElementById('cart_status').className = 'text-[10px] font-bold ' + (abandoned_cart ? 'text-teal-600' : 'text-slate-400');
-        document.getElementById('review_status').textContent = review_request ? 'مفعّل' : 'معطّل';
-        document.getElementById('review_status').className = 'text-[10px] font-bold ' + (review_request ? 'text-teal-600' : 'text-slate-400');
+        checkboxes.forEach(cb => {
+            const name = cb.getAttribute('name');
+            if (!name) return;
 
-        // Update card border
-        document.querySelectorAll('.scenario-card').forEach((card, i) => {
-            const val = i === 0 ? abandoned_cart : review_request;
-            card.classList.toggle('active', val);
+            const card = cb.closest('.scenario-card');
+            const isLocked = cb.disabled || (card && card.classList.contains('locked'));
+
+            if (isLocked) {
+                cb.checked = false;
+                data[name] = false;
+            } else {
+                data[name] = cb.checked;
+            }
+
+            // Update status label
+            let labelId = '';
+            if (name === 'abandoned_cart') {
+                labelId = 'cart_status';
+            } else if (name === 'review_request') {
+                labelId = 'review_status';
+            } else {
+                labelId = `${name}_status`;
+            }
+
+            const statusSpan = document.getElementById(labelId);
+            if (statusSpan) {
+                if (isLocked) {
+                    statusSpan.textContent = '🔒 مقفول';
+                    statusSpan.className = 'text-[10px] font-bold text-amber-600';
+                } else if (cb.checked) {
+                    statusSpan.textContent = 'مفعّل';
+                    statusSpan.className = 'text-[10px] font-bold text-teal-600';
+                } else {
+                    statusSpan.textContent = 'معطّل';
+                    statusSpan.className = 'text-[10px] font-bold text-slate-400';
+                }
+            }
+
+            // Update card active class
+            if (card) {
+                if (cb.checked && !isLocked) {
+                    card.classList.add('active');
+                } else {
+                    card.classList.remove('active');
+                }
+            }
         });
+
+        function showNotification(message, isError = false) {
+            const toast = document.createElement('div');
+            const icon = isError ? 'fa-circle-xmark' : 'fa-circle-check';
+            const bgColor = isError ? '#fef2f2' : '#f0fdf4';
+            const borderColor = isError ? '#fecaca' : '#bbf7d0';
+            const textColor = isError ? '#991b1b' : '#15803d';
+
+            toast.innerHTML = `<i class="fa-solid ${icon} ml-2"></i> ${message}`;
+            Object.assign(toast.style, {
+                position: 'fixed', top: '24px', right: '24px', zIndex: 9999,
+                background: bgColor, border: `1px solid ${borderColor}`, color: textColor,
+                padding: '11px 18px', borderRadius: '12px', fontWeight: '700',
+                fontSize: '13px', boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+                animation: 'slide-in-up 0.3s ease'
+            });
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 2500);
+        }
 
         try {
             const res = await fetch('/api/scenarios/save', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ abandoned_cart, review_request })
+                body: JSON.stringify(data)
             });
 
             if (res.ok) {
-                const toast = document.createElement('div');
-                toast.innerHTML = '<i class="fa-solid fa-circle-check ml-2"></i> تم حفظ السيناريوهات';
-                Object.assign(toast.style, {
-                    position: 'fixed', top: '24px', right: '24px', zIndex: 9999,
-                    background: '#f0fdf4', border: '1px solid #bbf7d0', color: '#15803d',
-                    padding: '11px 18px', borderRadius: '12px', fontWeight: '700',
-                    fontSize: '13px', boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
-                    animation: 'slide-in-up 0.3s ease'
-                });
-                document.body.appendChild(toast);
-                setTimeout(() => toast.remove(), 2500);
+                const responseData = await res.json();
+                if (responseData.status === 'success') {
+                    showNotification(responseData.message || 'تم حفظ السيناريوهات بنجاح ✅');
+                } else {
+                    showNotification(responseData.error || 'فشل حفظ السيناريوهات ❌', true);
+                }
+            } else {
+                showNotification('عذراً، حدث خطأ أثناء الحفظ. الرجاء المحاولة مرة أخرى ❌', true);
             }
         } catch (e) {
             console.error('Failed to save scenarios', e);
+            showNotification('عذراً، حدث خطأ أثناء الاتصال بالخادم. الرجاء المحاولة مرة أخرى ❌', true);
         }
     }
 </script>
