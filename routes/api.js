@@ -75,6 +75,48 @@ router.get('/billing/simulate-success', async (req, res) => {
 });
 
 // ------------------------------------------------------------------
+// 1.5. CONVERSATION HANDOFF ROUTES (Client)
+// ------------------------------------------------------------------
+
+const HandoffService = require('../services/HandoffService');
+
+// GET /api/conversations/paused
+router.get('/conversations/paused', async (req, res) => {
+    try {
+        if (!req.user || !req.user.merchant || !req.user.merchant.id) {
+            return res.status(401).json({ status: 'error', message: 'Authentication required' });
+        }
+        const tenant = await getModels().Tenant.findOne({ where: { salla_merchant_id: req.user.merchant.id } });
+        if (!tenant) return res.status(404).json({ error: 'Tenant not found' });
+
+        const pausedChats = await HandoffService.listPausedChats(tenant.id);
+        res.json({ status: 'success', data: pausedChats });
+    } catch (e) {
+        res.status(500).json({ status: 'error', message: e.message });
+    }
+});
+
+// POST /api/conversations/resume
+router.post('/conversations/resume', async (req, res) => {
+    try {
+        if (!req.user || !req.user.merchant || !req.user.merchant.id) {
+            return res.status(401).json({ status: 'error', message: 'Authentication required' });
+        }
+        const { chatKey } = req.body;
+        if (!chatKey) return res.status(400).json({ status: 'error', message: 'Missing chatKey' });
+
+        const tenant = await getModels().Tenant.findOne({ where: { salla_merchant_id: req.user.merchant.id } });
+        if (!tenant) return res.status(404).json({ error: 'Tenant not found' });
+
+        const resolved = HandoffService.getChatKey(chatKey);
+        const result = await HandoffService.resumeChat(tenant.id, resolved);
+        res.json({ status: 'success', resumed: result });
+    } catch (e) {
+        res.status(500).json({ status: 'error', message: e.message });
+    }
+});
+
+// ------------------------------------------------------------------
 // 2. ADMIN ROUTES
 // ------------------------------------------------------------------
 

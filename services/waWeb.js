@@ -210,6 +210,74 @@ function start(tenantId) {
                 ? msg.from.replace('@c.us', '')
                 : msg.from;
 
+            const HandoffService = require('./HandoffService');
+            const chatKey = HandoffService.getChatKey(msg.from);
+            const isPaused = await HandoffService.isPaused(k, chatKey);
+
+            if (isPaused) {
+                const SallaDatabase = require('../database/db_instance');
+                await SallaDatabase.connection.models.MessageLog.create({
+                    tenant_id: k,
+                    direction: 'in',
+                    content: msg.body || '',
+                    to_phone: fromPhone,
+                    status: 'received'
+                });
+                console.log(`🔕 [waWeb:${k}] Handoff active for ${chatKey}. Message logged, AI skipped.`);
+                return;
+            }
+
+            if (HandoffService.shouldTriggerHandoff(msg.body)) {
+                // Check Plan Gate first before pausing or sending any handoff notification
+                const planGate = require('./planGate');
+                const access = await planGate.checkTenantAccess(k);
+                if (!access.allowed) {
+                    const SallaDatabase = require('../database/db_instance');
+                    await SallaDatabase.connection.models.MessageLog.create({
+                        tenant_id: k,
+                        direction: 'in',
+                        content: msg.body || '',
+                        to_phone: fromPhone,
+                        status: 'received'
+                    });
+                    console.log(`🔕 [waWeb:${k}] Handoff triggered but Plan Gate blocked. Message logged, no reply.`);
+                    return;
+                }
+
+                await HandoffService.pauseChat(k, chatKey, {
+                    reason: 'keyword',
+                    last_message: msg.body,
+                    channel: 'qr'
+                });
+                const replyText = "تم تحويل محادثتك للموظف المختص، وسيتم الرد عليك في أقرب وقت ممكن. 🌸";
+                const SallaDatabase = require('../database/db_instance');
+
+                await SallaDatabase.connection.models.MessageLog.create({
+                    tenant_id: k,
+                    direction: 'in',
+                    content: msg.body || '',
+                    to_phone: fromPhone,
+                    status: 'received'
+                });
+                await SallaDatabase.connection.models.MessageLog.create({
+                    tenant_id: k,
+                    direction: 'out',
+                    content: replyText,
+                    to_phone: fromPhone,
+                    status: 'sent'
+                });
+
+                try { const chat = await msg.getChat(); chat.sendStateTyping(); } catch (e) {}
+                setTimeout(async () => {
+                    try {
+                        await s.client.sendMessage(msg.from, replyText);
+                    } catch (e) {
+                        console.error(`[waWeb:${k}] فشل إرسال رسالة التحويل:`, e.message);
+                    }
+                }, 1200);
+                return;
+            }
+
             const ChatService = require('./ChatService');
             // isSimulated:true → يولّد رد + يسجّل بدون إرسال (سنرسل نحن عبر waWeb)
             const result = await ChatService.handleIncomingMessage({

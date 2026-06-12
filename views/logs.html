@@ -43,12 +43,28 @@
                             </span>
                         </td>
                         <td class="px-6 py-4">
-                            <div class="flex items-center gap-2.5">
-                                <div class="w-8 h-8 rounded-xl flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
-                                    style="background: linear-gradient(135deg, #0d9488, #3b82f6);">
-                                    {{ (log.to_phone or '--') | slice(-2) }}
+                            <div class="flex items-center justify-between gap-2.5">
+                                <div class="flex items-center gap-2.5">
+                                    <div class="w-8 h-8 rounded-xl flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
+                                        style="background: linear-gradient(135deg, #0d9488, #3b82f6);">
+                                        {{ (log.to_phone or '--') | slice(-2) }}
+                                    </div>
+                                    <span class="text-xs font-mono font-bold text-slate-600" dir="ltr">{{ log.to_phone or '—' }}</span>
                                 </div>
-                                <span class="text-xs font-mono font-bold text-slate-600" dir="ltr">{{ log.to_phone or '—' }}</span>
+                                {% set chatKey = log.to_phone + '@c.us' %}
+                                {% set chatKeyLid = log.to_phone %}
+                                {% set paused_info = paused_chats[chatKey] or paused_chats[chatKeyLid] %}
+                                {% if paused_info and paused_info.paused %}
+                                <div class="flex items-center gap-2 flex-shrink-0">
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                                        ⚠️ بانتظار موظف
+                                    </span>
+                                    <button onclick="resumeChat('{{ chatKey if paused_chats[chatKey] else chatKeyLid }}', this)"
+                                        class="px-2 py-0.5 rounded text-[9px] font-bold bg-teal-50 text-teal-700 border border-teal-200 hover:bg-teal-100 transition">
+                                        تفعيل الرد الآلي
+                                    </button>
+                                </div>
+                                {% endif %}
                             </div>
                         </td>
                         <td class="px-6 py-4">
@@ -107,4 +123,36 @@
     </div>
 
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function resumeChat(chatKey, btn) {
+    if (!confirm("هل أنت متأكد من إعادة تفعيل الرد الآلي بالذكاء الاصطناعي لهذه المحادثة؟")) return;
+    try {
+        btn.disabled = true;
+        btn.innerText = "جاري التفعيل...";
+        const response = await fetch('/api/conversations/resume', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ chatKey })
+        });
+        const res = await response.json();
+        if (res.status === 'success') {
+            window.location.reload();
+        } else {
+            alert("خطأ: " + (res.message || "فشل التفعيل"));
+            btn.disabled = false;
+            btn.innerText = "تفعيل الرد الآلي";
+        }
+    } catch (e) {
+        console.error(e);
+        alert("فشل الاتصال بالخادم.");
+        btn.disabled = false;
+        btn.innerText = "تفعيل الرد الآلي";
+    }
+}
+</script>
 {% endblock %}

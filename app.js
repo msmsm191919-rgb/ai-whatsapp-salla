@@ -549,6 +549,68 @@ app.post("/webhook/meta", async (req, res) => {
                 where: { phone_number_id: phoneNumberId }
               });
               if (config) {
+                const HandoffService = require('./services/HandoffService');
+                const chatKey = HandoffService.getChatKey(from);
+                const isPaused = await HandoffService.isPaused(config.tenant_id, chatKey);
+
+                if (isPaused) {
+                  await connection.models.MessageLog.create({
+                    tenant_id: config.tenant_id,
+                    direction: 'in',
+                    content: msgBody,
+                    status: 'received',
+                    to_phone: from
+                  });
+                  console.log(`🔕 [Meta Webhook] Handoff active for ${chatKey}. Message logged, AI skipped.`);
+                  if (!res.headersSent) res.sendStatus(200);
+                  return;
+                }
+
+                if (HandoffService.shouldTriggerHandoff(msgBody)) {
+                  // Check Plan Gate first before pausing or sending any handoff notification
+                  const planGate = require('./services/planGate');
+                  const access = await planGate.checkTenantAccess(config.tenant_id);
+                  if (!access.allowed) {
+                    await connection.models.MessageLog.create({
+                      tenant_id: config.tenant_id,
+                      direction: 'in',
+                      content: msgBody,
+                      status: 'received',
+                      to_phone: from
+                    });
+                    console.log(`🔕 [Meta Webhook] Handoff triggered but Plan Gate blocked. Message logged, no reply.`);
+                    if (!res.headersSent) res.sendStatus(200);
+                    return;
+                  }
+
+                  await HandoffService.pauseChat(config.tenant_id, chatKey, {
+                    reason: 'keyword',
+                    last_message: msgBody,
+                    channel: 'api'
+                  });
+                  const replyText = "تم تحويل محادثتك للموظف المختص، وسيتم الرد عليك في أقرب وقت ممكن. 🌸";
+
+                  await connection.models.MessageLog.create({
+                    tenant_id: config.tenant_id,
+                    direction: 'in',
+                    content: msgBody,
+                    status: 'received',
+                    to_phone: from
+                  });
+                  await connection.models.MessageLog.create({
+                    tenant_id: config.tenant_id,
+                    direction: 'out',
+                    content: replyText,
+                    status: 'sent',
+                    to_phone: from
+                  });
+
+                  await sendMetaMessage(config, from, replyText);
+                  console.log(`⏸️ [Meta Webhook] Handoff triggered for ${chatKey}. Reply sent, AI skipped.`);
+                  if (!res.headersSent) res.sendStatus(200);
+                  return;
+                }
+
                 // Check Plan Gate first
                 const planGate = require('./services/planGate');
                 const access = await planGate.checkTenantAccess(config.tenant_id, 'whatsapp_api');
@@ -1331,12 +1393,16 @@ app.get("/logs", async (req, res) => {
       limit: 50
     });
 
+    const HandoffService = require('./services/HandoffService');
+    const pausedChats = await HandoffService.listPausedChats(tenant?.id);
+
     res.render("logs.html", {
       page: 'logs',
       logs: logs,
       user: req.user,
       activePage: 'logs',
-      plan_name: plan?.name || 'الأساسية'
+      plan_name: plan?.name || 'الأساسية',
+      paused_chats: pausedChats
     });
   } catch (e) {
     res.status(500).send("Error loading logs: " + e.message);
