@@ -9,14 +9,10 @@ const STOP_WORDS = new Set([
     'رابط', 'موقع', 'متجر', 'الرابط', 'الموقع', 'المتجر', 'توصيل', 'شحن', 
     'شحنة', 'توصيلها', 'استرجاع', 'استبدال', 'الاسترجاع', 'الاستبدال', 
     'سياسة', 'السياسة', 'الضمان', 'ضمان', 'هو', 'هي', 'هم', 'انا', 'أنت', 
-    'انت', 'نحن', 'xyz'
+    'انت', 'نحن', 'xyz', 'جزيلا', 'جزيلاً', 'شكرا', 'شكراً', 'مشكور', 'تسلم',
+    'يسلمو', 'مرحبا', 'هلا', 'اهلاً', 'اهلا'
 ]);
 
-const INTENT_TRIGGERS = [
-    'سعر', 'بكم', 'كم', 'عندكم', 'توفر', 'متوفر', 'موجود', 'ابحث', 'أبحث', 
-    'عطر', 'فستان', 'شنطة', 'منتج', 'ابي', 'أبي', 'ابغى', 'أبغى', 'شراء', 
-    'تفاصيل', 'معلومات', 'خصم', 'تخفيض'
-];
 
 class SallaProductKnowledgeService {
     
@@ -27,8 +23,44 @@ class SallaProductKnowledgeService {
 
     hasProductIntent(messageText) {
         if (!messageText) return false;
-        const lower = messageText.toLowerCase();
-        return INTENT_TRIGGERS.some(trigger => lower.includes(trigger));
+        const lower = messageText.toLowerCase().trim();
+
+        // 1. Direct negative keywords/phrases (service, shipping, returns, support, greetings)
+        const negativeKeywords = [
+            'مدة الشحن', 'مده الشحن', 'متى يوصل', 'متى التوصيل', 'وقت التوصيل', 'توصيل الشحنة',
+            'سياسة الاسترجاع', 'سياسة الاستبدال', 'شروط الاسترجاع', 'شروط الاستبدال',
+            'سياسه الاسترجاع', 'سياسه الاستبدال', 'طريقة الاسترجاع',
+            'هل يوجد ضمان', 'فيه ضمان', 'وش الضمان', 'ايش الضمان', 'ضمان', 'الضمان',
+            'كيف اطلب', 'كيف أطلب', 'طريقة الطلب', 'طريقه الطلب', 'كيفية الطلب',
+            'فين موقعكم', 'فين موقع', 'عنوانكم', 'اين موقعكم', 'أين موقعكم', 'موقع المتجر', 'مكانكم',
+            'السلام عليكم', 'عليكم السلام', 'مساء الخير', 'صباح الخير', 'شكرا', 'شكراً', 'مشكور',
+            'مرحبا', 'مرحباً', 'هلا', 'اهلا', 'اهلاً', 'هلو',
+            'موظف', 'بشري', 'مسؤول', 'مسؤل', 'الدعم', 'الفني', 'مشكلة', 'مشكله', 'تواصل', 'كلمني',
+            'ما فهمت', 'ما فهمتني', 'يا بوت', 'البوت', 'الروبوت',
+            'كيف حالك', 'شلونك', 'شخبارك', 'اخبارك', 'وين طلبي', 'طلبي', 'شحنتي', 'تتبع'
+        ];
+
+        if (negativeKeywords.some(keyword => lower.includes(keyword))) {
+            return false;
+        }
+
+        // 2. Positive intent triggers
+        const positiveTriggers = [
+            'سعر', 'بكم', 'كم', 'عندكم', 'توفر', 'متوفر', 'موجود', 'ابي', 'أبي', 'ابغى', 'أبغى', 'ابحث', 'أبحث'
+        ];
+
+        const hasPositiveTrigger = positiveTriggers.some(trigger => lower.includes(trigger));
+
+        // 3. Extract keyword (cleaned and Al-stripped)
+        const keyword = this.extractKeyword(messageText);
+        const hasKeyword = keyword && keyword.trim().length > 2;
+
+        // Trigger only if there's a positive trigger AND a keyword
+        if (hasPositiveTrigger && hasKeyword) {
+            return true;
+        }
+
+        return false;
     }
 
     extractKeyword(messageText) {
@@ -39,9 +71,14 @@ class SallaProductKnowledgeService {
             .trim();
         
         const words = cleanMsg.split(' ');
-        const filtered = words.filter(word => {
-            const cleanWord = word.trim();
-            return cleanWord.length > 2 && !STOP_WORDS.has(cleanWord);
+        const filtered = words.map(word => {
+            let cleanWord = word.trim();
+            if (cleanWord.startsWith('ال') && cleanWord.length > 4) {
+                cleanWord = cleanWord.slice(2);
+            }
+            return cleanWord;
+        }).filter(word => {
+            return word.length > 2 && !STOP_WORDS.has(word);
         });
 
         return filtered.join(' ');

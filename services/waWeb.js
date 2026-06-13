@@ -181,18 +181,60 @@ function start(tenantId) {
         console.warn(`⚠️ [waWeb:${k}] انقطع`, r);
     });
 
-    // 💬 رد تلقائي ذكي على الرسائل الواردة الجديدة فقط (يتجاهل القديمة المعلقة تماماً)
-    client.on('message', async (msg) => {
+    // 💬 رد تلقائي ذكي على الرسائل الواردة والصادرة
+    client.on('message_create', async (msg) => {
         if (s.client !== client) return; // تجاهل أحداث client قديم
         try {
-            // 1. التحقق من الشروط الأساسية
             if (!msg.body || msg.body.trim() === '') return;
             if (msg.type !== 'chat') return;
+
+            // 1. معالجة الرسائل الصادرة (من صاحب المتصفح/صاحب المتجر/البوت)
+            if (msg.fromMe === true) {
+                const chatKey = msg.to;
+                if (!chatKey || (!chatKey.endsWith('@c.us') && !chatKey.endsWith('@lid'))) return;
+                if (chatKey.includes('@g.us') || chatKey.includes('status')) return;
+
+                const HandoffService = require('./HandoffService');
+                const cleanChatKey = HandoffService.getChatKey(chatKey);
+
+                // التحقق هل الرسالة مرسلة من البوت نفسه (باستخدام الكاش المؤقت)
+                const botCache = s.aiSentMsgs;
+                const msgBodyTrimmed = (msg.body || '').trim();
+                if (botCache && botCache.has(msgBodyTrimmed)) {
+                    // رسالة صادرة من البوت → نقوم بحذفها من الكاش وتخطي إيقاف الـ AI
+                    botCache.delete(msgBodyTrimmed);
+                    return;
+                }
+
+                // الرسالة صادرة من صاحب المتجر يدوياً (من الجوال أو الإرسال اليدوي)
+                const fromPhone = cleanChatKey.split('@')[0];
+                const SallaDatabase = require('../database/db_instance');
+                if (SallaDatabase.connection) {
+                    await SallaDatabase.connection.models.MessageLog.create({
+                        tenant_id: k,
+                        direction: 'out',
+                        content: msg.body || '',
+                        to_phone: fromPhone,
+                        status: 'sent',
+                        metadata: { sender: 'human' }
+                    });
+                }
+
+                console.log(`👤 [waWeb:${k}] Owner replied from device to ${cleanChatKey}. Pausing AI for 60 minutes...`);
+                await HandoffService.pauseChat(k, cleanChatKey, {
+                    reason: 'merchant_whatsapp_reply',
+                    last_message: msg.body,
+                    channel: 'phone',
+                    last_human_message_at: new Date().toISOString()
+                });
+                return;
+            }
+
+            // 2. معالجة الرسائل الواردة (من العميل)
             if (!msg.from) return;
             if (!msg.from.endsWith('@c.us') && !msg.from.endsWith('@lid')) return;
             if (msg.from.includes('@g.us')) return;
             if (msg.from.includes('status')) return;
-            if (msg.fromMe) return;
 
             // ليست مجموعة: لا @g.us ويفضل chat.isGroup !== true إن أمكن
             try {
@@ -200,7 +242,7 @@ function start(tenantId) {
                 if (chat && chat.isGroup) return;
             } catch (e) {}
 
-            // 2. التحقق من وقت التفعيل (أي رسالة تصل بعد ready/الربط)
+            // التحقق من وقت التفعيل (أي رسالة تصل بعد ready/الربط)
             if (!s.autoReplyActivatedTime || msg.timestamp < s.autoReplyActivatedTime) {
                 console.log(`ℹ️ [waWeb:${k}] Ignored old message from ${msg.from} sent at ${msg.timestamp} (activated: ${s.autoReplyActivatedTime})`);
                 return;
@@ -268,6 +310,11 @@ function start(tenantId) {
                 });
 
                 try { const chat = await msg.getChat(); chat.sendStateTyping(); } catch (e) {}
+
+                // Add reply to bot-sent cache
+                s.aiSentMsgs = s.aiSentMsgs || new Set();
+                s.aiSentMsgs.add(replyText.trim());
+
                 setTimeout(async () => {
                     try {
                         await s.client.sendMessage(msg.from, replyText);
@@ -285,9 +332,14 @@ function start(tenantId) {
             });
             if (result && result.reply && s.client) {
                 try { const chat = await msg.getChat(); chat.sendStateTyping(); } catch (e) {}
+
+                // Add reply to bot-sent cache
+                s.aiSentMsgs = s.aiSentMsgs || new Set();
+                s.aiSentMsgs.add(result.reply.trim());
+
                 setTimeout(async () => { try { await s.client.sendMessage(msg.from, result.reply); } catch (e) { console.error(`[waWeb:${k}] فشل إرسال الرد:`, e.message); } }, 1200);
             }
-        } catch (e) { console.error(`[waWeb:${k}] خطأ معالجة رسالة واردة:`, e.message); }
+        } catch (e) { console.error(`[waWeb:${k}] خطأ معالجة الرسالة:`, e.message); }
     });
 
     client.initialize().catch(async (e) => {
@@ -299,7 +351,7 @@ function start(tenantId) {
 
         if (isContextError && (!s.initTries || s.initTries < 3)) {
             s.initTries = (s.initTries || 0) + 1;
-            
+
             // Set intermediate state so user sees "initializing_recovery" message instead of error
             s.status = 'initializing_recovery';
             s.qr = '';
@@ -343,7 +395,7 @@ function start(tenantId) {
         s.status = 'error';
         s.error = e.message;
         s.client = null;
-        
+
         const finalErrorTime = new Date().toISOString();
         console.error(`❌ [waWeb:${k}] Final initialization failure at ${finalErrorTime}. Stack trace:\n${e.stack || e}`);
 
@@ -359,12 +411,24 @@ function start(tenantId) {
 async function sendMessage(tenantId, phone, text) {
     const s = _session(tenantId);
     if (s.status !== 'ready' || !s.client) throw new Error('WhatsApp Web غير متصل لهذا التاجر');
+
+    // Add to AI sent cache to avoid self-pausing
+    s.aiSentMsgs = s.aiSentMsgs || new Set();
+    s.aiSentMsgs.add(text.trim());
+
     return s.client.sendMessage(_chatId(phone), text);
 }
 
 async function sendImage(tenantId, phone, dataUrl, caption = '') {
     const s = _session(tenantId);
     if (s.status !== 'ready' || !s.client) throw new Error('WhatsApp Web غير متصل لهذا التاجر');
+
+    // Add caption to AI sent cache to avoid self-pausing
+    s.aiSentMsgs = s.aiSentMsgs || new Set();
+    if (caption) {
+        s.aiSentMsgs.add(caption.trim());
+    }
+
     const m = /^data:(.+);base64,(.+)$/.exec(dataUrl || '');
     if (!m) return sendMessage(tenantId, phone, caption);
     const media = new MessageMedia(m[1], m[2], 'image.' + (m[1].split('/')[1] || 'jpg'));

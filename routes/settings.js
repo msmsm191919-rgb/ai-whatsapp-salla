@@ -131,12 +131,12 @@ router.post('/ai', async (req, res) => {
 
     if (tenant) {
       const currentSettings = tenant.settings || {};
+      const prevAiConfig = currentSettings.ai_config || {};
       currentSettings.ai_config = {
+        ...prevAiConfig,
         bot_name: req.body.bot_name,
         bot_tone: req.body.bot_tone,
-        custom_instructions: req.body.custom_instructions,
-        policy_return: req.body.policy_return,
-        shipping_time: req.body.shipping_time
+        custom_instructions: req.body.custom_instructions
       };
       tenant.settings = currentSettings;
       tenant.changed('settings', true);

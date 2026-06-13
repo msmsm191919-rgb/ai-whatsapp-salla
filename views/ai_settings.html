@@ -115,63 +115,21 @@
             </div>
 
             <!-- What NOT to say -->
-            <div>
+            <div class="mb-5">
                 <label class="field-label">ما الذي يجب ألا يقوله المساعد؟</label>
                 <textarea id="negative_instructions" rows="3" class="input-field"
                     style="resize: vertical; line-height: 1.6;"
                     placeholder="مثال: لا تعطِ خصومات بدون مبرر، ولا تعد بشيء غير مؤكد، ولا تتحدث في مواضيع خارج المتجر."></textarea>
                 <p class="field-hint">المحظورات والقيود التي تضمن عدم تقديم معلومات خاطئة.</p>
             </div>
-        </div>
 
-        <!-- Store Information Card -->
-        <div class="card p-7 relative overflow-hidden">
-            <div class="absolute top-0 right-0 w-1 h-full" style="background: linear-gradient(to bottom, #14b8a6, #10b981);"></div>
-
-            <h3 class="section-title">
-                <i class="fa-solid fa-store text-teal-500 text-sm"></i>
-                معلومات المتجر المهمة
-            </h3>
-
-            <!-- Store Custom Text (Knowledge Base) -->
-            <div class="mb-5">
-                <label class="field-label">معلومات مهمة لتدريب المساعد</label>
-                <textarea name="custom_text" id="custom_text" rows="5" class="input-field"
-                    style="resize: vertical; line-height: 1.6;"
-                    placeholder="مثال:
-نبيع عطوراً أصلية وثابتة، نوفر شحناً لجميع مدن المملكة، ولدينا ضمان على المنتجات.
-أهم منتجاتنا: عطور رجالية، عطور نسائية، وباقات هدايا.
-إذا سأل العميل عن هدية، اقترح عليه باقة الهدايا.">{{ kb.custom_text or '' }}</textarea>
-                <p class="field-hint">
-                    مبهر يستخدم اسم متجرك ورابطه من سلة تلقائياً، لكن تفاصيل المنتجات والخدمات والأسعار المهمة لا تُقرأ تلقائياً حالياً. اكتب هنا أهم المنتجات أو الخدمات أو ما يميز متجرك حتى يرد المساعد بدقة.
-                </p>
-                <p class="field-hint mt-1.5" style="color: #64748b;">
-                    <i class="fa-solid fa-lightbulb text-amber-500 ml-1"></i>
-                    إذا لم تكن متأكداً مما تكتب، يمكنك الاستعانة بأدوات الذكاء الاصطناعي لصياغة وصف مختصر ثم لصقه هنا.
-                </p>
-            </div>
-
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-5">
-                <div>
-                    <label class="field-label">مدة الشحن / سياسة الشحن</label>
-                    <input type="text" name="shipping_time" value="{{ config.shipping_time or '' }}"
-                        placeholder="مثال: الشحن خلال 3-5 أيام عمل" class="input-field">
-                    <p class="field-hint">تحديد مدة التوصيل للعملاء عند الاستفسار.</p>
-                </div>
-                <div>
-                    <label class="field-label">سياسة الاسترجاع والاستبدال</label>
-                    <input type="text" name="policy_return" value="{{ config.policy_return or '' }}"
-                        placeholder="مثال: الاسترجاع متاح خلال 7 أيام" class="input-field">
-                    <p class="field-hint">سياسة الاستبدال والاسترجاع المعتمدة بمتجرك.</p>
-                </div>
-            </div>
-
+            <!-- Special Behavioral Instructions -->
             <div>
-                <label class="field-label">تعليمات خاصة</label>
+                <label class="field-label">تعليمات خاصة بالسلوك</label>
                 <textarea id="other_instructions" rows="4" class="input-field"
                     style="resize: vertical; line-height: 1.6;"
-                    placeholder="مثال:&#10;- دائماً اقترح منتجات بديلة عند نفاذ المخزون&#10;- إذا سأل العميل عن منتج غير متوفر، وجهه للتسجيل في قائمة الانتظار"></textarea>
-                <p class="field-hint">أي تعليمات إضافية ترغب في التزام المساعد الذكي بها.</p>
+                    placeholder="مثال:&#10;- دائماً اقترح منتجات بديلة عند نفاذ المخزون&#10;- وجه العميل بلطف إذا سأل عن شيء غير متاح"></textarea>
+                <p class="field-hint">أي تعليمات إضافية ترغب في التزام المساعد الذكي بها سلوكياً.</p>
             </div>
         </div>
 
