@@ -352,7 +352,7 @@ const devOnly = (req, res, next) => {
 // 🔒 حماية المسارات الخاصة بالـ SaaS ومنع أي وصول غير مصرح به أو Fallback للمتجر الافتراضي
 app.use([
   '/dashboard', '/settings', '/logs', '/api/whatsapp-numbers', 
-  '/automation', '/campaigns', '/ai-settings', '/knowledge-base', 
+  '/automation', '/campaigns', '/ai-settings',
   '/scenarios', '/customers', '/billing', '/pricing', '/whatsapp-simulator', '/simulator', '/whatsapp-web', '/api/wa-web/start', '/api/wa-web/status', '/api/wa-web/logout',
   '/admin'
 ], ensureAuthenticated);
@@ -1998,104 +1998,6 @@ app.get('/billing', async (req, res) => {
   }
 });
 
-
-// ---------------------------------------------------------
-// KNOWLEDGE BASE ROUTES
-// ---------------------------------------------------------
-app.get("/knowledge-base", async (req, res) => {
-  try {
-    if (!req.user) req.user = { merchant: { id: 123456789, name: 'Demo Merchant' } };
-
-    const db = SallaDatabase.connection;
-    if (!db) return res.send("DB Booting...");
-
-    const tenant = await db.models.Tenant.findOne({
-      where: { salla_merchant_id: req.user.merchant.id },
-      include: [{ model: db.models.Subscription, include: [db.models.Plan] }]
-    });
-
-    const plan = tenant?.Subscription?.Plan;
-    const planName = plan?.name || 'الأساسية';
-    const planGate = require('./services/planGate');
-    const planContext = planGate.getPlanContext(planName);
-    const limitDocs = planGate.getLimit(planName, 'knowledge_docs');
-
-    const settings = tenant?.settings || {};
-    const kb = settings.knowledge_base || {};
-
-    // Calculate current docs
-    const shippingDoc = kb.shipping_policy && kb.shipping_policy.trim().length > 0 ? 1 : 0;
-    const returnDoc = kb.return_policy && kb.return_policy.trim().length > 0 ? 1 : 0;
-    const customDocs = kb.custom_text ? kb.custom_text.split(/\n\s*\n/).filter(p => p.trim().length > 0).length : 0;
-    const currentDocs = shippingDoc + returnDoc + customDocs;
-
-    res.render("knowledge_base.html", {
-      kb,
-      user: req.user,
-      activePage: 'knowledge_base',
-      plan_name: planName,
-      planContext,
-      current_docs: currentDocs,
-      limit_docs: limitDocs
-    });
-
-  } catch (e) {
-    console.error("KB Route Error:", e);
-    res.status(500).send("Error loading KB");
-  }
-});
-
-app.post("/api/knowledge-base/save", async (req, res) => {
-  try {
-    if (!req.user) req.user = { merchant: { id: 123456789, name: 'Demo Merchant' } };
-    const { shipping_policy, return_policy, custom_text } = req.body;
-
-    const db = SallaDatabase.connection;
-    const tenant = await db.models.Tenant.findOne({
-      where: { salla_merchant_id: req.user.merchant.id },
-      include: [{ model: db.models.Subscription, include: [db.models.Plan] }]
-    });
-
-    if (tenant) {
-      // Enforce plan limits on knowledge base documents
-      const shippingDoc = shipping_policy && shipping_policy.trim().length > 0 ? 1 : 0;
-      const returnDoc = return_policy && return_policy.trim().length > 0 ? 1 : 0;
-      const customDocs = custom_text ? custom_text.split(/\n\s*\n/).filter(p => p.trim().length > 0).length : 0;
-      const totalDocs = shippingDoc + returnDoc + customDocs;
-
-      const planGate = require('./services/planGate');
-      const plan = tenant.Subscription?.Plan;
-      const planName = plan?.name || 'الأساسية';
-      const limit = planGate.getLimit(planName, 'knowledge_docs');
-
-      if (limit !== -1 && totalDocs > limit) {
-        return res.status(403).json({
-          status: 'error',
-          error: `لقد تجاوزت الحد الأقصى للمستندات المسموح بها في باقتك الحالية (${limit} مستندات). المحاولة تحتوي على ${totalDocs} مستند. يرجى الترقية لحفظ المزيد.`
-        });
-      }
-
-      const currentSettings = tenant.settings || {};
-
-      // Update KB section
-      currentSettings.knowledge_base = {
-        shipping_policy,
-        return_policy,
-        custom_text
-      };
-
-      tenant.set('settings', currentSettings);
-      tenant.changed('settings', true);
-      await tenant.save();
-
-      res.json({ status: 'success' });
-    } else {
-      res.status(404).json({ error: 'Tenant not found' });
-    }
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
-});
 
 // ---------------------------------------------------------
 // PRICING / BILLING PAGE
