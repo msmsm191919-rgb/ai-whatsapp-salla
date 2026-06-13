@@ -104,12 +104,14 @@ class HandoffService {
             settings.paused_chats = settings.paused_chats || {};
 
             const now = Date.now();
+            const duration = metadata.durationMs || (60 * 60 * 1000); // 60 minutes default
             settings.paused_chats[chatKey] = {
                 paused: true,
                 requested_at: new Date(now).toISOString(),
-                auto_expires_at: new Date(now + 12 * 60 * 60 * 1000).toISOString(), // 12 ساعة افتراضية
+                auto_expires_at: new Date(now + duration).toISOString(),
                 ...metadata
             };
+            delete settings.paused_chats[chatKey].durationMs;
 
             tenant.settings = settings;
             tenant.changed('settings', true);

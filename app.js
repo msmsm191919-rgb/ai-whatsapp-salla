@@ -1387,18 +1387,32 @@ app.get("/logs", async (req, res) => {
 
     const plan = tenant?.Subscription?.Plan;
 
-    const logs = await db.models.MessageLog.findAll({
-      where: { tenant_id: tenant?.id },
-      order: [['created_at', 'DESC']],
-      limit: 50
+    // Query active threads (last 20 unique conversations)
+    const threadsQuery = `
+      SELECT m1.*, c.name as customer_name
+      FROM MessageLogs m1
+      LEFT JOIN customers c ON c.phone = m1.to_phone AND c.tenant_id = m1.tenant_id
+      INNER JOIN (
+          SELECT to_phone, MAX(created_at) as max_created
+          FROM MessageLogs
+          WHERE tenant_id = :tenantId
+          GROUP BY to_phone
+      ) m2 ON m1.to_phone = m2.to_phone AND m1.created_at = m2.max_created
+      WHERE m1.tenant_id = :tenantId
+      ORDER BY m1.created_at DESC
+      LIMIT 20;
+    `;
+    const threads = await db.query(threadsQuery, {
+      replacements: { tenantId: tenant?.id || 0 },
+      type: require('sequelize').QueryTypes.SELECT
     });
 
     const HandoffService = require('./services/HandoffService');
-    const pausedChats = await HandoffService.listPausedChats(tenant?.id);
+    const pausedChats = await HandoffService.listPausedChats(tenant?.id || 0);
 
     res.render("logs.html", {
       page: 'logs',
-      logs: logs,
+      threads: threads,
       user: req.user,
       activePage: 'logs',
       plan_name: plan?.name || 'الأساسية',

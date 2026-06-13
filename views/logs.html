@@ -1,158 +1,633 @@
 {% extends "layouts/dashboard_master.html" %}
 
-{% block title %}سجل المحادثات | مبهر AI{% endblock %}
-{% block header_title %}سجل المحادثات{% endblock %}
-{% block header_subtitle %}متابعة كافة الرسائل الصادرة والواردة مع العملاء{% endblock %}
+{% block title %}صندوق المحادثات | مبهر AI{% endblock %}
+{% block header_title %}صندوق المحادثات{% endblock %}
+{% block header_subtitle %}إدارة محادثات العملاء والتواصل المباشر مع تفعيل/إيقاف الذكاء الاصطناعي تلقائياً{% endblock %}
 
 {% block header_actions %}
 <div class="flex gap-3">
-    <div class="relative hidden md:block">
-        <input type="text" placeholder="بحث باسم أو رقم..."
-            class="pr-9 pl-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 bg-slate-50 text-slate-700 transition w-56">
-        <i class="fa-solid fa-search absolute right-3 top-3 text-slate-300 text-xs"></i>
-    </div>
     <a href="/logs/export" class="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold border border-slate-200 bg-white text-slate-600 hover:border-teal-300 hover:text-teal-600 transition shadow-sm">
-        <i class="fa-solid fa-download"></i> تصدير
+        <i class="fa-solid fa-download"></i> تصدير السجل الكامل
     </a>
 </div>
 {% endblock %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto space-y-5">
+<style>
+    /* Custom CSS to make the split layout look absolutely premium */
+    .inbox-container {
+        height: 680px;
+        max-height: calc(100vh - 220px);
+        display: flex;
+        background: #ffffff;
+        border-radius: 20px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+        border: 1px solid #e2e8f0;
+        overflow: hidden;
+    }
 
-    <!-- Table Card -->
-    <div class="card overflow-hidden p-0">
-        <div class="overflow-x-auto">
-            <table class="w-full text-right">
-                <thead>
-                    <tr class="bg-slate-50 border-b border-slate-100 text-xs text-slate-400 uppercase tracking-wider">
-                        <th class="px-6 py-3.5 font-bold">الوقت</th>
-                        <th class="px-6 py-3.5 font-bold">العميل</th>
-                        <th class="px-6 py-3.5 font-bold">الاتجاه</th>
-                        <th class="px-6 py-3.5 font-bold w-2/5">المحتوى</th>
-                        <th class="px-6 py-3.5 font-bold">الحالة</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-100">
-                    {% if logs and logs.length > 0 %}
-                    {% for log in logs %}
-                    <tr class="hover:bg-slate-50/70 transition group">
-                        <td class="px-6 py-4">
-                            <span class="text-xs text-slate-400 font-mono tracking-tighter" dir="ltr">
-                                {% if log.created_at %}{{ log.created_at | date("Y-m-d H:i") }}{% else %}--{% endif %}
-                            </span>
-                        </td>
-                        <td class="px-6 py-4">
-                            <div class="flex items-center justify-between gap-2.5">
-                                <div class="flex items-center gap-2.5">
-                                    <div class="w-8 h-8 rounded-xl flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
-                                        style="background: linear-gradient(135deg, #0d9488, #3b82f6);">
-                                        {{ (log.to_phone or '--') | slice(-2) }}
-                                    </div>
-                                    <span class="text-xs font-mono font-bold text-slate-600" dir="ltr">{{ log.to_phone or '—' }}</span>
-                                </div>
-                                {% set chatKey = log.to_phone + '@c.us' %}
-                                {% set chatKeyLid = log.to_phone %}
-                                {% set paused_info = paused_chats[chatKey] or paused_chats[chatKeyLid] %}
-                                {% if paused_info and paused_info.paused %}
-                                <div class="flex items-center gap-2 flex-shrink-0">
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
-                                        ⚠️ بانتظار موظف
-                                    </span>
-                                    <button onclick="resumeChat('{{ chatKey if paused_chats[chatKey] else chatKeyLid }}', this)"
-                                        class="px-2 py-0.5 rounded text-[9px] font-bold bg-teal-50 text-teal-700 border border-teal-200 hover:bg-teal-100 transition">
-                                        تفعيل الرد الآلي
-                                    </button>
-                                </div>
-                                {% endif %}
-                            </div>
-                        </td>
-                        <td class="px-6 py-4">
-                            {% if log.direction == 'in' %}
-                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold" style="background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe;">
-                                <i class="fa-solid fa-arrow-down-right text-[9px]"></i> وارد
-                            </span>
-                            {% else %}
-                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold" style="background: #f0fdfa; color: #0d9488; border: 1px solid #99f6e4;">
-                                <i class="fa-solid fa-arrow-up-right text-[9px]"></i> صادر
-                            </span>
-                            {% endif %}
-                        </td>
-                        <td class="px-6 py-4">
-                            <p class="text-xs text-slate-600 line-clamp-2 leading-relaxed max-w-sm" title="{{ log.content }}">
-                                {{ log.content }}
-                            </p>
-                        </td>
-                        <td class="px-6 py-4">
-                            {% if log.status == 'sent' %}
-                            <span class="flex items-center gap-1.5 text-[10px] font-bold text-teal-600">
-                                <i class="fa-solid fa-check-double"></i> مُرسل
-                            </span>
-                            {% elif log.status == 'failed' %}
-                            <span class="flex items-center gap-1.5 text-[10px] font-bold text-red-500">
-                                <i class="fa-solid fa-circle-exclamation"></i> فشل
-                            </span>
-                            {% else %}
-                            <span class="text-[10px] font-bold text-slate-400 uppercase">{{ log.status }}</span>
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% endfor %}
-                    {% else %}
-                    <tr>
-                        <td colspan="5" class="px-6 py-20 text-center">
-                            <div class="flex flex-col items-center gap-3">
-                                <div class="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center text-2xl text-slate-300">
-                                    <i class="fa-solid fa-comment-slash"></i>
-                                </div>
-                                <p class="text-slate-700 font-bold text-sm">لا توجد محادثات حتى الآن</p>
-                                <p class="text-xs text-slate-400">ستظهر جميع الرسائل الصادرة والواردة هنا تلقائياً</p>
-                            </div>
-                        </td>
-                    </tr>
-                    {% endif %}
-                </tbody>
-            </table>
+    .inbox-sidebar {
+        width: 380px;
+        flex-shrink: 0;
+        border-left: 1px solid #f1f5f9;
+        display: flex;
+        flex-direction: column;
+        background: #fafbfd;
+    }
+
+    .inbox-chat {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        background: #ffffff;
+    }
+
+    .thread-item {
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border-bottom: 1px solid #f8fafc;
+    }
+
+    .thread-item:hover {
+        background: #f1f5f9/60;
+    }
+
+    .thread-item.active {
+        background: linear-gradient(135deg, rgba(20, 184, 166, 0.08) 0%, rgba(20, 184, 166, 0.02) 100%);
+        border-right: 4px solid #0d9488;
+    }
+
+    .chat-bubble-in {
+        background-color: #f1f5f9;
+        color: #1e293b;
+        border-radius: 16px 16px 0px 16px;
+        align-self: flex-start;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+    }
+
+    .chat-bubble-out {
+        background-color: #0d9488;
+        color: #ffffff;
+        border-radius: 16px 16px 16px 0px;
+        align-self: flex-end;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+
+    .chat-bubble-out.failed {
+        background-color: #ef4444;
+    }
+
+    /* Scrollbars */
+    .custom-scroll::-webkit-scrollbar {
+        width: 5px;
+    }
+    .custom-scroll::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 99px;
+    }
+
+    /* Mobile Responsive Panel Transitions */
+    @media (max-width: 767px) {
+        .inbox-container {
+            height: calc(100vh - 120px);
+            max-height: none;
+            border-radius: 0px;
+            border: none;
+        }
+
+        .inbox-sidebar {
+            width: 100%;
+            display: flex;
+        }
+
+        .inbox-chat {
+            width: 100%;
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 10;
+            background: white;
+        }
+
+        .inbox-container.chat-active .inbox-sidebar {
+            display: none;
+        }
+
+        .inbox-container.chat-active .inbox-chat {
+            display: flex;
+        }
+    }
+</style>
+
+<div class="inbox-container" id="inboxContainer">
+    <!-- RIGHT SIDEBAR: Thread list -->
+    <div class="inbox-sidebar">
+        <!-- Search -->
+        <div class="p-4 border-b border-slate-100 bg-white">
+            <div class="relative">
+                <input type="text" id="inboxSearch" placeholder="بحث باسم العميل أو رقم الهاتف..."
+                    class="w-full pr-10 pl-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 bg-slate-50 text-slate-700 transition">
+                <i class="fa-solid fa-search absolute right-3.5 top-3.5 text-slate-400 text-xs"></i>
+            </div>
         </div>
 
-        <!-- Footer -->
-        <div class="px-6 py-4 border-t border-slate-100 bg-slate-50/30 flex items-center justify-between">
-            <p class="text-[11px] text-slate-400 font-bold">عرض آخر 50 رسالة</p>
-            <a href="/logs/export" class="text-[11px] text-teal-600 font-bold hover:underline">تصدير السجل الكامل 📥</a>
+        <!-- Filter Tabs -->
+        <div class="flex border-b border-slate-100 bg-white text-xs font-bold text-slate-500">
+            <button onclick="switchTab('all')" id="tab-all" class="flex-1 py-3 text-center border-b-2 border-teal-600 text-teal-600 transition">
+                الكل
+            </button>
+            <button onclick="switchTab('pending')" id="tab-pending" class="flex-1 py-3 text-center border-b-2 border-transparent hover:text-slate-700 transition flex items-center justify-center gap-1">
+                بانتظار موظف
+                <span id="pending-count" class="hidden bg-amber-100 text-amber-800 text-[10px] px-1.5 py-0.2 rounded-full">0</span>
+            </button>
+            <button onclick="switchTab('active')" id="tab-active" class="flex-1 py-3 text-center border-b-2 border-transparent hover:text-slate-700 transition">
+                رد آلي نشط
+            </button>
+        </div>
+
+        <!-- Threads list scrollable container with Load More button -->
+        <div class="flex-1 overflow-y-auto custom-scroll flex flex-col justify-between" id="threadsListOuter">
+            <div id="threadsList" class="flex-grow">
+                <div class="flex items-center justify-center h-40">
+                    <i class="fa-solid fa-circle-notch fa-spin text-slate-300 text-2xl"></i>
+                </div>
+            </div>
+            <div id="loadMoreContainer" class="p-3 border-t border-slate-100 bg-white text-center hidden">
+                <button onclick="loadNextPage()" class="text-[11px] font-bold text-teal-600 hover:text-teal-700 transition flex items-center justify-center gap-1 mx-auto py-1.5 px-4 rounded-lg hover:bg-slate-50 border border-slate-100 shadow-sm">
+                    <span>تحميل المزيد من المحادثات</span>
+                    <i class="fa-solid fa-chevron-down text-[9px]"></i>
+                </button>
+            </div>
         </div>
     </div>
 
+    <!-- LEFT SIDE: Chat window -->
+    <div class="inbox-chat" id="chatArea">
+        <!-- Empty State -->
+        <div class="flex-1 flex flex-col items-center justify-center p-8 text-center bg-slate-50/20" id="emptyState">
+            <div class="w-20 h-20 bg-teal-50 rounded-full flex items-center justify-center text-teal-600 text-3xl mb-4 shadow-sm animate-pulse">
+                <i class="fa-solid fa-comments"></i>
+            </div>
+            <h3 class="text-base font-bold text-slate-700">مرحباً بك في صندوق المحادثات</h3>
+            <p class="text-xs text-slate-400 mt-1.5 max-w-sm leading-relaxed">اختر عميلاً من القائمة الجانبية لبدء المحادثة المباشرة معه ومتابعة سجل الردود الآلية واليدوية.</p>
+        </div>
+
+        <!-- Chat Content (Hidden initially) -->
+        <div class="flex-grow flex flex-col h-full hidden" id="chatContent">
+            <!-- Chat Header -->
+            <div class="px-4 py-3 border-b border-slate-100 bg-white flex items-center justify-between shadow-sm">
+                <div class="flex items-center gap-3">
+                    <!-- Mobile Back Button -->
+                    <button class="md:hidden p-2 text-slate-500 hover:text-teal-600 transition -mr-2" onclick="closeChat()">
+                        <i class="fa-solid fa-arrow-right text-lg"></i>
+                    </button>
+
+                    <div class="w-10 h-10 rounded-xl gradient-teal flex items-center justify-center text-white text-sm font-bold shadow-sm" id="chatAvatar">
+                        --
+                    </div>
+                    <div>
+                        <h4 class="text-sm font-bold text-slate-800" id="chatCustomerName">...</h4>
+                        <p class="text-xs text-slate-400 font-mono mt-0.5" id="chatCustomerPhone" dir="ltr">...</p>
+                    </div>
+                </div>
+
+                <!-- AI Status Badge -->
+                <div class="flex items-center gap-4">
+                    <div id="handoffBadge" class="hidden">
+                        <!-- Badge dynamically set -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Messages List -->
+            <div class="flex-grow overflow-y-auto custom-scroll p-4 bg-slate-50/40 flex flex-col gap-4" id="messagesFeed">
+                <!-- Messages bubbles loaded here -->
+            </div>
+
+            <!-- Messages Input Footer -->
+            <div class="p-3 border-t border-slate-100 bg-white">
+                <div class="flex items-end gap-2.5">
+                    <textarea id="messageInput" rows="1" placeholder="اكتب رسالتك للعميل هنا... (إرسال الرسالة سيعطل الرد الآلي للعميل تلقائياً لمدة 60 دقيقة)"
+                        class="flex-grow resize-none border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 max-h-24 min-h-[46px] text-slate-700 bg-slate-50 transition leading-relaxed"></textarea>
+
+                    <button id="sendBtn" onclick="sendMessage()"
+                        class="w-11 h-11 bg-teal-600 hover:bg-teal-700 text-white rounded-xl shadow-sm transition flex items-center justify-center flex-shrink-0 focus:outline-none focus:ring-2 focus:ring-teal-500">
+                        <i class="fa-solid fa-paper-plane text-sm"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-async function resumeChat(chatKey, btn) {
-    if (!confirm("هل أنت متأكد من إعادة تفعيل الرد الآلي بالذكاء الاصطناعي لهذه المحادثة؟")) return;
-    try {
-        btn.disabled = true;
-        btn.innerText = "جاري التفعيل...";
-        const response = await fetch('/api/conversations/resume', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ chatKey })
-        });
-        const res = await response.json();
-        if (res.status === 'success') {
-            window.location.reload();
-        } else {
-            alert("خطأ: " + (res.message || "فشل التفعيل"));
-            btn.disabled = false;
-            btn.innerText = "تفعيل الرد الآلي";
+    let currentChatPhone = null;
+    let conversations = [];
+    let activeTab = 'all';
+    let searchQuery = '';
+    let currentOffset = 0;
+    const limit = 20;
+
+    // Load initial list and poll update
+    async function loadConversations(append = false) {
+        try {
+            let fetchLimit = limit;
+            let fetchOffset = currentOffset;
+
+            // If we are doing regular interval polling (not manual append), refresh all loaded threads from offset 0
+            if (!append) {
+                fetchLimit = currentOffset + limit;
+                fetchOffset = 0;
+            }
+
+            const res = await fetch(`/api/inbox/conversations?limit=${fetchLimit}&offset=${fetchOffset}`);
+            const json = await res.json();
+            if (json.status === 'success') {
+                const newItems = json.data;
+                if (append) {
+                    const existingPhones = conversations.map(c => c.phone);
+                    const uniqueNewItems = newItems.filter(item => !existingPhones.includes(item.phone));
+                    conversations = conversations.concat(uniqueNewItems);
+                } else {
+                    conversations = newItems;
+                }
+
+                renderConversations();
+                updatePendingBadgeCount();
+
+                // Show/hide Load More button based on fetched count
+                const loadMoreBtn = document.getElementById('loadMoreContainer');
+                if (loadMoreBtn) {
+                    if (newItems.length < limit) {
+                        loadMoreBtn.classList.add('hidden');
+                    } else {
+                        loadMoreBtn.classList.remove('hidden');
+                    }
+                }
+            }
+        } catch (e) {
+            console.error('Error fetching conversations:', e);
         }
-    } catch (e) {
-        console.error(e);
-        alert("فشل الاتصال بالخادم.");
-        btn.disabled = false;
-        btn.innerText = "تفعيل الرد الآلي";
     }
-}
+
+    // Load next page of conversations
+    async function loadNextPage() {
+        currentOffset += limit;
+        await loadConversations(true);
+    }
+
+    // Update the pending human count in the tab header
+    function updatePendingBadgeCount() {
+        const pending = conversations.filter(c => c.is_paused);
+        const countBadge = document.getElementById('pending-count');
+        if (countBadge) {
+            if (pending.length > 0) {
+                countBadge.innerText = pending.length;
+                countBadge.classList.remove('hidden');
+            } else {
+                countBadge.classList.add('hidden');
+            }
+        }
+    }
+
+    // Render conversations sidebar list
+    function renderConversations() {
+        const container = document.getElementById('threadsList');
+        if (!container) return;
+
+        // Filter list
+        let filtered = conversations;
+
+        // Filter by tab
+        if (activeTab === 'pending') {
+            filtered = filtered.filter(c => c.is_paused);
+        } else if (activeTab === 'active') {
+            filtered = filtered.filter(c => !c.is_paused);
+        }
+
+        // Filter by search
+        if (searchQuery) {
+            filtered = filtered.filter(c =>
+                String(c.customer_name).toLowerCase().includes(searchQuery) ||
+                String(c.phone).includes(searchQuery) ||
+                (c.last_message && String(c.last_message).toLowerCase().includes(searchQuery))
+            );
+        }
+
+        if (filtered.length === 0) {
+            container.innerHTML = `
+                <div class="flex flex-col items-center justify-center h-48 text-center px-4">
+                    <i class="fa-solid fa-message-slash text-slate-200 text-3xl mb-2"></i>
+                    <p class="text-xs text-slate-400 font-bold">لا توجد محادثات تطابق الفلتر</p>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = filtered.map(c => {
+            const nameInitial = String(c.customer_name || 'ع').trim().substring(0, 1);
+            const timeFormatted = formatRelativeTime(c.last_msg_at);
+            const isActive = currentChatPhone === c.phone ? 'active' : '';
+
+            // Badge design
+            const badgeHtml = c.is_paused
+                ? `<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-100 text-amber-800 border border-amber-200">⚠️ بانتظار موظف</span>`
+                : `<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold bg-teal-50 text-teal-700 border border-teal-100">🤖 رد آلي</span>`;
+
+            // Last message snippet direction arrow
+            let directionIcon = '';
+            if (c.direction === 'out') {
+                directionIcon = `<i class="fa-solid fa-arrow-up-right text-[8px] text-teal-500 ml-0.5"></i>`;
+            } else if (c.direction === 'in') {
+                directionIcon = `<i class="fa-solid fa-arrow-down-left text-[8px] text-blue-500 ml-0.5"></i>`;
+            }
+
+            return `
+                <div onclick="selectChat('${c.phone}')" class="thread-item ${isActive} p-3.5 flex items-start gap-3 border-b border-slate-50">
+                    <div class="w-10 h-10 rounded-xl gradient-teal flex items-center justify-center text-white text-sm font-bold flex-shrink-0 shadow-sm">
+                        ${nameInitial}
+                    </div>
+                    <div class="flex-grow min-w-0">
+                        <div class="flex items-center justify-between gap-1.5">
+                            <h4 class="text-xs font-bold text-slate-700 truncate">${c.customer_name || c.phone}</h4>
+                            <span class="text-[10px] text-slate-400 font-mono flex-shrink-0">${timeFormatted}</span>
+                        </div>
+                        <div class="flex items-center justify-between gap-1.5 mt-1.5">
+                            <p class="text-[11px] text-slate-400 truncate flex items-center gap-0.5">
+                                ${directionIcon} ${c.last_message || 'لا توجد رسائل'}
+                            </p>
+                            ${badgeHtml}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    // Switch sidebar filter tabs
+    function switchTab(tab) {
+        activeTab = tab;
+        // Update tab styles
+        ['all', 'pending', 'active'].forEach(t => {
+            const btn = document.getElementById(`tab-${t}`);
+            if (btn) {
+                if (t === tab) {
+                    btn.className = "flex-1 py-3 text-center border-b-2 border-teal-600 text-teal-600 transition flex items-center justify-center gap-1";
+                } else {
+                    btn.className = "flex-1 py-3 text-center border-b-2 border-transparent text-slate-500 hover:text-slate-700 transition flex items-center justify-center gap-1";
+                }
+            }
+        });
+        renderConversations();
+    }
+
+    // Select and open a customer chat
+    async function selectChat(phone) {
+        currentChatPhone = phone;
+
+        // Show container and active state in DOM for mobile responsiveness
+        const container = document.getElementById('inboxContainer');
+        container.classList.add('chat-active');
+
+        // Show chat content pane and hide empty state
+        document.getElementById('emptyState').classList.add('hidden');
+        document.getElementById('chatContent').classList.remove('hidden');
+
+        // Set name and details to loading
+        const selectedConvo = conversations.find(c => c.phone === phone) || { customer_name: phone, phone: phone };
+        document.getElementById('chatCustomerName').innerText = selectedConvo.customer_name || phone;
+        document.getElementById('chatCustomerPhone').innerText = phone;
+        document.getElementById('chatAvatar').innerText = String(selectedConvo.customer_name || 'ع').trim().substring(0, 1);
+
+        // Render current state for AI Badge in header
+        updateChatHeaderControls(selectedConvo.is_paused);
+
+        // Fetch messages history
+        await fetchMessages(phone);
+
+        // Refresh conversation item selection in sidebar
+        renderConversations();
+    }
+
+    // Update AI badge state in header
+    function updateChatHeaderControls(isPaused) {
+        const badge = document.getElementById('handoffBadge');
+
+        if (isPaused) {
+            badge.className = "inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200";
+            badge.innerHTML = `<i class="fa-solid fa-hand-paper ml-1"></i> بانتظار موظف (AI متوقف)`;
+            badge.classList.remove('hidden');
+        } else {
+            badge.className = "inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold bg-teal-50 text-teal-700 border border-teal-100";
+            badge.innerHTML = `<i class="fa-solid fa-robot ml-1"></i> الرد الآلي (AI) نشط`;
+            badge.classList.remove('hidden');
+        }
+    }
+
+    // Load active chat message history from API
+    async function fetchMessages(phone) {
+        if (currentChatPhone !== phone) return;
+        try {
+            const res = await fetch(`/api/inbox/messages/${phone}`);
+            const json = await res.json();
+            if (json.status === 'success') {
+                renderMessages(json.data);
+            }
+        } catch (e) {
+            console.error('Error fetching messages:', e);
+        }
+    }
+
+    // Periodic poll for open active chat
+    async function pollActiveChat() {
+        if (!currentChatPhone) return;
+        await fetchMessages(currentChatPhone);
+    }
+
+    // Render message bubbles in chat pane
+    function renderMessages(messages) {
+        const feed = document.getElementById('messagesFeed');
+        if (!feed) return;
+
+        // Remember scroll position to decide if we should auto-scroll
+        const isNearBottom = feed.scrollHeight - feed.clientHeight - feed.scrollTop < 120;
+
+        if (messages.length === 0) {
+            feed.innerHTML = `
+                <div class="flex flex-col items-center justify-center py-20 text-slate-300">
+                    <i class="fa-solid fa-envelope-open text-4xl mb-2"></i>
+                    <p class="text-xs">لا توجد رسائل سابقة في هذه المحادثة.</p>
+                </div>
+            `;
+            return;
+        }
+
+        feed.innerHTML = messages.map(msg => {
+            const time = formatAbsoluteTime(msg.created_at);
+            const isIncoming = msg.direction === 'in';
+
+            let statusIcon = '';
+            if (msg.direction === 'out') {
+                if (msg.status === 'sent') {
+                    statusIcon = `<i class="fa-solid fa-check-double text-[10px] text-teal-300 ml-1"></i>`;
+                } else if (msg.status === 'failed') {
+                    statusIcon = `<i class="fa-solid fa-circle-exclamation text-[10px] text-red-300 ml-1"></i>`;
+                } else {
+                    statusIcon = `<i class="fa-solid fa-check text-[10px] text-slate-300 ml-1"></i>`;
+                }
+            }
+
+            if (isIncoming) {
+                return `
+                    <div class="flex flex-col max-w-[75%] chat-bubble-in px-4 py-2.5">
+                        <p class="text-xs leading-relaxed whitespace-pre-wrap">${msg.content}</p>
+                        <span class="text-[9px] text-slate-400 mt-1 self-start font-mono" dir="ltr">
+                            ${time} | العميل
+                        </span>
+                    </div>
+                `;
+            } else {
+                const isHuman = msg.metadata && msg.metadata.sender === 'human';
+                const senderName = isHuman ? 'الموظف 🧑‍💻' : 'الرد الآلي 🤖';
+                const isFailed = msg.status === 'failed' ? 'failed' : '';
+
+                return `
+                    <div class="flex flex-col max-w-[75%] chat-bubble-out ${isFailed} px-4 py-2.5">
+                        <p class="text-xs leading-relaxed whitespace-pre-wrap">${msg.content}</p>
+                        <span class="text-[9px] text-teal-100/80 mt-1 self-end flex items-center font-mono" dir="ltr">
+                            ${senderName} | ${time} ${statusIcon}
+                        </span>
+                    </div>
+                `;
+            }
+        }).join('');
+
+        // Scroll to bottom if user is close to bottom, or if it's the initial load of a new chat
+        if (isNearBottom || feed.dataset.loadedPhone !== currentChatPhone) {
+            feed.scrollTop = feed.scrollHeight;
+            feed.dataset.loadedPhone = currentChatPhone;
+        }
+    }
+
+    // Send a manual message from input
+    async function sendMessage() {
+        const input = document.getElementById('messageInput');
+        if (!input) return;
+        const text = input.value.trim();
+        if (!text || !currentChatPhone) return;
+
+        const sendBtn = document.getElementById('sendBtn');
+        sendBtn.disabled = true;
+        input.disabled = true;
+
+        try {
+            const response = await fetch('/api/inbox/send', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    phone: currentChatPhone,
+                    message: text
+                })
+            });
+            const json = await response.json();
+            if (json.status === 'success') {
+                input.value = '';
+                input.style.height = 'auto'; // reset textarea height
+
+                // Immediately refresh active chat and conversation list
+                await fetchMessages(currentChatPhone);
+                await loadConversations();
+
+                // Since manual message auto-pauses AI, update UI badge
+                updateChatHeaderControls(true);
+            } else {
+                alert("خطأ أثناء الإرسال: " + (json.message || "حاول مرة أخرى."));
+            }
+        } catch (e) {
+            console.error('Error sending message:', e);
+            alert("فشل الإرسال، لم يتم الاتصال بالخادم.");
+        } finally {
+            sendBtn.disabled = false;
+            input.disabled = false;
+            input.focus();
+        }
+    }
+
+    // Close chat and return to list (Mobile only)
+    function closeChat() {
+        currentChatPhone = null;
+        const container = document.getElementById('inboxContainer');
+        container.classList.remove('chat-active');
+    }
+
+    // Time Formatting Utility (Relative)
+    function formatRelativeTime(dateStr) {
+        if (!dateStr) return '';
+        const date = new Date(dateStr);
+        const now = new Date();
+        const diffMs = now - date;
+        const diffSec = Math.floor(diffMs / 1000);
+        const diffMin = Math.floor(diffSec / 60);
+        const diffHr = Math.floor(diffMin / 60);
+        const diffDays = Math.floor(diffHr / 24);
+
+        if (diffSec < 60) {
+            return 'الآن';
+        } else if (diffMin < 60) {
+            return `منذ ${diffMin} د`;
+        } else if (diffHr < 24) {
+            return `منذ ${diffHr} س`;
+        } else if (diffDays === 1) {
+            return 'أمس';
+        } else {
+            return date.toLocaleDateString('ar-SA', { month: 'short', day: 'numeric' });
+        }
+    }
+
+    // Time Formatting Utility (Absolute)
+    function formatAbsoluteTime(dateStr) {
+        if (!dateStr) return '';
+        const date = new Date(dateStr);
+        return date.toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit', hour12: true });
+    }
+
+    // Search and filter binding on input change
+    document.addEventListener('DOMContentLoaded', () => {
+        loadConversations();
+        setInterval(loadConversations, 10000); // Poll list every 10s
+        setInterval(pollActiveChat, 10000);    // Poll messages every 10s
+
+        const searchInput = document.getElementById('inboxSearch');
+        if (searchInput) {
+            searchInput.addEventListener('input', (e) => {
+                searchQuery = e.target.value.trim().toLowerCase();
+                renderConversations();
+            });
+        }
+
+        const textarea = document.getElementById('messageInput');
+        if (textarea) {
+            textarea.addEventListener('input', function() {
+                this.style.height = 'auto';
+                this.style.height = (this.scrollHeight) + 'px';
+            });
+            textarea.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            });
+        }
+    });
 </script>
 {% endblock %}
