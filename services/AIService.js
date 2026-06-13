@@ -94,6 +94,13 @@ class AIService {
                 custom_text: kbConfig.custom_text
             };
 
+            // Fetch matching products context from Salla
+            const SallaProductKnowledgeService = require('./SallaProductKnowledgeService');
+            const sallaProducts = await SallaProductKnowledgeService.searchRelevantProducts(tenantId, userMessage);
+            if (sallaProducts && sallaProducts.length > 0) {
+                storeInfo.salla_products_context = sallaProducts;
+            }
+
             const config = {
                 bot_name: aiConfig.bot_name || 'مبهر',
                 bot_tone: aiConfig.bot_tone || 'friendly',
