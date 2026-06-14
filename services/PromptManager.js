@@ -51,6 +51,7 @@ class PromptManager {
 ### معلومات المتجر (Knowledge Base):
 - الاسم: ${storeInfo.name}
 - الرابط: ${storeInfo.domain}
+- وصف المتجر: ${storeInfo.description || 'لا يوجد'}
 - الشحن: ${storeInfo.shipping_policy || 'خلال 3-5 أيام عمل'}
 - الاسترجاع: ${storeInfo.return_policy || 'حسب سياسة المتجر (7 أيام للاستبدال)'}
 - معلومات وتفاصيل إضافية من التاجر: "${storeInfo.custom_text || 'لا يوجد'}"

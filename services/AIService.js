@@ -69,33 +69,65 @@ class AIService {
             const tenantSettings = tenant.settings || {};
             const kbConfig = tenantSettings.knowledge_base || {};
             const aiConfig = tenantSettings.ai_config || {};
+            const isCrawlerEnabled = tenantSettings.enable_storefront_crawler === true;
 
-            // Priority logic for shipping policy
-            let shippingPolicy = null;
-            if (aiConfig.shipping_time && aiConfig.shipping_time.trim().length > 0) {
-                shippingPolicy = aiConfig.shipping_time.trim();
-            } else if (kbConfig.shipping_policy && kbConfig.shipping_policy.trim().length > 0) {
-                shippingPolicy = kbConfig.shipping_policy.trim();
+            // Trigger Storefront Crawler in background (non-blocking) if enabled as an optional source
+            if (isCrawlerEnabled) {
+                const StorefrontCrawler = require('./StorefrontCrawler');
+                StorefrontCrawler.crawlStorefront(tenantId).catch(err => {
+                    console.error(`[AIService] Background crawl triggered error:`, err.message);
+                });
             }
 
-            // Priority logic for return policy
-            let returnPolicy = null;
-            if (aiConfig.policy_return && aiConfig.policy_return.trim().length > 0) {
-                returnPolicy = aiConfig.policy_return.trim();
-            } else if (kbConfig.return_policy && kbConfig.return_policy.trim().length > 0) {
-                returnPolicy = kbConfig.return_policy.trim();
+            const crawledPolicies = isCrawlerEnabled ? (tenantSettings.crawled_policies || {}) : {};
+
+            // Priority logic for shipping policy: Crawled storefront -> AI Config -> KB Config -> Fallback
+            let shippingPolicy = crawledPolicies.shipping_policy?.content;
+            if (!shippingPolicy || shippingPolicy.trim().length === 0) {
+                if (aiConfig.shipping_time && aiConfig.shipping_time.trim().length > 0) {
+                    shippingPolicy = aiConfig.shipping_time.trim();
+                } else if (kbConfig.shipping_policy && kbConfig.shipping_policy.trim().length > 0) {
+                    shippingPolicy = kbConfig.shipping_policy.trim();
+                }
+            }
+            if (shippingPolicy) {
+                shippingPolicy = shippingPolicy.slice(0, 800);
+            }
+
+            // Priority logic for return policy: Crawled storefront -> AI Config -> KB Config -> Fallback
+            let returnPolicy = crawledPolicies.return_policy?.content;
+            if (!returnPolicy || returnPolicy.trim().length === 0) {
+                if (aiConfig.policy_return && aiConfig.policy_return.trim().length > 0) {
+                    returnPolicy = aiConfig.policy_return.trim();
+                } else if (kbConfig.return_policy && kbConfig.return_policy.trim().length > 0) {
+                    returnPolicy = kbConfig.return_policy.trim();
+                }
+            }
+            if (returnPolicy) {
+                returnPolicy = returnPolicy.slice(0, 800);
+            }
+
+            // Get store description from Salla store/info API
+            const SallaProductKnowledgeService = require('./SallaProductKnowledgeService');
+            const sallaStoreDesc = await SallaProductKnowledgeService.getStoreDescription(tenantId);
+            let storeDescription = '';
+            if (sallaStoreDesc) {
+                storeDescription = sallaStoreDesc.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim().slice(0, 500);
+            }
+            if (!storeDescription && kbConfig.custom_text) {
+                storeDescription = kbConfig.custom_text.slice(0, 500);
             }
 
             const storeInfo = {
                 name: tenant.store_name,
                 domain: tenant.store_domain,
+                description: storeDescription,
                 shipping_policy: shippingPolicy,
                 return_policy: returnPolicy,
                 custom_text: kbConfig.custom_text
             };
 
             // Fetch matching products context from Salla
-            const SallaProductKnowledgeService = require('./SallaProductKnowledgeService');
             const sallaProducts = await SallaProductKnowledgeService.searchRelevantProducts(tenantId, userMessage);
             if (sallaProducts && sallaProducts.length > 0) {
                 storeInfo.salla_products_context = sallaProducts;
@@ -108,6 +140,7 @@ class AIService {
             };
 
             const systemPrompt = PromptManager.buildSalesAgentPrompt(storeInfo, config);
+            console.log(`[AIService] Injected system prompt length: ${systemPrompt.length} characters.`);
 
             // 4. Transform Previous Messages to OpenAI Format
             const history = previousMessages.map(msg => ({
