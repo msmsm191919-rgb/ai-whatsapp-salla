@@ -31,7 +31,7 @@
     "express-session": "1.18.1",
     "js-tiktoken": "^1.0.21",
     "mongoose": "8.16.0",
-    "mysql2": "3.14.1",
+    "mysql2": "3.22.5",
     "node-cron": "^4.2.1",
     "nunjucks": "^3.2.4",
     "openai": "^6.16.0",
