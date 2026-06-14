@@ -88,18 +88,11 @@
                             <input type="number" name="msg_limit_monthly" value="{{ plan.msg_limit_monthly }}"
                                 style="width:80px;text-align:center;font-size:13px;font-weight:700;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:5px;outline:none;font-family:Inter,sans-serif;">
                         </div>
-                        <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f1f5f9;">
+                        <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;">
                             <span style="font-size:12px;font-weight:700;color:#374151;display:flex;align-items:center;gap:8px;">
                                 <i class="fa-brands fa-whatsapp" style="color:#cbd5e1;width:16px;"></i> أرقام واتساب
                             </span>
                             <input type="number" name="whatsapp_count" value="{{ f.whatsapp_count or 1 }}"
-                                style="width:60px;text-align:center;font-size:13px;font-weight:700;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:5px;outline:none;font-family:Inter,sans-serif;">
-                        </div>
-                        <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;">
-                            <span style="font-size:12px;font-weight:700;color:#374151;display:flex;align-items:center;gap:8px;">
-                                <i class="fa-solid fa-users" style="color:#cbd5e1;width:16px;"></i> أعضاء الفريق
-                            </span>
-                            <input type="number" name="feat_team_members" value="{{ f.team_members or 1 }}"
                                 style="width:60px;text-align:center;font-size:13px;font-weight:700;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:5px;outline:none;font-family:Inter,sans-serif;">
                         </div>
                     </div>
@@ -129,8 +122,7 @@
                     <div style="display:flex;flex-direction:column;gap:4px;">
                         {% set toggles = [
                             {name:'feat_campaigns', icon:'fa-bullhorn', color:'#16a34a', bg:'#f0fdf4', label:'حملات تسويقية', field:'campaigns'},
-                            {name:'feat_api_access', icon:'fa-code', color:'#2563eb', bg:'#eff6ff', label:'API Access', field:'api_access'},
-                            {name:'feat_remove_branding', icon:'fa-copyright', color:'#d97706', bg:'#fffbeb', label:'إزالة شعار مبهر', field:'remove_branding'}
+                            {name:'feat_api_access', icon:'fa-code', color:'#2563eb', bg:'#eff6ff', label:'API Access', field:'api_access'}
                         ] %}
                         {% for t in toggles %}
                         <label style="display:flex;align-items:center;justify-content:space-between;padding:9px 10px;border-radius:10px;cursor:pointer;transition:background 0.15s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
@@ -146,14 +138,7 @@
                         {% endfor %}
                     </div>
 
-                    <div style="margin-top:12px;padding-top:12px;border-top:1px solid #f1f5f9;">
-                        <p style="font-size:10px;font-weight:700;color:#94a3b8;margin-bottom:6px;">مستوى الدعم</p>
-                        <select name="feat_support_level" style="width:100%;font-size:12px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:7px 10px;color:#374151;outline:none;font-family:Cairo,sans-serif;">
-                            <option value="email" {{ 'selected' if f.support_level=='email' }}>بريد إلكتروني (Standard)</option>
-                            <option value="priority" {{ 'selected' if f.support_level=='priority' }}>أولوية (Priority)</option>
-                            <option value="dedicated" {{ 'selected' if f.support_level=='dedicated' }}>مدير حساب (Dedicated)</option>
-                        </select>
-                    </div>
+
                 </div>
 
                 <!-- Design Tab -->

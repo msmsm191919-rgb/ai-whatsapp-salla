@@ -569,28 +569,6 @@
                 {% endif %}
             </div>
 
-            <div class="feature-row">
-                <div class="flex items-center gap-2.5">
-                    <div class="w-7 h-7 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center text-xs">
-                        <i class="fa-solid fa-users-gear"></i>
-                    </div>
-                    <span class="text-xs font-semibold text-slate-600">أعضاء الفريق</span>
-                </div>
-                <span class="text-xs font-black text-slate-800" style="font-family: Inter, sans-serif;">{{ plan_features.team_members or 1 }}</span>
-            </div>
-
-            <div class="feature-row">
-                <div class="flex items-center gap-2.5">
-                    <div class="w-7 h-7 rounded-lg bg-orange-100 text-orange-700 flex items-center justify-center text-xs">
-                        <i class="fa-solid fa-headset"></i>
-                    </div>
-                    <span class="text-xs font-semibold text-slate-600">الدعم الفني</span>
-                </div>
-                {% set support_labels = {'email': 'بريد', 'priority': 'أولوية', 'dedicated': 'مخصص'} %}
-                <span class="chip" style="background: #f8fafc; color: #475569; border: 1px solid #e2e8f0; font-size: 10px; padding: 2px 8px;">
-                    {{ support_labels[plan_features.support_level] or 'بريد' }}
-                </span>
-            </div>
         </div>
 
         <!-- Feature Chips -->
@@ -608,17 +586,6 @@
             {% if plan_features.api_access %}
             <span class="chip" style="background: #ede9fe; color: #6d28d9; border: 1px solid #ddd6fe;">
                 <i class="fa-solid fa-code text-[9px]"></i> API Access
-            </span>
-            {% endif %}
-            {% if plan_features.remove_branding %}
-            <span class="chip" style="background: #fdf4ff; color: #7e22ce; border: 1px solid #e9d5ff;">
-                <i class="fa-solid fa-eye-slash text-[9px]"></i> بدون علامة مبهر
-            </span>
-            {% endif %}
-            {% if plan_features.ai_training_docs and plan_features.ai_training_docs > 0 %}
-            <span class="chip" style="background: #fffbeb; color: #b45309; border: 1px solid #fde68a;">
-                <i class="fa-solid fa-file-lines text-[9px]"></i>
-                <span style="font-family: Inter, sans-serif;">{{ plan_features.ai_training_docs }}</span> ملفات تدريب
             </span>
             {% endif %}
         </div>

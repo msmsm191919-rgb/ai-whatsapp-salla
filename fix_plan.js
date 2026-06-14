@@ -1,4 +1,5 @@
-// Quick script to fix plan names and link demo tenant to the correct plan
+// Quick script to fix plan names and sync DB with planGate.js
+// ⚠️ هذه المميزات مطابقة 100% لـ services/planGate.js
 require("dotenv").config();
 const SallaDatabase = require("./database/db_instance");
 
@@ -7,103 +8,97 @@ const SallaDatabase = require("./database/db_instance");
         const db = await SallaDatabase.connect();
         const Plan = db.models.Plan;
 
-        // 1. Create Arabic plans if they don't exist
-        console.log("🌱 Creating Arabic-named plans...");
-        // ⚠️ هذه المميزات مطابقة 100% لـ services/planGate.js و views/pricing.html
+        // 1. Create/Update Arabic plans (synced with planGate.js)
+        console.log("🔄 Syncing plans with planGate.js...");
         const arabicPlans = [
             {
                 name: 'الأساسية',
-                price_monthly: 79,
-                price_yearly: 759,
+                price_monthly: 49,
+                price_yearly: 470,
                 msg_limit_monthly: 10000,
-                trial_days: 7,               // 🎁 تجربة مجانية 7 أيام للعملاء الجدد
+                trial_days: 7,
                 is_active: true,
                 features: {
-                    whatsapp_count: 1,
-                    campaigns: true,              // ✅ رسائل جماعية مجانية عبر QR (لكل الباقات)
-                    whatsapp_qr: true,
-                    whatsapp_api: false,          // ❌ API ميزة النمو فأعلى
-                    automation: true,             // ✅ السلات + الطلبات مفتوحة
+                    campaigns: true,
                     automation_carts: true,
                     automation_orders: true,
                     welcome_messages: true,
                     auto_reply_bot: true,
-                    ai_enabled: true,
                     ai_advanced: false,
-                    ai_model: 'GPT-4o Mini',
-                    ai_training_docs: 3,
-                    team_members: 1,
-                    support_level: 'standard',
-                    scenarios: 'basic'
+                    api_access: false,
+                    custom_ai_training: false,
+                    digital_products: false,
+                    customers_import: false,
+                    ai_cart_negotiator: false,
+                    whatsapp_qr: true,
+                    whatsapp_api: false,
+                    limits: {
+                        whatsapp_numbers: 1,
+                        messages_monthly: 10000,
+                        ai_replies_monthly: 1000,
+                        ai_model: 'GPT-4o Mini'
+                    },
+                    scenarios: ['abandoned_cart', 'order_status']
                 }
             },
             {
                 name: 'النمو',
                 price_monthly: 149,
                 price_yearly: 1430,
-                msg_limit_monthly: 35000,        // الحد المعلن
+                msg_limit_monthly: -1,           // رسائل غير محدودة
+                trial_days: 7,
                 is_active: true,
                 features: {
-                    whatsapp_count: 3,
-                    messages_overage_price: 0.02,  // ر.س لكل رسالة بعد الحد
-                    messages_hard_limit: 50000,    // الحد الصارم
-                    fair_use: true,
-                    whatsapp_qr: true,
-                    whatsapp_api: true,
                     campaigns: true,
-                    automation: true,
                     automation_carts: true,
                     automation_orders: true,
                     welcome_messages: true,
                     auto_reply_bot: true,
+                    ai_advanced: true,
                     digital_products: true,
                     customers_import: true,
                     ai_cart_negotiator: true,
-                    ai_enabled: true,
-                    ai_advanced: true,
-                    ai_model: 'GPT-4o',
-                    ai_training_docs: 10,
-                    team_members: 5,
-                    support_level: 'priority',
                     api_access: false,
-                    scenarios: 'advanced'
+                    custom_ai_training: false,
+                    whatsapp_qr: true,
+                    whatsapp_api: false,          // ❌ حصر Meta API في باقة الشركات فقط
+                    limits: {
+                        whatsapp_numbers: 3,
+                        messages_monthly: -1,
+                        ai_replies_monthly: 7000,
+                        ai_model: 'GPT-4o Mini'
+                    },
+                    scenarios: ['abandoned_cart', 'order_status', 'review_request', 'birthday', 'reactivation']
                 }
             },
             {
                 name: 'الشركات',
                 price_monthly: 299,
                 price_yearly: 2850,
-                msg_limit_monthly: 100000,       // الحد المعلن
+                msg_limit_monthly: -1,           // رسائل غير محدودة
+                trial_days: 7,
                 is_active: true,
                 features: {
-                    whatsapp_count: 'unlimited',
-                    messages_overage_price: 0.015, // ر.س لكل رسالة (مخفّض)
-                    messages_hard_limit: 150000,   // الحد الصارم
-                    fair_use: true,
-                    whatsapp_qr: true,
-                    whatsapp_api: true,
                     campaigns: true,
-                    automation: true,
                     automation_carts: true,
                     automation_orders: true,
                     welcome_messages: true,
                     auto_reply_bot: true,
+                    ai_advanced: true,
                     digital_products: true,
                     customers_import: true,
                     ai_cart_negotiator: true,
-                    ai_enabled: true,
-                    ai_advanced: true,
-                    ai_model: 'GPT-4o (Custom)',
-                    ai_training_docs: -1,
-                    team_members: 'unlimited',
-                    support_level: 'dedicated',
                     api_access: true,
-                    scenarios: 'advanced',
-                    ai_custom: true,
-                    priority_support: true,
-                    remove_branding: true,
-                    white_label: true,
-                    custom_ai_training: true
+                    custom_ai_training: true,
+                    whatsapp_qr: true,
+                    whatsapp_api: true,           // ✅ حصر Meta API في باقة الشركات فقط
+                    limits: {
+                        whatsapp_numbers: -1,
+                        messages_monthly: -1,
+                        ai_replies_monthly: 15000,
+                        ai_model: 'GPT-4o Mini'
+                    },
+                    scenarios: ['abandoned_cart', 'order_status', 'review_request', 'birthday', 'reactivation', 'price_drop']
                 }
             }
         ];
@@ -116,7 +111,13 @@ const SallaDatabase = require("./database/db_instance");
             if (created) {
                 console.log(`  ✅ Created: ${p.name}`);
             } else {
-                await plan.update({ features: p.features, msg_limit_monthly: p.msg_limit_monthly, price_monthly: p.price_monthly, price_yearly: p.price_yearly });
+                await plan.update({
+                    features: p.features,
+                    msg_limit_monthly: p.msg_limit_monthly,
+                    price_monthly: p.price_monthly,
+                    price_yearly: p.price_yearly,
+                    trial_days: p.trial_days
+                });
                 console.log(`  🔄 Updated: ${p.name}`);
             }
         }
@@ -157,10 +158,10 @@ const SallaDatabase = require("./database/db_instance");
                 console.log(`✅ Created subscription for النمو plan.`);
             }
         } else {
-            console.log("❌ Demo tenant not found");
+            console.log("⚠️ Demo tenant not found");
         }
 
-        console.log("\n✅ Done! All plans are now in Arabic and demo tenant is on النمو.");
+        console.log("\n✅ Done! All plans synced with planGate.js.");
         process.exit(0);
     } catch (e) {
         console.error('Error:', e.message);

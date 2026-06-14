@@ -1306,7 +1306,6 @@ app.post("/admin/plans/save", async (req, res) => {
     const features = {
       // Core Limits
       whatsapp_count: parseInt(req.body.whatsapp_count || 1),
-      team_members: parseInt(req.body.feat_team_members || 1),
 
       // Modules
       campaigns: (req.body.feat_campaigns === 'on'),
@@ -1315,14 +1314,9 @@ app.post("/admin/plans/save", async (req, res) => {
       // AI Capabilities
       ai_enabled: (req.body.feat_ai_enabled === 'on'),
       ai_model: req.body.feat_ai_model || 'gpt-3.5-turbo', // gpt-3.5-turbo, gpt-4o
-      ai_training_docs: parseInt(req.body.feat_ai_training_docs || 0),
 
-      // Branding & API
-      remove_branding: (req.body.feat_remove_branding === 'on'),
+      // API Access
       api_access: (req.body.feat_api_access === 'on'),
-
-      // Support
-      support_level: req.body.feat_support_level || 'email', // email, priority, dedicated
 
       // Visuals (Badge, Color)
       badge: req.body.ui_badge || '', // 'popular', 'new', 'best'
@@ -2861,7 +2855,11 @@ app.post("/api/campaigns/send", async (req, res) => {
 // AI SETTINGS ROUTES
 // ---------------------------------------------------------
 
-// 1. View Settings
+// 1. View Settings Redirect
+app.get("/settings/ai", (req, res) => {
+  res.redirect("/ai-settings");
+});
+
 app.get("/ai-settings", async (req, res) => {
   try {
     if (!req.user) req.user = { merchant: { id: 123456789, name: 'Demo Merchant' } };

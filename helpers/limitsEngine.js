@@ -44,6 +44,24 @@ async function checkLimit(tenantId, models, action = null, count = 1) {
             }
         });
 
+        // If action is ai_reply, check internal AI replies limit
+        if (action === 'ai_reply') {
+            const planGate = require('../services/planGate');
+            const aiLimit = planGate.getLimit(plan.name, 'ai_replies_monthly') || 0;
+            const currentAiCount = usage ? usage.ai_requests : 0;
+            const projectedAi = currentAiCount + count;
+
+            if (aiLimit !== -1 && projectedAi > aiLimit) {
+                return {
+                    allowed: false,
+                    reason: `Monthly AI replies limit exceeded. Used: ${currentAiCount} / ${aiLimit}. Attempting: ${count}.`,
+                    current: currentAiCount,
+                    limit: aiLimit
+                };
+            }
+            return { allowed: true, subscription };
+        }
+
         // Current usage before this action
         const currentCount = usage ? usage.messages_sent : 0;
         const projected = currentCount + count;

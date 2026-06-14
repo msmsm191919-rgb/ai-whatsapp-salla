@@ -54,16 +54,16 @@ class AIService {
             if (!tenant) throw new Error("Tenant not found");
 
             // 2. Check Usage Limits
-            const subscription = tenant.Subscription;
-            const msgLimit = subscription?.Plan?.features?.ai_requests || 0; // Or from monthly limit
-            const currentUsage = tenant.UsageCounters && tenant.UsageCounters.length > 0
-                ? tenant.UsageCounters[0].ai_requests
-                : 0;
+            const limitsEngine = require('../helpers/limitsEngine');
+            const limitCheck = await limitsEngine.checkLimit(tenantId, db.models, 'ai_reply', 1);
+            if (!limitCheck.allowed) {
+                console.log(`[limitsEngine] AI reply blocked for tenant ${tenantId}: ${limitCheck.reason}`);
+                throw new Error(`AI Limit Reached: ${limitCheck.reason}`);
+            }
 
+            const subscription = limitCheck.subscription;
             const planFeatures = subscription?.Plan?.features || {};
             const isAdvancedAI = planFeatures.ai_advanced === true;
-
-            // TODO: Strict limit check (if msgLimit > 0 && currentUsage >= msgLimit) throw new Error("Limit Reached");
 
             // 3. Prepare System Prompt (Using PromptManager)
             const tenantSettings = tenant.settings || {};
@@ -161,7 +161,7 @@ class AIService {
             const openai = new OpenAI({ apiKey });
 
             const completion = await openai.chat.completions.create({
-                model: isAdvancedAI ? "gpt-4o" : "gpt-4o-mini", // النمو/الشركات → GPT-4o | الأساسية → GPT-4o Mini
+                model: "gpt-4o-mini", // GPT-4o Mini for all plans without exception
                 messages: [
                     { role: "system", content: systemPrompt },
                     ...history.slice(-5) // Keep last 5 turns for context (optimization)
@@ -178,7 +178,7 @@ class AIService {
             return aiReply;
 
         } catch (error) {
-            if (error.message.includes("Plan Gate Blocked")) throw error;
+            if (error.message.includes("Plan Gate Blocked") || error.message.includes("AI Limit Reached")) throw error;
             console.error("❌ AI Service Error:", error.message);
             return this.mockResponse(userMessage, "المتجر");
         }
@@ -215,7 +215,7 @@ class AIService {
 
             const openai = new OpenAI({ apiKey });
             const completion = await openai.chat.completions.create({
-                model: "gpt-3.5-turbo",
+                model: "gpt-4o-mini", // GPT-4o Mini for all notifications
                 messages: [{ role: "system", content: systemPrompt }],
                 max_tokens: 100,
                 temperature: 0.7,

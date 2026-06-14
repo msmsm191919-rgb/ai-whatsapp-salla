@@ -18,7 +18,7 @@ router.get('/', async (req, res) => {
 
     let mrr = 0;
     tenants.forEach(t => {
-      const planPrice = t.Subscription?.Plan?.price_monthly || 79;
+      const planPrice = t.Subscription?.Plan?.price_monthly || 49;
       mrr += planPrice;
     });
 
@@ -121,15 +121,11 @@ router.post('/plans/save', async (req, res) => {
     const { id, name, price_monthly, price_yearly, msg_limit_monthly } = req.body;
     const features = {
       whatsapp_count: parseInt(req.body.whatsapp_count || 1),
-      team_members: parseInt(req.body.feat_team_members || 1),
       campaigns: req.body.feat_campaigns === 'on',
       automation: req.body.feat_automation === 'on',
       ai_enabled: req.body.feat_ai_enabled === 'on',
       ai_model: req.body.feat_ai_model || 'gpt-3.5-turbo',
-      ai_training_docs: parseInt(req.body.feat_ai_training_docs || 0),
-      remove_branding: req.body.feat_remove_branding === 'on',
       api_access: req.body.feat_api_access === 'on',
-      support_level: req.body.feat_support_level || 'email',
       badge: req.body.ui_badge || '',
       color: req.body.ui_color || 'gray',
       is_visible: req.body.is_visible === 'on'

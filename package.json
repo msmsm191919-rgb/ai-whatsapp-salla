@@ -29,6 +29,7 @@
     "dotenv": "16.5.0",
     "express": "5.1.0",
     "express-session": "1.18.1",
+    "js-tiktoken": "^1.0.21",
     "mongoose": "8.16.0",
     "mysql2": "3.14.1",
     "node-cron": "^4.2.1",

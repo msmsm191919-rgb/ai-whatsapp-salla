@@ -4,117 +4,54 @@ const SallaDatabase = require('../database/db_instance');
 const { Op } = require('sequelize');
 
 // ═══════════════════════════════════════════════════════════════════
-// 🗺️ خريطة الباقات الكاملة
-// ═══════════════════════════════════════════════════════════════════
-// ⚠️ هذه الخريطة مطابقة 100% لـ views/pricing.html
-// أي تعديل هنا لازم يتعدّل في pricing.html والعكس صحيح
+// خريطة الباقات
 const PLANS = {
     // ════════════════════════════════════════
-    // 1️⃣ الأساسية — 79 ر.س / شهر — للبداية السريعة
+    // 1️⃣ الأساسية — 49 ر.س / شهر — للبداية السريعة
     // 🎁 تجربة مجانية 7 أيام للعملاء الجدد (status='trial')، بعدها يدفع أو يتوقف
     // ════════════════════════════════════════
-    // ✓ 10,000 رسالة شهرياً | ✓ 1 رقم واتساب | ✓ بوت رد آلي
-    // ✓ استعادة السلات المتروكة | ✓ إشعارات حالة الطلب
-    // ✓ إشعارات ترحيبية | ✓ دعم فني عبر الشات
-    // ✗ ذكاء اصطناعي GPT-4o (بدلها GPT-4o Mini) | ✗ حملات تسويقية
     'الأساسية': {
-        price_monthly: 79,
-        price_yearly: 759,
+        price_monthly: 49,
+        price_yearly: 470,
         trial_days: 7,
         pages: [
             'dashboard', 'customers', 'scenarios', 'knowledge_base',
             'ai_settings', 'logs', 'settings', 'account',
             'automation_carts',   // ✅ مسموحة في الأساسية (استعادة السلات)
             'automation_orders',  // ✅ مسموحة في الأساسية (حالة الطلب)
-            'campaigns'           // ✅ الحملات الجماعية مجانية للكل عبر QR (ميزتنا التنافسية)
+            'campaigns'           // ✅ الحملات الجماعية مجانية للكل عبر QR
         ],
         features: {
-            campaigns: true,              // ✅ حملات جماعية مجانية (عبر QR) — متاحة لكل الباقات
-            automation_carts: true,       // ✅ استعادة السلات المتروكة
-            automation_orders: true,      // ✅ إشعارات حالة الطلب
-            welcome_messages: true,       // ✅ إشعارات ترحيبية
-            auto_reply_bot: true,         // ✅ بوت رد آلي (قوائم)
-            ai_advanced: false,           // ❌ GPT-4o (يستخدم Mini فقط)
+            campaigns: true,
+            automation_carts: true,
+            automation_orders: true,
+            welcome_messages: true,
+            auto_reply_bot: true,
+            ai_advanced: false,
             api_access: false,
             custom_ai_training: false,
-            white_label: false,
-            priority_support: false,      // دعم عادي عبر الشات
-            digital_products: false,      // ❌ تسليم منتجات رقمية (النمو فقط)
-            customers_import: false,      // ❌ استيراد العملاء Excel
-            ai_cart_negotiator: false,    // ❌ مفاوض AI ذكي
-            whatsapp_qr: true,            // ✅ ربط QR (الطريقة الأساسية المجانية لكل الباقات)
-            whatsapp_api: false           // ❌ WhatsApp Business API (النمو فأعلى فقط)
+            digital_products: false,
+            customers_import: false,
+            ai_cart_negotiator: false,
+            whatsapp_qr: true,
+            whatsapp_api: false
         },
         limits: {
             whatsapp_numbers: 1,
-            team_members: 1,
-            knowledge_docs: 3,
             messages_monthly: 10000,
+            ai_replies_monthly: 1000,
             ai_model: 'GPT-4o Mini'
         },
-        // السيناريوهات المتاحة (مطابقة لـ scenarios.html)
         scenarios: ['abandoned_cart', 'order_status']
     },
 
     // ════════════════════════════════════════
     // 2️⃣ النمو — 149 ر.س / شهر — الأكثر طلباً
     // ════════════════════════════════════════
-    // 🔥 شامل كل مزايا الأساسية + التالي:
-    // ✓ رسائل غير محدودة | ✓ GPT-4o | ✓ حملات تسويقية (Broadcast)
-    // ✓ تسليم المنتجات الرقمية | ✓ استيراد العملاء (Excel)
-    // ✓ استعادة سلات ذكية (مفاوض AI) | ✓ تذكير بتقييم المتجر
-    // ✓ ربط 3 أرقام واتساب
     'النمو': {
         price_monthly: 149,
         price_yearly: 1430,
-        trial_days: 0,
-        pages: [
-            'dashboard', 'customers', 'scenarios', 'knowledge_base',
-            'ai_settings', 'logs', 'settings', 'account',
-            'automation_carts', 'automation_orders',
-            'campaigns'                   // ✅ النمو يضيف الحملات
-        ],
-        features: {
-            campaigns: true,              // ✅
-            automation_carts: true,
-            automation_orders: true,
-            welcome_messages: true,
-            auto_reply_bot: true,
-            ai_advanced: true,            // ✅ GPT-4o
-            digital_products: true,       // ✅ تسليم منتجات رقمية + أكواد
-            customers_import: true,       // ✅ استيراد Excel
-            ai_cart_negotiator: true,     // ✅ مفاوض AI للسلات
-            api_access: false,            // ❌ (الشركات فقط)
-            custom_ai_training: false,
-            white_label: false,
-            priority_support: true,
-            whatsapp_qr: true,            // ✅ ربط QR
-            whatsapp_api: true            // ✅ WhatsApp Business API (متاح من النمو)
-        },
-        limits: {
-            whatsapp_numbers: 3,
-            team_members: 5,
-            knowledge_docs: 10,
-            // 🛡️ حد شهري واضح: 35,000 رسالة، بعدها رسوم زيادة بشفافية
-            messages_monthly: 35000,           // الحد المعلن
-            messages_overage_price: 0.02,      // ر.س لكل رسالة إضافية
-            messages_hard_limit: 50000,        // الحد الصارم
-            fair_use: true,
-            ai_model: 'GPT-4o'
-        },
-        scenarios: ['abandoned_cart', 'order_status', 'review_request', 'birthday', 'reactivation']
-    },
-
-    // ════════════════════════════════════════
-    // 3️⃣ الشركات — 299 ر.س / شهر — للكيانات الكبيرة
-    // ════════════════════════════════════════
-    // 🏢 شامل كل مزايا النمو + التالي:
-    // ✓ API access | ✓ White-label | ✓ Custom AI training
-    // ✓ تنبيه تخفيض السعر | ✓ أرقام واتساب غير محدودة
-    'الشركات': {
-        price_monthly: 299,
-        price_yearly: 2850,
-        trial_days: 0,
+        trial_days: 7,
         pages: [
             'dashboard', 'customers', 'scenarios', 'knowledge_base',
             'ai_settings', 'logs', 'settings', 'account',
@@ -130,23 +67,52 @@ const PLANS = {
             digital_products: true,
             customers_import: true,
             ai_cart_negotiator: true,
-            api_access: true,             // ✅
-            custom_ai_training: true,     // ✅
-            white_label: true,            // ✅
-            priority_support: true,
-            whatsapp_qr: true,            // ✅ ربط QR
-            whatsapp_api: true            // ✅ WhatsApp Business API
+            api_access: false,
+            custom_ai_training: false,
+            whatsapp_qr: true,
+            whatsapp_api: false           // ❌ حصر Meta API في باقة الشركات فقط
+        },
+        limits: {
+            whatsapp_numbers: 3,
+            messages_monthly: -1,         // رسائل غير محدودة
+            ai_replies_monthly: 7000,     // حد الردود الداخلية للـ AI
+            ai_model: 'GPT-4o Mini'
+        },
+        scenarios: ['abandoned_cart', 'order_status', 'review_request', 'birthday', 'reactivation']
+    },
+
+    // ════════════════════════════════════════
+    // 3️⃣ الشركات — 299 ر.س / شهر — للكيانات الكبيرة
+    // ════════════════════════════════════════
+    'الشركات': {
+        price_monthly: 299,
+        price_yearly: 2850,
+        trial_days: 7,
+        pages: [
+            'dashboard', 'customers', 'scenarios', 'knowledge_base',
+            'ai_settings', 'logs', 'settings', 'account',
+            'automation_carts', 'automation_orders', 'campaigns'
+        ],
+        features: {
+            campaigns: true,
+            automation_carts: true,
+            automation_orders: true,
+            welcome_messages: true,
+            auto_reply_bot: true,
+            ai_advanced: true,
+            digital_products: true,
+            customers_import: true,
+            ai_cart_negotiator: true,
+            api_access: true,
+            custom_ai_training: true,
+            whatsapp_qr: true,
+            whatsapp_api: true            // ✅ حصر Meta API في باقة الشركات فقط
         },
         limits: {
             whatsapp_numbers: -1,
-            team_members: -1,
-            knowledge_docs: -1,
-            // 🛡️ حد شهري واضح للشركات + رسوم زيادة مخفّضة
-            messages_monthly: 100000,          // الحد المعلن
-            messages_overage_price: 0.015,     // ر.س لكل رسالة إضافية (مخفّض)
-            messages_hard_limit: 150000,       // الحد الصارم
-            fair_use: true,
-            ai_model: 'GPT-4o (Custom)'
+            messages_monthly: -1,         // رسائل غير محدودة
+            ai_replies_monthly: 15000,    // حد الردود الداخلية للـ AI
+            ai_model: 'GPT-4o Mini'
         },
         scenarios: ['abandoned_cart', 'order_status', 'review_request', 'birthday', 'reactivation', 'price_drop']
     }
@@ -161,7 +127,7 @@ const PLAN_SCENARIOS = Object.fromEntries(
     Object.entries(PLANS).map(([name, cfg]) => [name, cfg.scenarios])
 );
 const ALL_SCENARIOS = ['abandoned_cart', 'review_request', 'order_status', 'birthday', 'reactivation', 'price_drop'];
-const ALL_FEATURES = ['campaigns', 'automation_carts', 'automation_orders', 'api_access', 'custom_ai_training', 'white_label', 'priority_support'];
+const ALL_FEATURES = ['campaigns', 'automation_carts', 'automation_orders', 'api_access', 'custom_ai_training'];
 
 /**
  * يجلب باقة المتجر
