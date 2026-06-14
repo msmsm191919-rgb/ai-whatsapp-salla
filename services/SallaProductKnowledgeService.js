@@ -4,6 +4,20 @@ const axios = require('axios');
 
 const storeInfoCache = new Map(); // tenantId -> { description: string, cachedAt: number }
 
+const CATALOG_TRIGGERS = [
+    'روابط المنتجات', 'رابط المنتجات', 'عطني روابط', 'وش تبيعون', 'وش تبيعوا',
+    'ايش تبيعون', 'ايش تبيعوا', 'ماذا تبيعون', 'عرض المنتجات', 'وريني المنتجات', 'وش عندكم', 'وش تبيعو', 'ايش عندكم',
+    'وش تقدمون', 'وش تقدموا', 'ايش تقدمون', 'ايش تقدموا', 'وش المنتجات', 'ايش المنتجات',
+    'وش عندكم منتجات', 'ايش عندكم منتجات', 'قائمة المنتجات', 'قائمه المنتجات', 'وش منتجاتكم', 'ايش منتجاتكم',
+    'اعطني المنتجات', 'عطني المنتجات', 'ارسلي المنتجات', 'ارسل المنتجات', 'روابط منتجات', 'وش نوع المنتجات'
+];
+
+const BEST_SELLER_TRIGGERS = [
+    'الأكثر مبيعاً', 'الاكثر مبيعا', 'الاكثر مبيعاً', 'الأكثر مبيعا', 'الاكثر مبيعات', 'الأكثر مبيعات', 'الأكثر طلباً', 'الاكثر طلبا',
+    'أكثر مبيعاً', 'اكثر مبيعا', 'أكثر المنتجات مبيعاً', 'اكثر المنتجات مبيعا', 'افضل المنتجات', 'أفضل المنتجات', 'افضل منتجاتكم', 'أفضل منتجاتكم',
+    'المنتجات الأكثر مبيعاً', 'المنتجات الاكثر مبيعا'
+];
+
 const STOP_WORDS = new Set([
     'كم', 'بكم', 'سعر', 'الاسعار', 'الأسعار', 'اسعار', 'أسعار', 'سعرها', 'سعره',
     'عندكم', 'عند الجيران', 'توفر', 'متوفر', 'موجود', 'ابحث', 'أبحث', 
@@ -66,16 +80,7 @@ class SallaProductKnowledgeService {
         }
 
         // Support general catalog/best-seller queries directly
-        const catalogTriggers = [
-            'روابط المنتجات', 'رابط المنتجات', 'عطني روابط', 'وش تبيعون', 'وش تبيعوا',
-            'ايش تبيعون', 'ايش تبيعوا', 'ماذا تبيعون', 'عرض المنتجات', 'وريني المنتجات', 'وش عندكم', 'وش تبيعو', 'ايش عندكم'
-        ];
-
-        const bestSellerTriggers = [
-            'الأكثر مبيعاً', 'الاكثر مبيعا', 'الاكثر مبيعاً', 'الأكثر مبيعا', 'الاكثر مبيعات', 'الأكثر مبيعات', 'الأكثر طلباً', 'الاكثر طلبا'
-        ];
-
-        if (catalogTriggers.some(trigger => lower.includes(trigger)) || bestSellerTriggers.some(trigger => lower.includes(trigger))) {
+        if (CATALOG_TRIGGERS.some(trigger => lower.includes(trigger)) || BEST_SELLER_TRIGGERS.some(trigger => lower.includes(trigger))) {
             return true;
         }
 
@@ -201,17 +206,8 @@ class SallaProductKnowledgeService {
             }
 
             const lower = userMessage.toLowerCase().trim();
-            const catalogTriggers = [
-                'روابط المنتجات', 'رابط المنتجات', 'عطني روابط', 'وش تبيعون', 'وش تبيعوا',
-                'ايش تبيعون', 'ايش تبيعوا', 'ماذا تبيعون', 'عرض المنتجات', 'وريني المنتجات', 'وش عندكم', 'وش تبيعو', 'ايش عندكم'
-            ];
-
-            const bestSellerTriggers = [
-                'الأكثر مبيعاً', 'الاكثر مبيعا', 'الاكثر مبيعاً', 'الأكثر مبيعا', 'الاكثر مبيعات', 'الأكثر مبيعات', 'الأكثر طلباً', 'الاكثر طلبا'
-            ];
-
-            const isCatalog = catalogTriggers.some(trigger => lower.includes(trigger));
-            const isBestSeller = bestSellerTriggers.some(trigger => lower.includes(trigger));
+            const isCatalog = CATALOG_TRIGGERS.some(trigger => lower.includes(trigger));
+            const isBestSeller = BEST_SELLER_TRIGGERS.some(trigger => lower.includes(trigger));
 
             let products = [];
             if (isCatalog || isBestSeller) {
@@ -251,7 +247,7 @@ class SallaProductKnowledgeService {
             }
 
             // 5. Format products list
-            return products.slice(0, 5).map(p => {
+            const formatted = products.slice(0, 5).map(p => {
                 const priceObj = p.prices?.price || p.price;
                 const salePriceObj = p.prices?.sale_price || p.sale_price;
                 const originalPrice = priceObj?.amount || priceObj || 0;
@@ -278,6 +274,9 @@ class SallaProductKnowledgeService {
                     description: this.stripHtml(p.description || p.short_description || '').slice(0, 200)
                 };
             });
+
+            formatted.query_type = isBestSeller ? 'best_sellers' : (isCatalog ? 'catalog' : 'search');
+            return formatted;
 
         } catch (e) {
             console.error(`[ProductKnowledge] Salla API search failed for tenant ${tenantId}:`, e.message);

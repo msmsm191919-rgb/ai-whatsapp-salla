@@ -30,7 +30,15 @@ class PromptManager {
 
         let productsSection = '';
         if (storeInfo.salla_products_context && storeInfo.salla_products_context.length > 0) {
-            productsSection = `\n### منتجات مطابقة من سلة:\n` +
+            const queryType = storeInfo.salla_products_context.query_type || 'search';
+            let heading = '### منتجات مطابقة من سلة:';
+            if (queryType === 'best_sellers') {
+                heading = '### المنتجات الأكثر مبيعاً والأكثر طلباً في متجرنا حالياً:';
+            } else if (queryType === 'catalog') {
+                heading = '### قائمة بالمنتجات المتوفرة والمعروضة في متجرنا:';
+            }
+
+            productsSection = `\n${heading}\n` +
                 storeInfo.salla_products_context.map((p, idx) =>
                     `${idx + 1}. الاسم: ${p.name}\n   السعر: ${p.price}\n   الحالة: ${p.available}\n   الرابط: ${p.url}\n   وصف مختصر: ${p.description || 'لا يوجد'}`
                 ).join('\n') + '\n';
