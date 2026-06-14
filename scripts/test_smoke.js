@@ -10,7 +10,7 @@ async function runSmokeTest() {
         await axios.get(BASE_URL);
         console.log("✅ Server is UP (HTTP 200)");
     } catch (e) {
-        console.error("❌ Server is Down! Please start it with 'node app1.js'");
+        console.error("❌ Server is Down! Please start it with 'node app.js'");
         process.exit(1);
     }
 
