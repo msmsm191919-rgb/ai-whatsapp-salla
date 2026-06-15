@@ -2,660 +2,431 @@
 
 {% block title %}لوحة التحكم | مبهر AI{% endblock %}
 {% block header_title %}لوحة التحكم{% endblock %}
-{% block header_subtitle %}نظرة شاملة على أداء متجرك وتفاعل عملائك{% endblock %}
+{% block header_subtitle %}مرحباً بك في لوحة تحكم مبهر الذكية{% endblock %}
 
 {% block styles %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
-    .hero-card {
-        background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-        border: 1px solid #e2e8f0;
-        border-radius: 24px;
-        position: relative;
-        overflow: hidden;
-        box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.02);
-    }
-    .hero-card::before {
-        content: '';
-        position: absolute;
-        top: -60px; left: -60px;
-        width: 240px; height: 240px;
-        background: radial-gradient(circle, rgba(20,184,166,0.08) 0%, transparent 70%);
-        pointer-events: none;
-    }
-    .hero-card::after {
-        content: '';
-        position: absolute;
-        bottom: -40px; right: 80px;
-        width: 180px; height: 180px;
-        background: radial-gradient(circle, rgba(139,92,246,0.05) 0%, transparent 70%);
-        pointer-events: none;
+    /* 🎨 Soft Premium Light Theme Styling */
+    body {
+        background-color: #F8FAFC !important;
+        color: #334155;
     }
 
-    .metric-icon {
-        width: 44px; height: 44px;
-        border-radius: 12px;
-        display: flex; align-items: center; justify-content: center;
-        font-size: 18px;
-        flex-shrink: 0;
+    .hero-gradient-connected {
+        background: linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%);
     }
 
-    .plan-pill {
-        background: #f0fdfa;
-        border: 1px solid #ccfbf1;
-        border-radius: 16px;
+    .hero-gradient-disconnected {
+        background: linear-gradient(135deg, #ffffff 0%, #fffbeb 100%);
     }
 
-    .usage-track {
-        height: 10px;
-        background: #f1f5f9;
-        border-radius: 99px;
-        overflow: hidden;
-    }
-    .usage-fill {
-        height: 100%;
-        border-radius: 99px;
-        transition: width 1.4s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-
-    .activity-row {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        padding: 10px 14px;
-        border-radius: 12px;
-        transition: background 0.15s;
-        cursor: default;
-    }
-    .activity-row:hover { background: #f8fafc; }
-
-    .feature-row {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 12px 14px;
-        border-radius: 12px;
+    .card-clean {
+        background: #ffffff;
         border: 1px solid #f1f5f9;
-        background: #fafafa;
-        transition: border-color 0.15s;
+        border-radius: 16px;
+        box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.02), 0 2px 8px -1px rgba(15, 23, 42, 0.01);
+        transition: transform 0.2s, box-shadow 0.2s;
     }
-    .feature-row:hover { border-color: #e2e8f0; background: #fff; }
 
-    .chip {
-        display: inline-flex;
+    .card-clean:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 12px 24px -4px rgba(15, 23, 42, 0.05), 0 4px 12px -2px rgba(15, 23, 42, 0.03);
+    }
+
+    .btn-emerald {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        color: #ffffff;
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.15);
+        border: 1px solid #059669;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .btn-emerald:hover {
+        background: linear-gradient(135deg, #059669 0%, #047857 100%);
+        transform: translateY(-1px);
+        box-shadow: 0 6px 16px rgba(16, 185, 129, 0.25);
+    }
+
+    .btn-indigo {
+        background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);
+        color: #ffffff;
+        box-shadow: 0 4px 12px rgba(79, 70, 229, 0.15);
+        border: 1px solid #4338ca;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .btn-indigo:hover {
+        background: linear-gradient(135deg, #4338ca 0%, #3730a3 100%);
+        transform: translateY(-1px);
+        box-shadow: 0 6px 16px rgba(79, 70, 229, 0.25);
+    }
+
+    .metric-value {
+        font-family: 'Inter', 'Cairo', sans-serif;
+        font-weight: 800;
+        color: #0f172a;
+    }
+
+    /* Premium Icon Badges Styles */
+    .icon-badge {
+        display: flex;
         align-items: center;
-        gap: 4px;
-        font-size: 11px;
-        font-weight: 700;
-        padding: 4px 12px;
-        border-radius: 99px;
+        justify-content: center;
+        border-radius: 12px;
+        width: 42px;
+        height: 42px;
+        font-size: 15px;
+        flex-shrink: 0;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    
+    .icon-badge-blue {
+        background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+        border: 1px solid #bfdbfe;
+        color: #2563eb;
+        box-shadow: 0 4px 8px -1px rgba(37, 99, 235, 0.08), 0 2px 4px -1px rgba(37, 99, 235, 0.04);
+    }
+    
+    .icon-badge-green {
+        background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+        border: 1px solid #a7f3d0;
+        color: #10b981;
+        box-shadow: 0 4px 8px -1px rgba(16, 185, 129, 0.08), 0 2px 4px -1px rgba(16, 185, 129, 0.04);
+    }
+    
+    .icon-badge-purple {
+        background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%);
+        border: 1px solid #ddd6fe;
+        color: #4f46e5;
+        box-shadow: 0 4px 8px -1px rgba(79, 70, 229, 0.08), 0 2px 4px -1px rgba(79, 70, 229, 0.04);
+    }
+
+    .pulse-dot-green {
+        background-color: #10b981;
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+        animation: pulse-green 2s infinite;
+    }
+
+    .pulse-dot-amber {
+        background-color: #f59e0b;
+        box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7);
+        animation: pulse-amber 2s infinite;
+    }
+
+    @keyframes pulse-green {
+        0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+        70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+        100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+    }
+
+    @keyframes pulse-amber {
+        0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7); }
+        70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(245, 158, 11, 0); }
+        100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+    }
+
+    /* Mobile view optimizations */
+    @media (max-width: 640px) {
+        .card-clean {
+            padding: 14px !important;
+            border-radius: 12px;
+        }
+        .hero-gradient-connected, .hero-gradient-disconnected {
+            padding: 16px !important;
+            border-radius: 12px;
+        }
+        .icon-badge {
+            width: 36px;
+            height: 36px;
+            font-size: 13px;
+        }
+        #devPlanSwitcher {
+            display: none !important;
+        }
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="space-y-6">
+<div class="space-y-6 pb-16">
 
-    {# 🚀 إبراز قيمة باقة النمو للتاجر المشترك بالباقة الأساسية #}
-    {% if plan_name == 'الأساسية' %}
-    <div class="bg-teal-50 border border-teal-100 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shadow-sm animate-in">
-        <div class="flex items-center gap-3">
-            <div class="w-8 h-8 rounded-lg bg-teal-100 text-teal-700 flex items-center justify-center flex-shrink-0">
-                <i class="fa-solid fa-circle-info"></i>
-            </div>
-            <p class="text-xs font-bold text-teal-800 leading-relaxed">
-                أنت حالياً على الباقة الأساسية. باقة النمو تفتح لك رسائل غير محدودة ومزايا مبيعات أوسع 🚀
-            </p>
-        </div>
-        <a href="/pricing" class="bg-teal-600 hover:bg-teal-700 text-white font-bold py-1.5 px-4 rounded-xl text-xs shadow-sm transition self-start sm:self-auto whitespace-nowrap text-center">
-            عرض باقة النمو
-        </a>
-    </div>
-    {% endif %}
-
-    {# 🚀 قائمة إعداد الحساب لأول استخدام (First-use Onboarding Checklist) #}
-    {% if completed_steps < 3 %}
-    <div class="card p-5 sm:p-6 border border-slate-100 rounded-2xl bg-white shadow-sm relative overflow-hidden">
-        <!-- خط تدرج علوي خفيف للجمالية -->
-        <div class="absolute top-0 right-0 left-0 h-1.5" style="background: linear-gradient(to left, #0d9488, #14b8a6, #3b82f6);"></div>
-
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
-            <div>
-                <h3 class="font-extrabold text-slate-800 text-sm flex items-center gap-2">
-                    <i class="fa-solid fa-list-check text-teal-600 text-base"></i>
-                    أكمل إعداد قاعدة المعرفة لمتجرك ⚡
-                </h3>
-                <p class="text-xs text-slate-500 mt-1">أكمل الخطوات التالية ليبدأ مبهر بالعمل والبدء باستعادة مبيعاتك المتروكة.</p>
-            </div>
-            <div class="flex items-center gap-3 self-start sm:self-auto">
-                <span class="text-xs font-bold text-slate-600">اكتمل {{ completed_steps }} من 3</span>
-                <div class="w-24 sm:w-32 h-2.5 bg-slate-100 rounded-full overflow-hidden">
-                    <div class="h-full bg-gradient-to-r from-teal-500 to-emerald-400 rounded-full transition-all duration-500" style="width: {{ completion_percent }}%"></div>
-                </div>
-            </div>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4">
-            <!-- الخطوة 1: ربط واتساب -->
-            <div class="flex items-center justify-between p-4 rounded-xl border {% if isConnected %}bg-emerald-50/30 border-emerald-100{% else %}bg-slate-50/50 border-slate-100{% endif %}">
-                <div class="flex items-center gap-3">
-                    <div class="w-9 h-9 rounded-full flex items-center justify-center text-sm {% if isConnected %}bg-emerald-500 text-white{% else %}bg-slate-200 text-slate-400{% endif %} font-bold">
-                        {% if isConnected %}
-                        <i class="fa-solid fa-check text-xs"></i>
+    <!-- 1️⃣ Hero Revenue Card -->
+    {% if isConnected %}
+    <div class="hero-gradient-connected border border-emerald-100/60 rounded-2xl p-5 sm:p-6 shadow-sm transition-all duration-300">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div class="space-y-1.5 text-right">
+                <div class="flex flex-wrap items-center gap-2">
+                    <span class="text-xs text-slate-400 font-bold">حالة التشغيل 🚀</span>
+                    <span class="bg-indigo-50 text-indigo-700 text-[10px] font-bold px-2.5 py-0.5 rounded-full border border-indigo-100/30">باقة {{ plan_name }}</span>
+                    <span class="bg-blue-50 text-blue-700 text-[10px] font-bold px-2.5 py-0.5 rounded-full border border-blue-100/30">
+                        {% if plan_name == 'الأساسية' %}
+                        الرسائل: <span dir="ltr">{{ messages_sent }} / 3,000</span>
                         {% else %}
-                        1
+                        الرسائل: غير محدودة
                         {% endif %}
-                    </div>
-                    <div>
-                        <p class="text-xs font-black text-slate-800">ربط واتساب</p>
-                        <p class="text-[10px] text-slate-500 mt-0.5">{% if isConnected %}متصل بنجاح ✅{% else %}غير متصل 🔌{% endif %}</p>
-                    </div>
+                    </span>
                 </div>
-                {% if not isConnected %}
-                <a href="/whatsapp-web" class="px-3.5 py-1.5 rounded-lg text-xs font-bold text-white shadow-md hover:scale-102 transition duration-150 animate-pulse" style="background: linear-gradient(135deg, #0d9488, #14b8a6);">
-                    ربط الآن
-                </a>
-                {% endif %}
+                <h1 class="text-xl font-black text-slate-900 leading-snug">{{ user.merchant.name or 'متجرك الإلكتروني' }}</h1>
+                <p class="text-xs flex items-center gap-2 text-slate-600">
+                    <span class="w-2 h-2 rounded-full pulse-dot-green"></span>
+                    <span class="font-medium">مبهر يعمل وجاهز لمتابعة فرص البيع في متجرك.</span>
+                </p>
             </div>
-
-            <!-- الخطوة 2: إعداد قاعدة معرفة المتجر والسياسات -->
-            <div class="flex items-center justify-between p-4 rounded-xl border {% if is_persona_configured %}bg-emerald-50/30 border-emerald-100{% else %}bg-slate-50/50 border-slate-100{% endif %}">
-                <div class="flex items-center gap-3">
-                    <div class="w-9 h-9 rounded-full flex items-center justify-center text-sm {% if is_persona_configured %}bg-emerald-500 text-white{% else %}bg-slate-200 text-slate-400{% endif %} font-bold">
-                        {% if is_persona_configured %}
-                        <i class="fa-solid fa-check text-xs"></i>
-                        {% else %}
-                        2
-                        {% endif %}
-                    </div>
-                    <div>
-                        <p class="text-xs font-black text-slate-800">معلومات المتجر والسياسات</p>
-                        <p class="text-[10px] text-slate-500 mt-0.5">{% if is_persona_configured %}قاعدة المعرفة مكتملة ✅{% else %}أضف معلومات متجرك وسياساتك حتى يرد مبهر بدقة ✍️{% endif %}</p>
-                    </div>
-                </div>
-                {% if not is_persona_configured %}
-                <a href="/ai-settings" class="px-3.5 py-1.5 rounded-lg text-xs font-bold text-white shadow-md hover:scale-102 transition duration-150" style="background: linear-gradient(135deg, #0d9488, #14b8a6);">
-                    إعداد قاعدة المعرفة
-                </a>
-                {% endif %}
-            </div>
-
-            <!-- الخطوة 3: تفعيل السيناريوهات -->
-            <div class="flex items-center justify-between p-4 rounded-xl border {% if is_scenarios_configured %}bg-emerald-50/30 border-emerald-100{% else %}bg-slate-50/50 border-slate-100{% endif %}">
-                <div class="flex items-center gap-3">
-                    <div class="w-9 h-9 rounded-full flex items-center justify-center text-sm {% if is_scenarios_configured %}bg-emerald-500 text-white{% else %}bg-slate-200 text-slate-400{% endif %} font-bold">
-                        {% if is_scenarios_configured %}
-                        <i class="fa-solid fa-check text-xs"></i>
-                        {% else %}
-                        3
-                        {% endif %}
-                    </div>
-                    <div>
-                        <p class="text-xs font-black text-slate-800">تفعيل السيناريوهات</p>
-                        <p class="text-[10px] text-slate-500 mt-0.5">{% if is_scenarios_configured %}مفعّلة ونشطة 🚀{% else %}غير مفعّلة ⚙️{% endif %}</p>
-                    </div>
-                </div>
-                {% if not is_scenarios_configured %}
-                <a href="/scenarios" class="px-3.5 py-1.5 rounded-lg text-xs font-bold text-white shadow-md hover:scale-102 transition duration-150" style="background: linear-gradient(135deg, #0d9488, #14b8a6);">
-                    تفعيل السيناريوهات
-                </a>
-                {% endif %}
-            </div>
+            <a href="/ai-settings" class="btn-indigo px-5 py-2.5 rounded-xl text-xs font-bold text-center self-start sm:self-auto transition duration-200">
+                <i class="fa-solid fa-gear ml-1"></i> ضبط الردود
+            </a>
         </div>
     </div>
     {% else %}
-    <!-- مبهر جاهز للعمل ✅ -->
-    <div class="rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-stretch sm:items-center gap-4 animate-in" style="background: linear-gradient(135deg, #ecfdf5, #d1fae5); border: 2px solid #a7f3d0; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.08);">
-        <div class="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 mx-auto sm:mx-0" style="background: #10b981; color: #fff;">
-            <i class="fa-solid fa-circle-check text-2xl"></i>
-        </div>
-        <div class="flex-1 text-center sm:text-right">
-            <p class="font-extrabold text-emerald-950 text-sm">مبهر جاهز للعمل ✅</p>
-            <p class="text-xs text-emerald-900 mt-1 leading-relaxed">
-                مساعدك الذكي وجميع السيناريوهات مهيئة وتعمل بكفاءة الآن في الخلفية لزيادة مبيعات متجرك.
-            </p>
+    <div class="hero-gradient-disconnected border border-amber-100/60 rounded-2xl p-5 sm:p-6 shadow-sm transition-all duration-300">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div class="space-y-1.5 text-right">
+                <div class="flex flex-wrap items-center gap-2">
+                    <span class="text-xs text-slate-400 font-bold">تجهيز أولي مطلوب ⚡</span>
+                    <span class="bg-indigo-50 text-indigo-700 text-[10px] font-bold px-2.5 py-0.5 rounded-full border border-indigo-100/30">باقة {{ plan_name }}</span>
+                    <span class="bg-blue-50 text-blue-700 text-[10px] font-bold px-2.5 py-0.5 rounded-full border border-blue-100/30">
+                        {% if plan_name == 'الأساسية' %}
+                        الرسائل: <span dir="ltr">{{ messages_sent }} / 3,000</span>
+                        {% else %}
+                        الرسائل: غير محدودة
+                        {% endif %}
+                    </span>
+                </div>
+                <h1 class="text-xl font-black text-slate-900 leading-snug">{{ user.merchant.name or 'متجرك الإلكتروني' }}</h1>
+                <p class="text-xs flex items-center gap-2 text-amber-700">
+                    <span class="w-2 h-2 rounded-full pulse-dot-amber"></span>
+                    <span class="font-medium">اربط واتساب حتى يبدأ مبهر في متابعة السلات والرد على العملاء.</span>
+                </p>
+            </div>
+            <a href="/whatsapp-web" class="btn-emerald px-5 py-2.5 rounded-xl text-xs font-bold text-center self-start sm:self-auto transition duration-200">
+                <i class="fa-brands fa-whatsapp ml-1"></i> ربط واتساب
+            </a>
         </div>
     </div>
     {% endif %}
 
-    {# 🔔 تنبيه ربط واتساب — إذا كان غير متصل #}
-    {% if completed_steps >= 3 and not isConnected %}
-    <div class="rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-stretch sm:items-center gap-4 animate-in" style="background: linear-gradient(135deg, #fffbeb, #fef3c7); border: 2px solid #fde68a; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.05);">
-        <div class="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 animate-pulse mx-auto sm:mx-0" style="background: #f59e0b; color: #fff;">
-            <i class="fa-brands fa-whatsapp text-2xl"></i>
+    <!-- 1.5️⃣ Quiet Basic Plan Banner (Basic Plan Only) -->
+    {% if plan_name == 'الأساسية' %}
+    <div class="p-3.5 rounded-xl border border-indigo-100 bg-indigo-50/20 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-xs transition duration-200">
+        <div class="flex flex-wrap items-center gap-2 text-slate-700">
+            <span class="bg-indigo-50 text-indigo-700 text-[10px] font-black px-2.5 py-0.5 rounded-full border border-indigo-200/40">أنت على الباقة الأساسية</span>
+            <span class="font-medium text-slate-600">يمكنك فتح رسائل غير محدودة ومزايا مبيعات أوسع عبر باقة النمو.</span>
         </div>
-        <div class="flex-1 text-center sm:text-right">
-            <p class="font-black text-amber-950 text-sm">🔌 خطوة متبقية: ربط حساب واتساب</p>
-            <p class="text-xs text-amber-900 mt-1 leading-relaxed">
-                اربط واتساب الآن حتى يبدأ مبهر في متابعة السلات والرد على العملاء تلقائياً.
-            </p>
-        </div>
-        <a href="/whatsapp-web" class="px-5 py-2.5 rounded-xl text-sm font-bold text-white whitespace-nowrap shadow-lg w-full sm:w-auto text-center flex items-center justify-center" style="background: linear-gradient(135deg, #d97706, #f59e0b);">
-            <i class="fa-solid fa-link text-xs ml-1"></i> ربط واتساب
+        <a href="/pricing" class="text-indigo-600 hover:text-indigo-800 font-bold hover:underline shrink-0 flex items-center gap-1">
+            عرض باقة النمو <i class="fa-solid fa-arrow-left text-[10px] mr-0.5"></i>
         </a>
     </div>
     {% endif %}
 
-    {# 🚦 Usage Limit Warnings — يحترم الباقة #}
-    {% if msg_limit and msg_limit > 0 %}
-        {% if usage_percent >= 100 %}
-        <div class="rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-stretch sm:items-center gap-4 text-center sm:text-right" style="background:linear-gradient(135deg,#fef2f2,#fee2e2); border:2px solid #fca5a5;">
-            <div class="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 mx-auto sm:mx-0" style="background:#dc2626; color:#fff;">
-                <i class="fa-solid fa-circle-xmark text-xl"></i>
-            </div>
-            <div class="flex-1">
-                <p class="font-black text-red-900 text-sm">⛔ تم تجاوز الحد الشهري للرسائل</p>
-                <p class="text-xs text-red-700 mt-1 leading-relaxed">
-                    استهلكت <strong style="font-family:Inter,sans-serif;">{{ messages_sent }}</strong> من أصل <strong style="font-family:Inter,sans-serif;">{{ msg_limit }}</strong> رسالة. تم إيقاف الردود التلقائية حتى ترقّي باقتك أو يبدأ الشهر الجديد.
-                </p>
-            </div>
-            <a href="/pricing" class="px-5 py-2.5 rounded-xl text-sm font-bold text-white whitespace-nowrap shadow-lg w-full sm:w-auto text-center flex items-center justify-center" style="background:linear-gradient(135deg,#dc2626,#ef4444);">
-                <i class="fa-solid fa-arrow-up text-xs ml-1"></i> ترقية الباقة
-            </a>
-        </div>
-        {% elif usage_percent >= 80 %}
-        <div class="rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-stretch sm:items-center gap-4 text-center sm:text-right" style="background:linear-gradient(135deg,#fffbeb,#fef3c7); border:2px solid #fde68a;">
-            <div class="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 mx-auto sm:mx-0" style="background:#f59e0b; color:#fff;">
-                <i class="fa-solid fa-triangle-exclamation text-xl"></i>
-            </div>
-            <div class="flex-1">
-                <p class="font-black text-amber-900 text-sm">⚠️ اقتربت من حد الاستهلاك الشهري</p>
-                <p class="text-xs text-amber-700 mt-1 leading-relaxed">
-                    استهلكت <strong style="font-family:Inter,sans-serif;">{{ messages_sent }}</strong> من أصل <strong style="font-family:Inter,sans-serif;">{{ msg_limit }}</strong> رسالة. يرجى ترقية الباقة لتفادي انقطاع الخدمة.
-                </p>
-            </div>
-            <a href="/pricing" class="px-5 py-2.5 rounded-xl text-sm font-bold text-white whitespace-nowrap shadow-lg w-full sm:w-auto text-center flex items-center justify-center" style="background:linear-gradient(135deg,#d97706,#f59e0b);">
-                <i class="fa-solid fa-arrow-up text-xs ml-1"></i> ترقية الباقة
-            </a>
-        </div>
-        {% endif %}
-    {% endif %}
-
-    <!-- ══ HERO BANNER (Light Theme) ══ -->
-    <div class="hero-card p-5 sm:p-7 text-slate-800">
-        <div class="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-
-            <!-- Left: Welcome -->
-            <div class="w-full lg:flex-1">
-                <p class="text-slate-500 text-sm font-bold mb-1">مرحباً بعودتك 👋</p>
-                <h1 class="text-2xl font-black text-slate-800 mb-3">{{ user.merchant.name or 'متجرك' }}</h1>
-                <p class="text-slate-600 text-sm max-w-md leading-relaxed">
-                    مساعدك الذكي جاهز ويعمل بكفاءة لمتابعة عملائك وإغلاق مبيعاتك المفقودة.
-                </p>
-                <div class="mt-3 flex items-center gap-2 text-xs font-bold text-teal-600">
-                    <i class="fa-solid fa-circle-info text-xs"></i>
-                    {% if sub_status == 'trial' %}
-                        <span>تجربة مجانية ومتبقي {{ days_left }} أيام</span>
-                    {% elif sub_status == 'active' %}
-                        <span>اشتراك {{ plan_name }} ومتبقي {{ days_left }} أيام</span>
-                    {% elif sub_status == 'expired' %}
-                        <span class="text-rose-600 font-bold">اشتراك منتهي</span>
-                    {% else %}
-                        <span class="text-slate-500 font-bold">لا يوجد اشتراك مفعل</span>
-                    {% endif %}
-                </div>
-                <div class="flex flex-col sm:flex-row gap-2.5 mt-5">
-                    <a href="/campaigns/create"
-                        class="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition shadow-lg shadow-teal-600/10 w-full sm:w-auto text-center animate-in"
-                        style="background: linear-gradient(135deg, #0d9488, #14b8a6); color: white;">
-                        <i class="fa-solid fa-plus text-xs"></i> إنشاء حملة
-                    </a>
-                    <a href="/ai-settings"
-                        class="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold border transition w-full sm:w-auto text-center bg-white border-slate-200 text-slate-700 hover:bg-slate-50 shadow-sm">
-                        <i class="fa-solid fa-robot text-xs"></i> إعدادات المساعد الذكي
-                    </a>
-                </div>
-            </div>
-
-            <!-- Right: Plan Card -->
-            <div class="plan-pill p-5 w-full lg:w-auto min-w-0 lg:min-w-[220px] text-center flex-shrink-0">
-                <p class="text-[10px] text-slate-400 uppercase tracking-widest font-bold mb-2">الباقة الحالية</p>
-                <p class="text-2xl font-black text-teal-700 mb-1">الباقة {{ plan_name }}</p>
-                {% if sub_status == 'active' or sub_status == 'trial' %}
-                <p class="text-slate-800 font-extrabold text-lg">
-                    <span style="font-family: Inter, sans-serif;">{{ plan_price }}</span>
-                    <span class="text-xs text-slate-400 font-normal"> ر.س / {{ plan_billing }}</span>
-                </p>
-                {% endif %}
-                <div class="mt-3 flex items-center justify-center gap-2">
-                    {% if sub_status == 'active' %}
-                        <span class="w-2 h-2 rounded-full bg-emerald-500 pulse-dot"></span>
-                        <span class="text-[11px] text-emerald-700 font-bold">نشط</span>
-                    {% elif sub_status == 'trial' %}
-                        <span class="w-2 h-2 rounded-full bg-amber-500 pulse-dot"></span>
-                        <span class="text-[11px] text-amber-700 font-bold">تجريبي</span>
-                    {% elif sub_status == 'expired' %}
-                        <span class="w-2 h-2 rounded-full bg-red-500"></span>
-                        <span class="text-[11px] text-red-700 font-bold">منتهي</span>
-                    {% else %}
-                        <span class="w-2 h-2 rounded-full bg-slate-400"></span>
-                        <span class="text-[11px] text-slate-700 font-bold">غير مفعل</span>
-                    {% endif %}
-                </div>
-                <a href="/pricing" class="mt-3 block text-[11px] text-teal-600 hover:text-teal-700 transition font-bold">
-                    ترقية الباقة ←
-                </a>
-            </div>
-        </div>
-    </div>
-
-    <!-- ══ USAGE BAR ══ -->
-    <div class="card p-4 sm:p-6">
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
-            <div class="flex items-center gap-3">
-                <div class="metric-icon" style="background: #f0fdfa; color: #0d9488;">
-                    <i class="fa-solid fa-gauge-high text-base"></i>
-                </div>
-                <div>
-                    <h3 class="text-sm font-bold text-slate-700">استهلاك الرسائل الشهري</h3>
-                    <p class="text-xs text-slate-400 mt-0.5">تجديد: {{ renewal_date }}</p>
-                </div>
-            </div>
-            <div class="flex items-center justify-between sm:justify-start gap-4 sm:gap-6 w-full sm:w-auto">
-                <div class="text-center">
-                    <p class="text-xl font-black text-slate-800 font-mono">{{ messages_sent }}</p>
-                    <p class="text-[10px] text-slate-400 font-bold uppercase mt-0.5">مُرسل</p>
-                </div>
-                <div class="text-slate-200 text-lg">/</div>
-                <div class="text-center">
-                    <p class="text-xl font-black text-teal-600 font-mono">
-                        {% if msg_limit > 0 %}{{ msg_limit }}{% else %}∞{% endif %}
-                    </p>
-                    <p class="text-[10px] text-slate-400 font-bold uppercase mt-0.5">الحد</p>
-                </div>
-                <div class="text-slate-200 text-lg">|</div>
-                <div class="text-center">
-                    <p class="text-xl font-black {% if msg_limit <= 0 %}text-teal-600{% elif usage_percent > 80 %}text-red-500{% elif usage_percent > 50 %}text-amber-500{% else %}text-emerald-600{% endif %} font-mono">
-                        {% if msg_limit <= 0 %}نشط بلا قيود{% else %}{{ messages_remaining }}{% endif %}
-                    </p>
-                    <p class="text-[10px] text-slate-400 font-bold uppercase mt-0.5">متبقي</p>
-                </div>
-            </div>
-        </div>
-        <div class="usage-track">
-            <div class="usage-fill {% if msg_limit <= 0 %}bg-teal-500{% elif usage_percent > 80 %}bg-gradient-to-r from-red-400 to-red-500{% elif usage_percent > 50 %}bg-gradient-to-r from-amber-400 to-orange-400{% else %}bg-gradient-to-r from-teal-400 to-emerald-500{% endif %}"
-                style="width: 0%" data-target="{% if msg_limit <= 0 %}100{% else %}{{ usage_percent }}{% endif %}"></div>
-        </div>
-        <div class="flex justify-between mt-2.5">
-            <p class="text-[11px] text-slate-400">
-                {% if msg_limit <= 0 %}
-                    استهلاك غير محدود في باقة {{ plan_name }} ✨
-                {% else %}
-                    <span class="font-mono">{{ usage_percent }}%</span> مستخدم
-                {% endif %}
-            </p>
-            {% if msg_limit > 0 and usage_percent > 80 %}
-            <p class="text-[11px] text-red-500 font-bold">
-                <i class="fa-solid fa-triangle-exclamation ml-1"></i> اقتربت من الحد — <a href="/pricing" class="underline">قم بالترقية</a>
-            </p>
-            {% endif %}
-        </div>
-    </div>
-
-    <!-- ══ STATS GRID ══ -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-
+    <!-- 2️⃣ Compact Metrics Row (2x2 Grid with balanced 5th element on mobile, 1x5 on Desktop) -->
+    <div class="grid grid-cols-2 lg:grid-cols-5 gap-4">
         <!-- Messages Sent -->
-        <div class="stat-card">
-            <div class="flex items-start justify-between mb-4">
-                <div class="metric-icon" style="background: #dcfce7; color: #16a34a;">
-                    <i class="fa-brands fa-whatsapp"></i>
-                </div>
-                <span class="chip" style="background: #f0fdf4; color: #15803d; font-size:10px;">هذا الشهر</span>
+        <div class="card-clean p-3.5 sm:p-4 flex flex-col sm:flex-row items-start sm:items-center gap-2.5 sm:gap-3">
+            <div class="icon-badge icon-badge-blue">
+                <i class="fa-solid fa-paper-plane text-xs"></i>
             </div>
-            <p class="text-3xl font-black text-slate-800 mb-1" style="font-family: Inter, sans-serif;">{{ messages_sent }}</p>
-            <p class="text-xs font-semibold text-slate-500">رسالة مُرسلة</p>
-        </div>
-
-        <!-- Connection Status -->
-        <div class="stat-card">
-            <div class="flex items-start justify-between mb-4">
-                <div class="metric-icon" style="{% if isConnected %}background: #dcfce7; color: #16a34a;{% else %}background: #fee2e2; color: #dc2626;{% endif %}">
-                    <i class="{% if isConnected %}fa-solid fa-circle-check{% else %}fa-solid fa-circle-xmark{% endif %}"></i>
-                </div>
-                <span class="chip" style="{% if isConnected %}background: #f0fdfa; color: #15803d;{% else %}background: #fef2f2; color: #b91c1c;{% endif %} font-size:10px;">الواتساب</span>
-            </div>
-            <p class="text-2xl font-black text-slate-800 mb-1">{% if isConnected %}متصل نشط{% else %}غير متصل 🔌{% endif %}</p>
-            <p class="text-xs font-semibold text-slate-500">حالة ربط القناة</p>
-        </div>
-
-        <!-- Campaigns -->
-        <div class="stat-card">
-            <div class="flex items-start justify-between mb-4">
-                <div class="metric-icon" style="background: #dbeafe; color: #1d4ed8;">
-                    <i class="fa-solid fa-bullhorn"></i>
-                </div>
-                {% if plan_features.campaigns %}
-                <span class="chip" style="background: #f0fdf4; color: #15803d; font-size:10px;">
-                    <i class="fa-solid fa-check text-[9px]"></i> مفعّلة
-                </span>
+            <div class="min-w-0 w-full text-right">
+                <p class="text-[10px] text-slate-500 font-bold uppercase tracking-wider">الرسائل المرسلة</p>
+                {% if plan_name == 'الأساسية' %}
+                <p class="text-sm sm:text-base metric-value mt-0.5 text-slate-900 font-black" dir="ltr">
+                    {{ messages_sent }} / 3,000
+                </p>
+                <p class="text-[9px] text-slate-400 font-bold mt-0.5">رسائل هذا الشهر</p>
                 {% else %}
-                <span class="chip" style="background: #fef2f2; color: #b91c1c; font-size:10px;">
-                    <i class="fa-solid fa-lock text-[9px]"></i> مقفلة
-                </span>
+                <p class="text-base sm:text-lg metric-value mt-0.5 text-slate-900 font-black">∞</p>
+                <p class="text-[9px] text-slate-400 font-bold mt-0.5">رسائل غير محدودة</p>
                 {% endif %}
             </div>
-            <p class="text-3xl font-black text-slate-800 mb-1" style="font-family: Inter, sans-serif;">{{ campaigns_count }}</p>
-            <p class="text-xs font-semibold text-slate-500">حملة تسويقية</p>
         </div>
 
-        <!-- Contacts -->
-        <div class="stat-card">
-            <div class="flex items-start justify-between mb-4">
-                <div class="metric-icon" style="background: #fef3c7; color: #d97706;">
-                    <i class="fa-solid fa-users"></i>
-                </div>
-                <span class="chip" style="background: #fffbeb; color: #b45309; font-size:10px;">قاعدة عملاء</span>
+        <!-- Campaigns Count -->
+        <div class="card-clean p-3.5 sm:p-4 flex flex-col sm:flex-row items-start sm:items-center gap-2.5 sm:gap-3">
+            <div class="icon-badge icon-badge-green">
+                <i class="fa-solid fa-bullhorn text-xs"></i>
             </div>
-            <p class="text-3xl font-black text-slate-800 mb-1" style="font-family: Inter, sans-serif;">{{ contacts_count }}</p>
-            <p class="text-xs font-semibold text-slate-500">عميل مسجّل</p>
+            <div class="min-w-0 w-full text-right">
+                <p class="text-[10px] text-slate-500 font-bold uppercase tracking-wider">الحملات التسويقية</p>
+                <p class="text-base metric-value mt-0.5 text-slate-900 font-black">{{ campaigns_count }}</p>
+            </div>
+        </div>
+
+        <!-- Contacts Count -->
+        <div class="card-clean p-3.5 sm:p-4 flex flex-col sm:flex-row items-start sm:items-center gap-2.5 sm:gap-3">
+            <div class="icon-badge icon-badge-blue">
+                <i class="fa-solid fa-users text-xs"></i>
+            </div>
+            <div class="min-w-0 w-full text-right">
+                <p class="text-[10px] text-slate-500 font-bold uppercase tracking-wider">العملاء المسجلين</p>
+                <p class="text-base metric-value mt-0.5 text-slate-900 font-black">{{ contacts_count }}</p>
+            </div>
+        </div>
+
+        <!-- Abandoned Carts Status -->
+        <div class="card-clean p-3.5 sm:p-4 flex flex-col sm:flex-row items-start sm:items-center gap-2.5 sm:gap-3">
+            <div class="icon-badge icon-badge-purple">
+                <i class="fa-solid fa-cart-shopping text-xs"></i>
+            </div>
+            <div class="min-w-0 w-full text-right">
+                <p class="text-[10px] text-slate-500 font-bold uppercase tracking-wider">السلات المتروكة</p>
+                <p class="text-xs font-black {% if is_scenarios_configured %}text-emerald-600{% else %}text-amber-600{% endif %} mt-1">
+                    {% if is_scenarios_configured %}متابعة نشطة{% else %}تحتاج تفعيل{% endif %}
+                </p>
+            </div>
+        </div>
+
+        <!-- WhatsApp Connection Status -->
+        <div class="card-clean p-3.5 sm:p-4 flex flex-col sm:flex-row items-start sm:items-center gap-2.5 sm:gap-3 col-span-2 lg:col-span-1">
+            <div class="icon-badge {% if isConnected %}icon-badge-green{% else %}icon-badge-amber{% endif %}">
+                <i class="fa-brands fa-whatsapp text-xs"></i>
+            </div>
+            <div class="min-w-0 w-full text-right">
+                <p class="text-[10px] text-slate-500 font-bold uppercase tracking-wider">حالة الربط</p>
+                <p class="text-xs font-black {% if isConnected %}text-emerald-600{% else %}text-amber-600{% endif %} mt-1">
+                    {% if isConnected %}متصل ونشط{% else %}غير متصل 🔌{% endif %}
+                </p>
+            </div>
         </div>
     </div>
 
-    <!-- ══ TWO COLUMNS ══ -->
-    <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
+    <!-- 3️⃣ Sales Opportunities Section (3 Premium Action Cards) -->
+    <div class="space-y-4">
+        <div class="flex items-center gap-2.5">
+            <div class="icon-badge icon-badge-purple">
+                <i class="fa-solid fa-lightbulb text-xs"></i>
+            </div>
+            <div>
+                <h3 class="text-sm font-bold text-slate-800">فرص مبيعات تنتظرك</h3>
+                <p class="text-[10px] text-slate-400 mt-0.5">فرص ذكية لتحسين مبيعات متجرك وتفاعل عملائك</p>
+            </div>
+        </div>
 
-        <!-- Chart — 3 cols -->
-        <div class="card p-4 sm:p-6 lg:col-span-3">
-            <div class="flex items-center justify-between mb-6">
-                <div class="flex items-center gap-3">
-                    <div class="metric-icon" style="background: #eff6ff; color: #1d4ed8;">
-                        <i class="fa-solid fa-chart-line text-base"></i>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <!-- Opportunity 1: Abandoned Carts -->
+            <div class="card-clean p-4 space-y-3.5 flex flex-col justify-between">
+                <div class="space-y-2.5">
+                    <div class="flex items-center gap-2.5">
+                        <div class="icon-badge icon-badge-green">
+                            <i class="fa-solid fa-cart-shopping text-xs"></i>
+                        </div>
+                        <span class="text-xs font-black text-slate-800">السلات المتروكة</span>
+                    </div>
+                    <p class="text-[11px] text-slate-500 leading-relaxed">متابعة السلات المتروكة بالذكاء الاصطناعي لإقناع المترددين وإتمام الطلبات.</p>
+                </div>
+                <div class="flex justify-between items-center pt-2.5 border-t border-slate-50">
+                    {% if is_scenarios_configured %}
+                    <span class="text-[10px] text-green-600 bg-green-50 border border-green-100/50 px-2.5 py-0.5 rounded-full font-bold">متابعة نشطة</span>
+                    {% else %}
+                    <span class="text-[10px] text-amber-600 bg-amber-50 border border-amber-100/50 px-2.5 py-0.5 rounded-full font-bold">تحتاج تفعيل</span>
+                    {% endif %}
+                    <a href="/automation/carts" class="text-[10px] text-indigo-600 font-bold hover:underline">السجلات ←</a>
+                </div>
+            </div>
+
+            <!-- Opportunity 2: Inactive Reactivation -->
+            <div class="card-clean p-4 space-y-3.5 flex flex-col justify-between">
+                <div class="space-y-2.5">
+                    <div class="flex items-center gap-2.5">
+                        <div class="icon-badge icon-badge-purple">
+                            <i class="fa-solid fa-user-clock text-xs"></i>
+                        </div>
+                        <span class="text-xs font-black text-slate-800">العملاء غير النشطين</span>
+                    </div>
+                    <p class="text-[11px] text-slate-500 leading-relaxed">استرجاع العملاء غير النشطين وتنشيطهم بحملات تلقائية ذكية ومخصصة.</p>
+                </div>
+                <div class="flex justify-between items-center pt-2.5 border-t border-slate-50">
+                    {% if plan_name == 'الأساسية' %}
+                    <span class="text-[10px] text-slate-500 font-medium">متاح في باقة النمو</span>
+                    <a href="/pricing" class="text-[10px] bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200/50 px-2.5 py-1 rounded-lg font-bold transition">استكشف النمو</a>
+                    {% else %}
+                        {% if is_scenarios_configured %}
+                        <span class="text-[10px] text-green-600 bg-green-50 border border-green-100/50 px-2.5 py-0.5 rounded-full font-bold">متابعة نشطة</span>
+                        {% else %}
+                        <span class="text-[10px] text-amber-600 bg-amber-50 border border-amber-100/50 px-2.5 py-0.5 rounded-full font-bold">تحتاج تفعيل</span>
+                        {% endif %}
+                    <a href="/scenarios" class="text-[10px] text-indigo-600 font-bold hover:underline">الضبط ←</a>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Opportunity 3: Campaigns -->
+            <div class="card-clean p-4 space-y-3.5 flex flex-col justify-between">
+                <div class="space-y-2.5">
+                    <div class="flex items-center gap-2.5">
+                        <div class="icon-badge icon-badge-blue">
+                            <i class="fa-solid fa-bullhorn text-xs"></i>
+                        </div>
+                        <span class="text-xs font-black text-slate-800">حملات واتساب</span>
+                    </div>
+                    <p class="text-[11px] text-slate-500 leading-relaxed">إرسال عروض وتخفيضات جماعية مخصصة لقواعد عملائك بنقرة واحدة.</p>
+                </div>
+                <div class="flex justify-between items-center pt-2.5 border-t border-slate-50">
+                    {% if plan_name == 'الأساسية' %}
+                    <span class="text-[10px] text-blue-700 bg-blue-50 border border-blue-100/50 px-2.5 py-0.5 rounded-full font-bold">حملات واتساب جماعية محدودة</span>
+                    {% else %}
+                    <span class="text-[10px] text-green-600 bg-green-50 border border-green-100/50 px-2.5 py-0.5 rounded-full font-bold">حملات واتساب جماعية غير محدودة</span>
+                    {% endif %}
+                    <a href="/campaigns/create" class="text-[10px] text-indigo-600 font-bold hover:underline">إنشاء حملة ←</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 5️⃣ Two Columns Section: Messages Chart & Activity List -->
+    <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
+        <!-- Message Activity Chart (3 Columns) -->
+        <div class="card-clean p-5 lg:col-span-3">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-2.5">
+                    <div class="icon-badge icon-badge-blue">
+                        <i class="fa-solid fa-chart-line text-xs"></i>
                     </div>
                     <div>
-                        <h3 class="text-sm font-bold text-slate-700">نشاط الرسائل</h3>
-                        <p class="text-xs text-slate-400 mt-0.5">آخر 7 أيام</p>
+                        <h3 class="text-xs font-bold text-slate-800">حركة الرسائل</h3>
+                        <p class="text-[10px] text-slate-400 mt-0.5">خلال آخر 7 أيام</p>
                     </div>
                 </div>
-                <span class="chip" style="background: #f0fdfa; color: #0d9488; border: 1px solid #ccfbf1;">
-                    <span style="font-family: Inter, sans-serif;">7</span> أيام
-                </span>
             </div>
-            <div style="height: 200px; position: relative;">
+            <div style="height: 180px; position: relative;">
                 <canvas id="messagesChart"></canvas>
             </div>
         </div>
 
-        <!-- Recent Activity — 2 cols -->
-        <div class="card p-4 sm:p-6 lg:col-span-2">
-            <div class="flex items-center justify-between mb-5">
-                <h3 class="text-sm font-bold text-slate-700 flex items-center gap-2">
-                    <i class="fa-solid fa-clock-rotate-left text-teal-500 text-xs"></i>
-                    آخر النشاطات
-                </h3>
-                <a href="/logs" class="text-[11px] text-teal-600 font-bold hover:underline">عرض الكل ←</a>
-            </div>
-            <div class="space-y-1">
-                {% if recentLogs and recentLogs.length > 0 %}
-                {% for log in recentLogs %}
-                <div class="activity-row">
-                    <div class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0
-                        {{ 'bg-blue-100 text-blue-500' if log.direction == 'in' else 'bg-teal-100 text-teal-600' }}">
-                        <i class="fa-solid text-xs {{ 'fa-arrow-down' if log.direction == 'in' else 'fa-arrow-up' }}"></i>
-                    </div>
-                    <div class="flex-1 min-w-0">
-                        <p class="text-[12px] font-bold text-slate-700 truncate" style="font-family: Inter, sans-serif;">{{ log.to_phone or 'غير معروف' }}</p>
-                        <p class="text-[11px] text-slate-400 truncate">{{ log.content | truncate(32) }}</p>
-                    </div>
-                    <span class="text-[10px] font-bold uppercase flex-shrink-0
-                        {{ 'text-teal-500' if log.status == 'sent' else 'text-slate-400' }}">
-                        {{ log.status }}
-                    </span>
+        <!-- Recent Activity Logs (2 Columns) -->
+        <div class="card-clean p-5 lg:col-span-2 flex flex-col justify-between">
+            <div class="space-y-4">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-xs font-bold text-slate-800 flex items-center gap-2.5">
+                        <div class="icon-badge icon-badge-purple">
+                            <i class="fa-solid fa-clock-rotate-left text-xs"></i>
+                        </div>
+                        <span>آخر النشاطات</span>
+                    </h3>
+                    <a href="/logs" class="text-[10px] text-indigo-600 font-bold hover:underline">عرض الكل ←</a>
                 </div>
-                {% endfor %}
-                {% else %}
-                <div class="text-center py-10">
-                    <div class="w-12 h-12 mx-auto rounded-full bg-slate-50 flex items-center justify-center text-slate-300 text-xl mb-3">
-                        <i class="fa-solid fa-comment-slash"></i>
-                    </div>
-                    <p class="text-sm font-semibold text-slate-500">لا توجد نشاطات بعد</p>
-                    <p class="text-xs text-slate-400 mt-1">ستظهر المحادثات هنا عند البدء</p>
+
+                <div class="space-y-2.5">
+                    {% if recentLogs and recentLogs.length > 0 %}
+                        {% for log in recentLogs %}
+                        <div class="flex items-center justify-between p-2 rounded-xl bg-slate-50 hover:bg-slate-100/60 transition duration-150">
+                            <div class="min-w-0 text-right">
+                                <p class="text-[11px] font-bold text-slate-800 truncate" style="font-family: Inter, sans-serif;">{{ log.to_phone }}</p>
+                                <p class="text-[10px] text-slate-400 truncate max-w-[160px]">{{ log.content }}</p>
+                            </div>
+                            <span class="text-[9px] font-bold px-2 py-0.5 rounded-full uppercase {{ 'text-green-600 bg-green-50 border border-green-100' if log.status == 'sent' else 'text-slate-400 bg-slate-100' }}">
+                                {{ log.status }}
+                            </span>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-8">
+                            <div class="w-10 h-10 mx-auto rounded-full bg-slate-50 flex items-center justify-center text-slate-300 text-base mb-2">
+                                <i class="fa-solid fa-comment-slash"></i>
+                            </div>
+                            <p class="text-xs font-semibold text-slate-500">لا توجد نشاطات حديثة</p>
+                        </div>
+                    {% endif %}
                 </div>
-                {% endif %}
             </div>
         </div>
-    </div>
-
-    <!-- ══ OPPORTUNITIES & CONVERSION BLOCK ══ -->
-    <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
-
-        <!-- Left Column: Sales Opportunities (3 cols) -->
-        <div class="card p-4 sm:p-6 lg:col-span-3 flex flex-col justify-between">
-            <div>
-                <div class="flex items-center justify-between mb-5">
-                    <div class="flex items-center gap-3">
-                        <div class="metric-icon" style="background: #f0fdfa; color: #0d9488;">
-                            <i class="fa-solid fa-lightbulb"></i>
-                        </div>
-                        <div>
-                            <h3 class="text-sm font-bold text-slate-700">فرص مضاعفة المبيعات</h3>
-                            <p class="text-xs text-slate-400 mt-0.5">استغل الميزات المتاحة لزيادة دخل متجرك</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="space-y-3">
-                    <!-- WhatsApp status connection -->
-                    <div class="flex items-center justify-between p-3 rounded-xl border border-slate-100 bg-slate-50/30">
-                        <div class="flex items-center gap-2.5">
-                            <div class="w-6 h-6 rounded-md bg-emerald-100 text-emerald-700 flex items-center justify-center text-[10px]">
-                                <i class="fa-brands fa-whatsapp"></i>
-                            </div>
-                            <span class="text-xs font-bold text-slate-600">تفعيل المساعد التلقائي على الواتساب</span>
-                        </div>
-                        {% if isConnected %}
-                        <span class="text-[11px] font-bold text-emerald-600 flex items-center gap-1">
-                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 pulse-dot"></span> نشط ومفعل
-                        </span>
-                        {% else %}
-                        <a href="/whatsapp-web" class="text-[11px] font-bold text-amber-600 hover:underline">اربط الآن 🔌</a>
-                        {% endif %}
-                    </div>
-
-                    <!-- Abandoned carts -->
-                    <div class="flex items-center justify-between p-3 rounded-xl border border-slate-100 bg-slate-50/30">
-                        <div class="flex items-center gap-2.5">
-                            <div class="w-6 h-6 rounded-md bg-purple-100 text-purple-700 flex items-center justify-center text-[10px]">
-                                <i class="fa-solid fa-cart-shopping"></i>
-                            </div>
-                            <span class="text-xs font-bold text-slate-600">متابعة واسترجاع السلات المتروكة</span>
-                        </div>
-                        {% if plan_name == 'الأساسية' %}
-                        <span class="text-[11px] font-bold text-emerald-600 flex items-center gap-1">
-                            <i class="fa-solid fa-circle-check text-xs"></i> نشط
-                        </span>
-                        {% else %}
-                        <span class="text-[11px] font-bold text-emerald-600 flex items-center gap-1">
-                            <i class="fa-solid fa-circle-check text-xs"></i> نشط بالذكاء الاصطناعي
-                        </span>
-                        {% endif %}
-                    </div>
-
-                    <!-- Inactive clients reactivation -->
-                    <div class="flex items-center justify-between p-3 rounded-xl border border-slate-100 bg-slate-50/30">
-                        <div class="flex items-center gap-2.5">
-                            <div class="w-6 h-6 rounded-md bg-blue-100 text-blue-700 flex items-center justify-center text-[10px]">
-                                <i class="fa-solid fa-arrows-spin"></i>
-                            </div>
-                            <span class="text-xs font-bold text-slate-600">يمكنك استرجاع العملاء غير النشطين</span>
-                        </div>
-                        {% if plan_name == 'الأساسية' %}
-                        <span class="text-[10px] bg-amber-50 border border-amber-100 text-amber-700 px-2 py-0.5 rounded-md font-bold flex items-center gap-1">
-                            <i class="fa-solid fa-lock text-[8px]"></i> النمو
-                        </span>
-                        {% else %}
-                        <span class="text-[11px] font-bold text-emerald-600 flex items-center gap-1">
-                            <i class="fa-solid fa-circle-check text-xs"></i> نشط
-                        </span>
-                        {% endif %}
-                    </div>
-
-                    <!-- Smart WhatsApp Chat Widget -->
-                    <div class="flex items-center justify-between p-3 rounded-xl border border-slate-100 bg-slate-50/30">
-                        <div class="flex items-center gap-2.5">
-                            <div class="w-6 h-6 rounded-md bg-indigo-100 text-indigo-700 flex items-center justify-center text-[10px]">
-                                <i class="fa-solid fa-window-maximize"></i>
-                            </div>
-                            <span class="text-xs font-bold text-slate-600">تحويل محادثات المتجر إلى فرص بيع تلقائية</span>
-                        </div>
-                        {% if plan_name == 'الأساسية' %}
-                        <span class="text-[10px] bg-amber-50 border border-amber-100 text-amber-700 px-2 py-0.5 rounded-md font-bold flex items-center gap-1">
-                            <i class="fa-solid fa-lock text-[8px]"></i> النمو
-                        </span>
-                        {% else %}
-                        <span class="text-[11px] font-bold text-emerald-600 flex items-center gap-1">
-                            <i class="fa-solid fa-circle-check text-xs"></i> نشط
-                        </span>
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
-
-            {% if plan_name == 'النمو' %}
-            <div class="mt-4 pt-3 border-t border-slate-100 text-[11px] text-slate-400 leading-relaxed">
-                💡 هل تحتاج لربط واتساب الرسمي للشركات (Meta API)؟ باقة الشركات تدعم هذا الربط لتلبية احتياجات الأعمال الكبيرة.
-            </div>
-            {% endif %}
-        </div>
-
-        <!-- Right Column: Smart Upgrade Card (2 cols) -->
-        <div class="card p-4 sm:p-6 lg:col-span-2 flex flex-col justify-between overflow-hidden relative border-teal-100 bg-gradient-to-br from-white to-teal-50/30">
-            {% if plan_name == 'الأساسية' %}
-            <div class="absolute top-0 left-0 w-24 h-24 bg-teal-500/5 rounded-full -translate-x-6 -translate-y-6"></div>
-            <div>
-                <span class="badge badge-teal mb-3 font-bold">باقة النمو 🚀</span>
-                <h3 class="text-base font-extrabold text-slate-800 leading-snug">فعّل قوة النمو لمبيعات أكثر</h3>
-                <p class="text-xs text-slate-500 mt-2 leading-relaxed">رقّ اشتراكك الآن إلى **باقة النمو** لتحصل على مبيعات وقيمة أعلى:</p>
-
-                <ul class="mt-3.5 space-y-2 text-xs text-slate-600 font-medium">
-                    <li class="flex items-center gap-2"><i class="fa-solid fa-circle-check text-teal-600"></i> رسائل غير محدودة</li>
-                    <li class="flex items-center gap-2"><i class="fa-solid fa-circle-check text-teal-600"></i> زر واتساب ذكي للمتجر</li>
-                    <li class="flex items-center gap-2"><i class="fa-solid fa-circle-check text-teal-600"></i> الترحيب الذكي بالعملاء الجدد</li>
-                    <li class="flex items-center gap-2"><i class="fa-solid fa-circle-check text-teal-600"></i> استرجاع السلات بالذكاء الاصطناعي</li>
-                    <li class="flex items-center gap-2"><i class="fa-solid fa-circle-check text-teal-600"></i> استرجاع العملاء غير النشطين</li>
-                </ul>
-            </div>
-            <a href="/pricing" class="mt-5 w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-2.5 px-4 rounded-xl text-xs text-center shadow-lg shadow-teal-500/20 transition flex items-center justify-center gap-2">
-                الترقية إلى باقة النمو <i class="fa-solid fa-arrow-left text-[10px]"></i>
-            </a>
-            {% else %}
-            <!-- If already on Growth/Enterprise, show account info summaries -->
-            <div class="flex flex-col h-full justify-between">
-                <div>
-                    <span class="badge badge-teal mb-3 font-bold">حالة الحساب</span>
-                    <h3 class="text-sm font-bold text-slate-700">اشتراكك نشط بالكامل</h3>
-                    <p class="text-xs text-slate-500 mt-1">تتمتع حالياً بكافة مميزات باقة **{{ plan_name }}** الممتازة.</p>
-                </div>
-                <div class="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-slate-600">
-                    <span>الدعم الفني:</span>
-                    <a href="https://wa.me/your_number" target="_blank" class="text-teal-600 hover:underline flex items-center gap-1">
-                        تواصل معنا عبر الواتساب <i class="fa-brands fa-whatsapp"></i>
-                    </a>
-                </div>
-            </div>
-            {% endif %}
-        </div>
-
     </div>
 
 </div>
@@ -668,9 +439,9 @@
         const ctx = document.getElementById('messagesChart');
         if (!ctx) return;
         const c = ctx.getContext('2d');
-        const grad = c.createLinearGradient(0, 0, 0, 200);
-        grad.addColorStop(0, 'rgba(20,184,166,0.18)');
-        grad.addColorStop(1, 'rgba(20,184,166,0)');
+        const grad = c.createLinearGradient(0, 0, 0, 180);
+        grad.addColorStop(0, 'rgba(37,99,235,0.15)'); // Blue gradient start
+        grad.addColorStop(1, 'rgba(37,99,235,0)');    // Fade out
 
         new Chart(ctx, {
             type: 'line',
@@ -678,16 +449,16 @@
                 labels: {{ chartLabels | safe }},
                 datasets: [{
                     data: {{ chartData | safe }},
-                    borderColor: '#14b8a6',
+                    borderColor: '#2563EB', // Blue accent
                     backgroundColor: grad,
-                    borderWidth: 2.5,
+                    borderWidth: 2,
                     fill: true,
-                    tension: 0.45,
-                    pointBackgroundColor: '#14b8a6',
+                    tension: 0.4,
+                    pointBackgroundColor: '#2563EB',
                     pointBorderColor: '#fff',
-                    pointBorderWidth: 2,
-                    pointRadius: 4,
-                    pointHoverRadius: 7
+                    pointBorderWidth: 1.5,
+                    pointRadius: 3,
+                    pointHoverRadius: 5
                 }]
             },
             options: {
@@ -697,35 +468,26 @@
                     backgroundColor: '#0f172a',
                     titleColor: '#94a3b8',
                     bodyColor: '#fff',
-                    padding: 10,
-                    cornerRadius: 10,
-                    titleFont: { family: 'Cairo', size: 11 },
-                    bodyFont: { family: 'Inter', size: 14, weight: '700' }
+                    padding: 8,
+                    cornerRadius: 8,
+                    titleFont: { family: 'Cairo', size: 10 },
+                    bodyFont: { family: 'Inter', size: 12, weight: '700' }
                 }},
                 scales: {
                     y: {
                         beginAtZero: true,
                         grid: { color: '#f1f5f9', drawBorder: false },
-                        ticks: { font: { family: 'Inter', size: 11 }, color: '#94a3b8', maxTicksLimit: 5 },
+                        ticks: { font: { family: 'Inter', size: 9 }, color: '#94a3b8', maxTicksLimit: 4 },
                         border: { display: false }
                     },
                     x: {
                         grid: { display: false },
-                        ticks: { font: { family: 'Cairo', size: 11 }, color: '#94a3b8' },
+                        ticks: { font: { family: 'Cairo', size: 9 }, color: '#94a3b8' },
                         border: { display: false }
                     }
                 }
             }
         });
     })();
-
-    // ── Animate usage bar on load ──
-    document.addEventListener('DOMContentLoaded', () => {
-        const fill = document.querySelector('.usage-fill');
-        if (fill) {
-            const target = fill.dataset.target || '0';
-            setTimeout(() => { fill.style.width = target + '%'; }, 300);
-        }
-    });
 </script>
 {% endblock %}
