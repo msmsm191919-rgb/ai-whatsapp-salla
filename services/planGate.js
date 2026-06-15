@@ -38,7 +38,7 @@ const PLANS = {
         },
         limits: {
             whatsapp_numbers: 1,
-            messages_monthly: 10000,
+            messages_monthly: 3000,
             ai_replies_monthly: 1000,
             ai_model: 'GPT-4o Mini'
         },

@@ -15,7 +15,7 @@ const SallaDatabase = require("./database/db_instance");
                 name: 'الأساسية',
                 price_monthly: 49,
                 price_yearly: 470,
-                msg_limit_monthly: 10000,
+                msg_limit_monthly: 3000,
                 trial_days: 7,
                 is_active: true,
                 features: {
@@ -34,7 +34,7 @@ const SallaDatabase = require("./database/db_instance");
                     whatsapp_api: false,
                     limits: {
                         whatsapp_numbers: 1,
-                        messages_monthly: 10000,
+                        messages_monthly: 3000,
                         ai_replies_monthly: 1000,
                         ai_model: 'GPT-4o Mini'
                     },

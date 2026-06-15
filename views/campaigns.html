@@ -133,7 +133,7 @@
             <h3 class="font-bold text-slate-700 flex items-center gap-2 text-sm justify-center sm:justify-start">
                 <i class="fa-solid fa-list text-teal-500"></i> سجل الحملات
             </h3>
-            <span class="text-xs text-slate-400 font-bold text-center sm:text-right">{{ plan_name }} — {{ msg_limit }} رسالة/شهر</span>
+            <span class="text-xs text-slate-400 font-bold text-center sm:text-right">{{ plan_name }} — {% if msg_limit > 0 %}{{ msg_limit }} رسالة/شهر{% else %}رسائل غير محدودة{% endif %}</span>
         </div>
 
         <div class="overflow-x-auto">

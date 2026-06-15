@@ -22,18 +22,17 @@
 
 | الميزة | الحالة | المفتاح |
 |---------|--------|---------|
-| 10,000 رسالة شهرية | ✅ | `limits.messages_monthly: 10000` |
+| 3,000 رسالة شهرية | ✅ | `limits.messages_monthly: 3000` |
 | رقم 1 واتساب | ✅ | `limits.whatsapp_numbers: 1` |
-| بوت رد آلي (قوائم) | ✅ | `features.auto_reply_bot` |
-| أتمتة سلات متروكة | ✅ | `features.automation_carts` |
-| إشعارات حالة الطلب | ✅ | `features.automation_orders` |
-| رسائل ترحيبية | ✅ | `features.welcome_messages` |
-| حملات جماعية (QR) | ✅ | `features.campaigns` |
-| 1,000 رد ذكاء اصطناعي | ✅ | `limits.ai_replies_monthly: 1000` |
-| ذكاء اصطناعي متقدم | ❌ | `features.ai_advanced: false` |
-| استيراد العملاء Excel | ❌ | `features.customers_import: false` |
-| API Access | ❌ | `features.api_access: false` |
-| WhatsApp Business API | ❌ | `features.whatsapp_api: false` |
+| ردود ذكية بالذكاء الاصطناعي | ✅ | `limits.ai_replies_monthly: 1000` |
+| حملات واتساب جماعية محدودة | ✅ | `features.campaigns` |
+| زر واتساب للمتجر | ✅ | `features.welcome_messages` |
+| استرجاع السلات المتروكة | ✅ | `features.automation_carts` |
+| متابعة العملاء تلقائياً | ✅ | `features.automation_orders` |
+| تنبيهات الطلبات التلقائية | ✅ | `features.automation_orders` |
+| تقارير وإحصائيات | ✅ | `features.reports` |
+| سجل الإشعارات المرسلة | ✅ | `features.logs` |
+| تجربة مجانية 7 أيام | ✅ | `trial_days: 7` |
 
 **السيناريوهات:** `abandoned_cart`, `order_status`
 
@@ -44,17 +43,22 @@
 | الميزة | المفتاح |
 |---------|---------| 
 | **رسائل غير محدودة** 🔥 | `limits.messages_monthly: -1` |
-| **ذكاء اصطناعي متقدم** | `features.ai_advanced: true` |
-| 7,000 رد ذكاء اصطناعي | `limits.ai_replies_monthly: 7000` |
-| حملات تسويقية (Broadcast) | `features.campaigns: true` |
-| تسليم منتجات رقمية + أكواد | `features.digital_products: true` |
-| استيراد العملاء (Excel) | `features.customers_import: true` |
-| أتمتة سلات ذكية (مفاوض AI) | `features.ai_cart_negotiator: true` |
-| تذكير بتقييم المتجر | scenario: `review_request` |
-| تهنئة عيد ميلاد | scenario: `birthday` |
-| إعادة تنشيط العملاء | scenario: `reactivation` |
+| **ردود ذكية بالذكاء الاصطناعي** | `features.ai_advanced: true` |
+| زر واتساب ذكي للمتجر | `features.welcome_messages: true` |
+| الترحيب الذكي بالعملاء الجدد | `features.welcome_messages: true` |
+| إقناع العملاء المترددين وإتمام الطلبات | `features.ai_cart_negotiator: true` |
+| استرجاع السلات المتروكة بالذكاء الاصطناعي | `features.ai_cart_negotiator: true` |
+| متابعة العملاء بالذكاء الاصطناعي | `features.ai_advanced: true` |
+| استرجاع العملاء غير النشطين | scenario: `reactivation` |
+| حملات واتساب جماعية غير محدودة | `features.campaigns: true` |
+| طلب التقييمات والمراجعات تلقائياً | scenario: `review_request` |
+| الرد على الاعتراضات الشائعة | `features.ai_advanced: true` |
+| تحويل المحادثات إلى فرص بيع | `features.ai_advanced: true` |
+| زيادة فرص إتمام الطلبات | `features.ai_advanced: true` |
+| تقارير وإحصائيات متقدمة | `features.reports: true` |
+| سجل كامل للمحادثات والإشعارات | `features.logs: true` |
 | ربط 3 أرقام واتساب | `limits.whatsapp_numbers: 3` |
-| WhatsApp Business API | ❌ `features.whatsapp_api: false` |
+| تجربة مجانية 7 أيام | `trial_days: 7` |
 
 ---
 
@@ -65,9 +69,12 @@
 | **API Access** (REST + Webhooks) | `features.api_access: true` |
 | **Custom Knowledge Base (إعداد قاعدة معرفة مخصصة)** | `features.custom_ai_training: true` |
 | **WhatsApp Business API** ✅ | `features.whatsapp_api: true` |
-| 15,000 رد ذكاء اصطناعي | `limits.ai_replies_monthly: 15000` |
-| تنبيه انخفاض سعر | scenario: `price_drop` |
-| أرقام واتساب غير محدودة | `limits.whatsapp_numbers: -1` |
+| ربط رسمي عبر Meta API | `features.whatsapp_api: true` |
+| عدة أرقام واتساب | `limits.whatsapp_numbers: -1` |
+| إشعارات التدخل البشري | `features.human_intervention_notif: true` |
+| تقارير متقدمة للشركات | `features.reports_enterprise: true` |
+| حلول مخصصة حسب احتياج النشاط | `features.custom_solutions: true` |
+| تجربة مجانية 7 أيام | `trial_days: 7` |
 
 ---
 
