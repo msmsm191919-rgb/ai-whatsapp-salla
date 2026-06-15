@@ -60,7 +60,7 @@
 
         body {
             font-family: 'Cairo', 'Inter', sans-serif;
-            background-color: #f1f5f9;
+            background-color: #f8fafc;
             color: #1e293b;
             -webkit-font-smoothing: antialiased;
         }
@@ -80,59 +80,98 @@
         .sidebar-link {
             display: flex;
             align-items: center;
-            gap: 10px;
-            padding: 9px 14px;
-            border-radius: 10px;
+            gap: 12px;
+            padding: 10px 14px;
+            border-radius: 12px;
             font-size: 13.5px;
-            font-weight: 600;
-            color: #94a3b8;
-            transition: all 0.18s ease;
+            font-weight: 700;
+            color: #475569;
+            transition: all 0.2s ease;
             position: relative;
+            border: 1px solid transparent;
         }
         .sidebar-link:hover {
-            background: rgba(255,255,255,0.06);
-            color: #e2e8f0;
+            background: #f1f5f9;
+            color: #0f172a;
+        }
+        .sidebar-link:hover .nav-icon {
+            color: #0f172a;
         }
         .sidebar-link.active {
-            background: linear-gradient(135deg, rgba(20,184,166,0.18) 0%, rgba(20,184,166,0.06) 100%);
-            color: #5eead4;
-            border: 1px solid rgba(20,184,166,0.20);
+            background: linear-gradient(135deg, rgba(13,148,136,0.08) 0%, rgba(13,148,136,0.03) 100%);
+            color: #0d9488;
+            border: 1px solid rgba(13,148,136,0.15);
         }
         .sidebar-link.active .nav-icon {
-            color: #2dd4bf;
+            color: #0d9488;
         }
         /* 🔒 Locked sidebar items */
         .sidebar-link.locked {
-            opacity: 0.55;
+            opacity: 0.6;
             position: relative;
         }
         .sidebar-link.locked:hover {
-            background: rgba(245,158,11,0.08);
-            color: #fbbf24;
+            background: rgba(245,158,11,0.05);
+            color: #b45309;
         }
         .sidebar-link.locked .nav-icon {
-            color: #94a3b8;
+            color: #64748b;
         }
         .sidebar-link .side-lock {
             margin-right: auto;
             font-size: 9px;
-            color: #fbbf24;
-            background: rgba(245,158,11,0.15);
+            color: #d97706;
+            background: rgba(245,158,11,0.1);
             padding: 3px 6px;
             border-radius: 6px;
-            border: 1px solid rgba(245,158,11,0.25);
+            border: 1px solid rgba(245,158,11,0.15);
         }
         .sidebar-group-label {
             font-size: 10px;
-            font-weight: 700;
+            font-weight: 800;
             letter-spacing: 0.08em;
             text-transform: uppercase;
-            color: #475569;
+            color: #94a3b8;
             padding: 0 14px;
-            margin: 20px 0 6px;
+            margin: 24px 0 8px;
             display: flex;
             align-items: center;
             gap: 6px;
+        }
+
+        /* ── Collapsible Sidebar Desktop ── */
+        @media (min-width: 1024px) {
+            #sidebar {
+                transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+            }
+            .sidebar-collapsed #sidebar {
+                width: 72px !important;
+            }
+            .sidebar-collapsed #sidebar .logo-text,
+            .sidebar-collapsed #sidebar .sidebar-link span,
+            .sidebar-collapsed #sidebar .sidebar-link .side-lock,
+            .sidebar-collapsed #sidebar .sidebar-group-label,
+            .sidebar-collapsed #sidebar .user-details,
+            .sidebar-collapsed #sidebar .logout-btn {
+                display: none !important;
+            }
+            .sidebar-collapsed #sidebar .logo-container {
+                justify-content: center;
+                padding-left: 0;
+                padding-right: 0;
+            }
+            .sidebar-collapsed #sidebar .sidebar-link {
+                justify-content: center;
+                padding: 10px;
+                gap: 0;
+            }
+            .sidebar-collapsed #sidebar .user-footer {
+                justify-content: center;
+                padding: 16px 0;
+            }
+            .sidebar-collapsed #sidebar #collapseIcon {
+                transform: rotate(180deg);
+            }
         }
 
         /* ── Cards ── */
@@ -167,10 +206,11 @@
 
         /* ── Topbar ── */
         .topbar {
-            background: rgba(255,255,255,0.92);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border-bottom: 1px solid #e2e8f0;
+            background: rgba(255,255,255,0.85);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-bottom: 1px solid #f1f5f9;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.02);
         }
         @media (max-width: 1023px) {
             .topbar {
@@ -253,6 +293,15 @@
 </head>
 
 <body>
+<script>
+    // Apply sidebar collapse state immediately on parsing body to prevent layout shift
+    (function() {
+        const collapsed = localStorage.getItem('sidebarCollapsed');
+        if (collapsed === '1') {
+            document.body.classList.add('sidebar-collapsed');
+        }
+    })();
+</script>
 <div class="flex h-screen overflow-hidden">
 
     <!-- ── Mobile Overlay ── -->
@@ -262,24 +311,27 @@
          SIDEBAR
     ══════════════════════════════════════ -->
     <aside id="sidebar"
-        class="fixed lg:static inset-y-0 -right-60 lg:right-0 z-50 w-60 flex flex-col transition-all duration-300 overflow-hidden"
-        style="background: #0f172a;">
+        class="fixed lg:static inset-y-0 -right-60 lg:right-0 z-50 w-60 flex flex-col transition-all duration-300 overflow-hidden bg-white border-l border-slate-100 shadow-sm">
 
-        <!-- Ambient glows -->
-        <div class="absolute inset-0 pointer-events-none overflow-hidden">
-            <div class="absolute -top-16 -left-16 w-48 h-48 bg-teal-500 rounded-full blur-[80px] opacity-[0.07]"></div>
-            <div class="absolute bottom-0 right-0 w-48 h-48 bg-purple-600 rounded-full blur-[80px] opacity-[0.06]"></div>
-        </div>
-
-        <!-- Logo -->
-        <div class="relative z-10 flex items-center gap-3 px-5 py-5 border-b border-white/[0.06]">
-            <div class="w-9 h-9 rounded-xl gradient-teal flex items-center justify-center shadow-lg">
-                <i class="fa-solid fa-wand-magic-sparkles text-white text-base"></i>
+        <!-- Logo & Collapsible Header -->
+        <div class="relative z-10 flex items-center justify-between px-5 py-5 border-b border-slate-100 logo-container flex-shrink-0">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-xl gradient-teal flex items-center justify-center shadow-md flex-shrink-0">
+                    <i class="fa-solid fa-wand-magic-sparkles text-white text-base"></i>
+                </div>
+                <div class="logo-text">
+                    <h1 class="text-slate-800 font-bold text-base tracking-tight leading-none">مبهر <span class="text-teal-600 font-black">AI</span></h1>
+                    <p class="text-[10px] text-slate-400 mt-0.5 font-inter uppercase tracking-widest">SaaS Platform</p>
+                </div>
             </div>
-            <div>
-                <h1 class="text-white font-bold text-base tracking-tight leading-none">مبهر <span class="text-teal-400">AI</span></h1>
-                <p class="text-[10px] text-slate-500 mt-0.5 font-inter uppercase tracking-widest">SaaS Platform</p>
-            </div>
+            <!-- Collapse Button on Desktop -->
+            <button id="collapseBtn" onclick="toggleSidebarCollapse()" class="hidden lg:flex w-7 h-7 items-center justify-center rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition" title="تصغير/توسيع القائمة">
+                <i id="collapseIcon" class="fa-solid fa-chevron-right text-xs transition-transform duration-300"></i>
+            </button>
+            <!-- Close Button on Mobile -->
+            <button onclick="toggleSidebar()" class="lg:hidden w-7 h-7 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition" title="إغلاق القائمة">
+                <i class="fa-solid fa-xmark text-base"></i>
+            </button>
         </div>
 
         <!-- Nav -->
@@ -358,22 +410,22 @@
         </nav>
 
         <!-- User Footer -->
-        <div class="relative z-10 border-t border-white/[0.06] p-4" style="background: rgba(0,0,0,0.2);">
+        <div class="relative z-10 border-t border-slate-100 p-4 user-footer bg-slate-50/50 flex-shrink-0">
             <div class="flex items-center gap-3">
                 <div class="relative flex-shrink-0">
                     <div class="w-9 h-9 rounded-xl gradient-teal flex items-center justify-center text-white font-bold text-sm shadow-md">
                         {{ (user.merchant.name | first) if user.merchant.name else 'م' }}
                     </div>
-                    <div class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-400 border-2 rounded-full" style="border-color: #0f172a;"></div>
+                    <div class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 border-2 rounded-full" style="border-color: #ffffff;"></div>
                 </div>
-                <div class="flex-1 min-w-0">
-                    <p class="text-white text-sm font-semibold truncate leading-tight">{{ user.merchant.name or 'متجر تجريبي' }}</p>
-                    <p class="text-teal-400 text-[10px] flex items-center gap-1 mt-0.5">
+                <div class="flex-1 min-w-0 user-details">
+                    <p class="text-slate-800 text-sm font-bold truncate leading-tight">{{ user.merchant.name or 'متجر تجريبي' }}</p>
+                    <p class="text-teal-600 text-[10px] flex items-center gap-1 mt-0.5 font-bold">
                         <i class="fa-solid fa-bolt text-[8px]"></i>
                         {{ plan_name or 'الأساسية' }}
                     </p>
                 </div>
-                <a href="/logout" class="text-slate-500 hover:text-slate-300 transition text-sm" title="تسجيل الخروج">
+                <a href="/logout" class="text-slate-400 hover:text-red-500 transition text-sm logout-btn" title="تسجيل الخروج">
                     <i class="fa-solid fa-right-from-bracket"></i>
                 </a>
             </div>
@@ -445,6 +497,12 @@
         sidebar.classList.toggle('-right-60');
         sidebar.classList.toggle('right-0');
         overlay.classList.toggle('hidden');
+    }
+
+    function toggleSidebarCollapse() {
+        document.body.classList.toggle('sidebar-collapsed');
+        const isCollapsed = document.body.classList.contains('sidebar-collapsed');
+        localStorage.setItem('sidebarCollapsed', isCollapsed ? '1' : '0');
     }
 
     document.addEventListener('DOMContentLoaded', () => {
