@@ -1,868 +1,667 @@
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
+{% extends "layouts/dashboard_master.html" %}
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>إنشاء حملة | مبهر AI</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Cairo', sans-serif;
-        }
-        .font-mono, [dir="ltr"], input[type="url"], input[type="number"] {
-            font-family: 'Inter', monospace;
-        }
+{% block title %}إنشاء حملة | مبهر AI{% endblock %}
 
-        .chat-scroll::-webkit-scrollbar {
-            width: 4px;
-        }
+{% block header_title %}حملة جديدة ✨{% endblock %}
+{% block header_subtitle %}أنشئ حملتك التسويقية في 3 خطوات بسيطة{% endblock %}
 
-        .chat-scroll::-webkit-scrollbar-track {
-            background: transparent;
-        }
+{% block header_actions %}
+<!-- Plan Quota Badge -->
+<div class="hidden md:flex items-center gap-2 px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-full text-xs font-bold text-gray-600">
+    <i class="fa-solid fa-gauge-high text-teal-500"></i>
+    <span>الرصيد:</span>
+    <span class="{% if messages_remaining != -1 and messages_remaining < 100 %}text-red-500{% else %}text-teal-600{% endif %}">
+        {% if messages_remaining == -1 %}∞{% else %}{{ messages_remaining }}{% endif %}
+    </span>
+    <span class="text-gray-400">رسالة</span>
+</div>
+<button id="scheduleBtn" class="bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 font-bold py-2 px-4 rounded-xl shadow-sm transition flex items-center gap-2 text-sm" title="جدولة لوقت لاحق">
+    <i class="fa-regular fa-clock"></i> جدولة
+</button>
+<button id="sendBtn" class="bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-6 rounded-xl shadow-lg shadow-teal-500/30 transition flex items-center gap-2 text-sm">
+    <i class="fa-solid fa-paper-plane"></i> إرسال الآن
+</button>
+{% endblock %}
 
-        .chat-scroll::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
-            border-radius: 2px;
-        }
+{% block styles %}
+<style>
+    .chat-scroll::-webkit-scrollbar {
+        width: 4px;
+    }
+    .chat-scroll::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    .chat-scroll::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 2px;
+    }
 
-        .custom-scrollbar::-webkit-scrollbar {
-            width: 6px;
-        }
+    .custom-scrollbar::-webkit-scrollbar {
+        width: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+        background: #f1f1f1;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 10px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8;
+    }
 
-        .custom-scrollbar::-webkit-scrollbar-track {
-            background: #f1f1f1;
-        }
+    /* Layout Container */
+    .meta-layout {
+        display: grid;
+        grid-template-columns: 1fr 420px;
+        gap: 32px;
+        align-items: start;
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 10px 0 32px 0;
+    }
 
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
-            border-radius: 10px;
-        }
+    .meta-preview-col {
+        position: sticky;
+        top: 96px;
+        height: calc(100vh - 140px);
+        max-height: calc(100vh - 140px);
+        overflow: hidden;
+        display: flex;
+        justify-content: center;
+        border-radius: 30px;
+    }
 
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-            background: #94a3b8;
-        }
+    .meta-phone {
+        width: 300px;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+    }
 
-        /* Layout Container */
+    .meta-chat-scroll {
+        overflow-y: auto;
+        height: 100%;
+        scrollbar-width: thin;
+        scrollbar-color: #cbd5e1 transparent;
+    }
+
+    .meta-textarea {
+        min-height: 140px !important;
+        max-height: 280px !important;
+        resize: vertical !important;
+        height: auto;
+    }
+
+    @media (max-width: 1024px) {
         .meta-layout {
-            display: grid;
-            grid-template-columns: 1fr 420px;
-            gap: 32px;
-            align-items: start;
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 32px 24px;
+            grid-template-columns: 1fr;
+            padding: 16px 0;
         }
 
         .meta-preview-col {
-            position: sticky;
-            top: 96px;
-            height: calc(100vh - 140px);
-            max-height: calc(100vh - 140px);
-            overflow: hidden;
-            display: flex;
-            justify-content: center;
-            border-radius: 30px;
+            position: relative;
+            top: 0;
+            height: 550px;
+            max-height: none;
+            order: 2;
+            width: 100%;
         }
 
-        .meta-phone {
-            width: 300px;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
+        .meta-form-col {
+            order: 1;
         }
+    }
+</style>
+{% endblock %}
 
-        .meta-chat-scroll {
-            overflow-y: auto;
-            height: 100%;
-            scrollbar-width: thin;
-            scrollbar-color: #cbd5e1 transparent;
-        }
+{% block content %}
+{% if not campaigns_enabled %}
+<!-- Locked State -->
+<div class="max-w-xl mx-auto mt-20 text-center p-10">
+    <div class="w-20 h-20 mx-auto bg-purple-100 rounded-2xl flex items-center justify-center text-4xl text-purple-500 mb-6">
+        <i class="fa-solid fa-lock"></i>
+    </div>
+    <h2 class="text-2xl font-black text-gray-800 mb-3">الحملات غير متاحة في باقة {{ plan_name }}</h2>
+    <p class="text-gray-500 text-sm mb-6">قم بترقية باقتك لتتمكن من إرسال رسائل جماعية لعملائك.</p>
+    <a href="/pricing" class="bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-8 py-3 rounded-xl font-bold inline-flex items-center gap-2">
+        <i class="fa-solid fa-rocket"></i> ترقية الباقة
+    </a>
+</div>
+{% else %}
 
-        .meta-textarea {
-            min-height: 140px !important;
-            max-height: 280px !important;
-            resize: vertical !important;
-            height: auto;
-        }
+<!-- 📱 Mobile View Tabs (Only on small viewports) -->
+<div class="flex border border-gray-200 rounded-2xl p-1 bg-white shadow-sm lg:hidden mb-4 gap-1">
+    <button id="tabFormBtn" onclick="switchMobileTab('form')" class="flex-grow py-3 px-4 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition text-teal-600 bg-teal-50 border border-teal-100 shadow-sm">
+        <i class="fa-solid fa-pen-to-square"></i> تعديل المحتوى
+    </button>
+    <button id="tabPreviewBtn" onclick="switchMobileTab('preview')" class="flex-grow py-3 px-4 rounded-xl font-bold text-xs text-gray-500 hover:text-teal-600 transition flex items-center justify-center gap-1.5">
+        <i class="fa-brands fa-whatsapp text-sm"></i> معاينة الرسالة
+    </button>
+</div>
 
-        @media (max-width: 1024px) {
-            .meta-layout {
-                grid-template-columns: 1fr;
-                padding: 16px;
-            }
+<div class="meta-layout">
 
-            .meta-preview-col {
-                position: relative;
-                top: 0;
-                height: 600px;
-                max-height: none;
-                order: 2;
-                width: 100%;
-            }
+    <!-- Right Column: Form -->
+    <div id="formCol" class="meta-form-col space-y-6">
 
-            .meta-form-col {
-                order: 1;
-            }
-        }
-    </style>
-    <script>
-        function toggleSidebar() {
-            const sidebar = document.getElementById('sidebar');
-            const overlay = document.getElementById('sidebarOverlay');
-            sidebar.classList.toggle('translate-x-full');
-            overlay.classList.toggle('hidden');
-        }
-    </script>
-</head>
-
-<body class="bg-gray-50">
-
-    <div class="flex h-screen overflow-hidden">
-        <!-- Sidebar Overlay -->
-        <div id="sidebarOverlay" class="fixed inset-0 bg-black/50 z-40 hidden lg:hidden" onclick="toggleSidebar()">
+        <!-- 🛡️ نصيحة حماية الرقم من الحظر -->
+        <div class="flex items-start gap-3 p-4 rounded-2xl bg-teal-50/70 border border-teal-100">
+            <div class="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 bg-teal-100 text-teal-700">
+                <i class="fa-solid fa-shield-halved text-sm"></i>
+            </div>
+            <div class="flex-1">
+                <p class="text-sm font-bold text-teal-800">إرسال آمن ضد الحظر — تلقائياً 🛡️</p>
+                <p class="text-xs text-teal-700 mt-1 leading-relaxed">
+                    النظام يرسل رسائلك <strong>بسرعة آمنة متغيّرة</strong> (يزيد التأخير تدريجياً + فترات تبريد) لحماية رقمك من الحظر.
+                    <br>
+                    💡 <strong>لو رقمك جديد:</strong> ابدأ بكميات صغيرة (مثلاً 50-100 رسالة أول يومين) وزدها تدريجياً، وأرسل لعملاء يعرفونك — هذا يقلّل خطر الحظر بشكل كبير.
+                </p>
+            </div>
         </div>
 
-        <!-- Sidebar -->
-        <aside id="sidebar"
-            class="fixed lg:static inset-y-0 right-0 z-50 w-64 bg-[#1e293b] text-white transform translate-x-full lg:translate-x-0 transition-transform duration-300 flex flex-col shadow-2xl relative overflow-hidden">
-            <!-- Background Accents -->
-            <div class="absolute top-0 left-0 w-full h-full overflow-hidden opacity-10 pointer-events-none">
-                <div class="absolute -top-24 -left-24 w-64 h-64 bg-teal-500 rounded-full blur-[100px]"></div>
-                <div class="absolute bottom-0 right-0 w-64 h-64 bg-purple-500 rounded-full blur-[100px]"></div>
+        <!-- Step 1: Campaign Details -->
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 relative overflow-hidden hover:shadow-md transition-shadow">
+            <div class="absolute top-0 right-0 w-1.5 h-full bg-teal-500"></div>
+            <div class="flex items-center gap-3 mb-6">
+                <div class="w-8 h-8 rounded-full bg-teal-50 text-teal-600 flex items-center justify-center font-bold text-sm border border-teal-100">1</div>
+                <h3 class="font-bold text-gray-800 text-lg">تفاصيل الحملة</h3>
             </div>
-
-            <div class="p-6 relative z-10 flex items-center gap-3 border-b border-gray-700/50">
-                <div
-                    class="w-10 h-10 bg-gradient-to-tr from-teal-400 to-blue-500 rounded-xl flex items-center justify-center shadow-lg shadow-teal-500/20">
-                    <i class="fa-solid fa-wand-magic-sparkles text-xl text-white"></i>
+            <div class="space-y-5">
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-2">اسم الحملة</label>
+                    <input type="text" id="campaignName" placeholder="مثال: عروض نهاية العام" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3.5 text-sm focus:bg-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition font-medium">
                 </div>
                 <div>
-                    <h1 class="text-xl font-bold tracking-wide">Mobhir <span class="text-teal-400">AI</span></h1>
-                    <p class="text-[10px] text-gray-400 uppercase tracking-widest">Enterprise Edition</p>
-                </div>
-            </div>
-
-            <nav class="flex-1 py-6 px-3 space-y-1 relative z-10 overflow-y-auto custom-scrollbar">
-                <a href="/dashboard"
-                    class="flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all group mb-6 text-gray-400 hover:bg-white/5 hover:text-white">
-                    <i class="fa-solid fa-chart-pie w-5 group-hover:scale-110 transition-transform"></i>
-                    <span class="font-bold text-sm">لوحة التحكم</span>
-                </a>
-
-                <!-- Messaging Group -->
-                <div
-                    class="mb-2 px-3 text-[10px] font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2">
-                    <i class="fa-solid fa-message text-[9px]"></i> الرسائل والحملات
-                </div>
-                <a href="/logs"
-                    class="flex items-center gap-3 px-4 py-2 rounded-xl transition-all group text-gray-400 hover:bg-white/5 hover:text-white">
-                    <i class="fa-solid fa-comments w-5 group-hover:scale-110 transition-transform"></i>
-                    <span class="font-medium text-sm">المحادثات</span>
-                </a>
-                <a href="/campaigns"
-                    class="flex items-center gap-3 px-4 py-2 rounded-xl transition-all group bg-gradient-to-r from-teal-600/20 to-teal-600/5 text-teal-400 border border-teal-500/20 shadow-lg shadow-teal-900/10">
-                    <i class="fa-solid fa-bullhorn w-5 text-teal-400"></i>
-                    <span class="font-medium text-sm">حملات الرسائل</span>
-                </a>
-
-                <!-- Automation Group -->
-                <div
-                    class="mt-6 mb-2 px-3 text-[10px] font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2">
-                    <i class="fa-solid fa-bolt text-[9px]"></i> الأتمتة
-                </div>
-                <a href="/automation/carts"
-                    class="flex items-center gap-3 px-4 py-2 rounded-xl transition-all group text-gray-400 hover:bg-white/5 hover:text-white">
-                    <i class="fa-solid fa-cart-shopping w-5 group-hover:scale-110 transition-transform"></i>
-                    <span class="font-medium text-sm">السلات المتروكة</span>
-                </a>
-                <a href="/automation/orders"
-                    class="flex items-center gap-3 px-4 py-2 rounded-xl transition-all group text-gray-400 hover:bg-white/5 hover:text-white">
-                    <i class="fa-solid fa-box-open w-5 group-hover:scale-110 transition-transform"></i>
-                    <span class="font-medium text-sm">حالة الطلبات</span>
-                </a>
-
-                <!-- AI Group -->
-                <div
-                    class="mt-6 mb-2 px-3 text-[10px] font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2">
-                    <i class="fa-solid fa-brain text-[9px]"></i> الذكاء الاصطناعي
-                </div>
-                <a href="/ai-settings"
-                    class="flex items-center gap-3 px-4 py-2 rounded-xl transition-all group text-gray-400 hover:bg-white/5 hover:text-white">
-                    <i class="fa-solid fa-robot w-5 group-hover:scale-110 transition-transform"></i>
-                    <span class="font-medium text-sm">شخصية المساعد</span>
-                </a>
-                <a href="/scenarios"
-                    class="flex items-center gap-3 px-4 py-2 rounded-xl transition-all group text-gray-400 hover:bg-white/5 hover:text-white">
-                    <i class="fa-solid fa-wand-magic-sparkles w-5 group-hover:scale-110 transition-transform"></i>
-                    <span class="font-medium text-sm">السيناريوهات</span>
-                </a>
-
-                <!-- Management Group -->
-                <div
-                    class="mt-6 mb-2 px-3 text-[10px] font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2">
-                    <i class="fa-solid fa-sliders text-[9px]"></i> الإدارة
-                </div>
-                <a href="/customers"
-                    class="flex items-center gap-3 px-4 py-2 rounded-xl transition-all group text-gray-400 hover:bg-white/5 hover:text-white">
-                    <i class="fa-solid fa-users w-5 group-hover:scale-110 transition-transform"></i>
-                    <span class="font-medium text-sm">العملاء</span>
-                </a>
-                {% if activeChannel != 'api' %}
-                <a href="/whatsapp-web"
-                    class="flex items-center gap-3 px-4 py-2 rounded-xl transition-all group text-gray-400 hover:bg-white/5 hover:text-white">
-                    <i class="fa-brands fa-whatsapp w-5 group-hover:scale-110 transition-transform"></i>
-                    <span class="font-medium text-sm">ربط واتساب{% if activeChannel == 'qr' %} <span style="color:#16a34a;">✓</span>{% else %} ⭐{% endif %}</span>
-                </a>
-                {% endif %}
-                {% if activeChannel != 'qr' %}
-                <a href="/settings/whatsapp"
-                    class="flex items-center gap-3 px-4 py-2 rounded-xl transition-all group text-gray-400 hover:bg-white/5 hover:text-white">
-                    <i class="fa-solid fa-gear w-5 group-hover:scale-110 transition-transform"></i>
-                    <span class="font-medium text-sm">واتساب API{% if activeChannel == 'api' %} <span style="color:#16a34a;">✓</span>{% else %} (متقدم){% endif %}</span>
-                </a>
-                {% endif %}
-                <a href="/billing"
-                    class="flex items-center gap-3 px-4 py-2 rounded-xl transition-all group text-gray-400 hover:bg-white/5 hover:text-white">
-                    <i class="fa-solid fa-receipt w-5 group-hover:scale-110 transition-transform"></i>
-                    <span class="font-medium text-sm">الفواتير والاشتراك</span>
-                </a>
-                <a href="/pricing"
-                    class="flex items-center gap-3 px-4 py-2 rounded-xl transition-all group text-gray-400 hover:bg-white/5 hover:text-white">
-                    <i class="fa-solid fa-gem w-5 group-hover:scale-110 transition-transform"></i>
-                    <span class="font-medium text-sm">الباقات والأسعار</span>
-                </a>
-            </nav>
-
-            <!-- User Profile -->
-            <div class="p-4 border-t border-gray-700/50 bg-black/20 backdrop-blur-sm relative z-10">
-                <div class="flex items-center gap-3">
+                    <div class="flex justify-between items-center mb-2">
+                        <label class="block text-sm font-bold text-gray-700">الجمهور المستهدف</label>
+                        <a href="/customers" class="text-xs text-teal-600 hover:text-teal-800 font-bold transition bg-teal-50 px-2 py-1 rounded-md">
+                            <i class="fa-solid fa-users-gear ml-1"></i> إدارة القوائم
+                        </a>
+                    </div>
                     <div class="relative">
-                        <div
-                            class="w-10 h-10 rounded-full bg-gradient-to-br from-gray-700 to-gray-600 border border-gray-500 flex items-center justify-center text-white font-bold shadow-md">
-                            {{ (user.merchant.name | first) if user.merchant.name else 'M' }}
-                        </div>
-                        <div
-                            class="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-[#1e293b] rounded-full">
+                        <select id="audience" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3.5 text-sm focus:bg-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition appearance-none font-medium cursor-pointer">
+                            <option value="all">جميع العملاء ({{ contacts_count }})</option>
+                            <option value="vip">العملاء المميزين (VIP)</option>
+                            <option value="abandoned">أصحاب السلات المتروكة</option>
+                            <option value="test">رقم تجريبي (للتجربة)</option>
+                        </select>
+                        <div class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+                            <i class="fa-solid fa-chevron-down text-xs"></i>
                         </div>
                     </div>
-                    <div class="overflow-hidden">
-                        <p class="text-sm font-bold text-white truncate">{{ user.merchant.name or 'متجر غير معروف' }}
-                        </p>
-                        <p class="text-[10px] text-teal-400 flex items-center gap-1"><i
-                                class="fa-solid fa-bolt text-[8px]"></i> {{ plan_name or 'الأساسية' }}</p>
-                    </div>
+                    <p class="text-[11px] text-gray-500 mt-2 flex items-center gap-1.5">
+                        <i class="fa-solid fa-shield-halved text-emerald-500"></i>
+                        يرسل النظام الرسائل بسرعة آمنة تلقائياً لحماية رقمك من الحظر 🛡️
+                    </p>
                 </div>
             </div>
-        </aside>
+        </div>
 
-        <main class="flex-1 overflow-y-auto bg-gray-50 relative custom-scrollbar">
-            <header
-                class="bg-white/80 backdrop-blur-md sticky top-0 z-40 border-b border-gray-200 px-8 py-4 flex items-center justify-between">
-                <div class="flex items-center gap-4">
-                    <button onclick="toggleSidebar()" class="lg:hidden text-gray-700 hover:text-teal-600 transition">
-                        <i class="fa-solid fa-bars text-xl"></i>
-                    </button>
-                    <div>
-                        <div class="flex items-center gap-2">
-                            <a href="/campaigns" class="text-gray-400 hover:text-teal-600 transition"><i
-                                    class="fa-solid fa-arrow-right"></i></a>
-                            <h2 class="text-2xl font-bold text-gray-800">حملة جديدة ✨</h2>
-                            <div
-                                class="mr-3 px-3 py-1 bg-gradient-to-r from-teal-50 to-blue-50 border border-teal-100 rounded-full flex items-center gap-2">
-                                <span class="w-1.5 h-1.5 rounded-full bg-teal-500 animate-pulse"></span>
-                                <span
-                                    class="text-[10px] font-bold bg-gradient-to-r from-teal-600 to-blue-600 bg-clip-text text-transparent transform translate-y-[1px]">مدعوم
-                                    بـ مبهر AI</span>
-                            </div>
-                        </div>
-                        <p class="text-sm text-gray-500 mt-1 mr-6">أنشئ حملتك التسويقية في 3 خطوات بسيطة</p>
-                    </div>
-                </div>
-                <div class="flex gap-2 items-center">
-                    <!-- Plan Quota Badge -->
-                    <div
-                        class="hidden md:flex items-center gap-2 px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-full text-xs font-bold text-gray-600">
-                        <i class="fa-solid fa-gauge-high text-teal-500"></i>
-                        <span>الرصيد:</span>
-                        <span
-                            class="{% if messages_remaining != -1 and messages_remaining < 100 %}text-red-500{% else %}text-teal-600{% endif %}">
-                            {% if messages_remaining == -1 %}∞{% else %}{{ messages_remaining }}{% endif %}
-                        </span>
-                        <span class="text-gray-400">رسالة</span>
-                    </div>
-                    <button id="scheduleBtn"
-                        class="bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 font-bold py-2 px-4 rounded-xl shadow-sm transition flex items-center gap-2 text-sm"
-                        title="جدولة لوقت لاحق">
-                        <i class="fa-regular fa-clock"></i> جدولة
-                    </button>
-                    <button id="sendBtn"
-                        class="bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-6 rounded-xl shadow-lg shadow-teal-500/30 transition flex items-center gap-2 text-sm">
-                        <i class="fa-solid fa-paper-plane"></i> إرسال الآن
-                    </button>
-                </div>
-            </header>
+        <!-- Step 2: Message Content -->
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 relative overflow-hidden hover:shadow-md transition-shadow">
+            <div class="absolute top-0 right-0 w-1.5 h-full bg-blue-500"></div>
+            <div class="flex items-center gap-3 mb-6">
+                <div class="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-sm border border-blue-100">2</div>
+                <h3 class="font-bold text-gray-800 text-lg">محتوى الرسالة</h3>
+            </div>
 
-            {% if not campaigns_enabled %}
-            <!-- Locked State -->
-            <div class="max-w-xl mx-auto mt-20 text-center p-10">
-                <div
-                    class="w-20 h-20 mx-auto bg-purple-100 rounded-2xl flex items-center justify-center text-4xl text-purple-500 mb-6">
-                    <i class="fa-solid fa-lock"></i>
+            {% if channel_mode == 'api' %}
+            <!-- وضع WhatsApp API: قوالب معتمدة من Meta -->
+            <div class="mb-4 flex items-start gap-2 p-3 rounded-xl text-xs bg-blue-50 border border-blue-100 text-blue-800">
+                <i class="fa-solid fa-circle-info mt-0.5"></i>
+                <span>أنت متصل عبر <strong>WhatsApp API</strong>. حسب قواعد Meta، الحملات الإعلانية تُرسَل عبر <strong>قالب معتمد مسبقاً</strong> (مو نص حر).</span>
+            </div>
+            <div class="mb-3">
+                <label class="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wide">اختر القالب المعتمد</label>
+                {% if templates and templates.length > 0 %}
+                <select id="templateSelect" onchange="previewTemplate()" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3.5 text-sm focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition">
+                    <option value="">— اختر قالباً —</option>
+                    {% for t in templates %}
+                    <option value="{{ t.name }}" data-lang="{{ t.language }}" data-body="{{ t.body }}">{{ t.name }} ({{ t.language }})</option>
+                    {% endfor %}
+                </select>
+                <div id="templatePreview" class="hidden mt-3 p-3 rounded-xl text-sm text-gray-700 whitespace-pre-line" style="background:#d9fdd3;border:1px solid #b6e8ad;"></div>
+                <p class="text-[11px] text-gray-400 mt-2">💡 {{1}} في القالب يُستبدل تلقائياً باسم العميل عند الإرسال.</p>
+                {% else %}
+                <div class="p-4 rounded-xl text-center text-sm bg-amber-50 border border-amber-200 text-amber-900">
+                    ما فيه قوالب معتمدة في حساب Meta. أنشئ قالباً واعتمده من
+                    <a href="https://business.facebook.com" target="_blank" class="underline font-bold">Meta Business</a> ليظهر هنا.
                 </div>
-                <h2 class="text-2xl font-black text-gray-800 mb-3">الحملات غير متاحة في باقة {{ plan_name }}</h2>
-                <p class="text-gray-500 text-sm mb-6">قم بترقية باقتك لتتمكن من إرسال رسائل جماعية لعملائك.</p>
-                <a href="/pricing"
-                    class="bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-8 py-3 rounded-xl font-bold inline-flex items-center gap-2">
-                    <i class="fa-solid fa-rocket"></i> ترقية الباقة
-                </a>
+                {% endif %}
             </div>
             {% else %}
 
-            <div class="meta-layout">
-
-                <!-- Right Column: Form -->
-                <div class="meta-form-col space-y-6">
-
-                    <!-- 🛡️ نصيحة حماية الرقم من الحظر -->
-                    <div class="flex items-start gap-3 p-4 rounded-2xl" style="background:#f0fdfa; border:1px solid #99f6e4;">
-                        <div class="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style="background:#ccfbf1; color:#0d9488;">
-                            <i class="fa-solid fa-shield-halved text-sm"></i>
-                        </div>
-                        <div class="flex-1">
-                            <p class="text-sm font-bold text-teal-800">إرسال آمن ضد الحظر — تلقائياً 🛡️</p>
-                            <p class="text-xs text-teal-700 mt-1 leading-relaxed">
-                                النظام يرسل رسائلك <strong>بسرعة آمنة متغيّرة</strong> (يزيد التأخير تدريجياً + فترات تبريد) لحماية رقمك من الحظر.
-                                <br>
-                                💡 <strong>لو رقمك جديد:</strong> ابدأ بكميات صغيرة (مثلاً 50-100 رسالة أول يومين) وزدها تدريجياً، وأرسل لعملاء يعرفونك — هذا يقلّل خطر الحظر بشكل كبير.
-                            </p>
-                        </div>
+            <!-- Image Upload -->
+            <div class="mb-5">
+                <label class="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wide">صورة (اختياري)</label>
+                <label for="campaignImage" class="flex items-center gap-4 p-3 border border-gray-200 border-dashed rounded-xl cursor-pointer hover:bg-gray-50 transition group bg-gray-50/30">
+                    <div class="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center text-gray-400 group-hover:bg-white group-hover:text-blue-500 transition shadow-inner relative overflow-hidden">
+                        <img id="imagePreviewThumbnail" class="absolute inset-0 w-full h-full object-cover hidden">
+                        <i class="fa-regular fa-image text-2xl" id="uploadIcon"></i>
                     </div>
-
-                    <!-- Step 1: Campaign Details -->
-                    <div
-                        class="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 relative overflow-hidden hover:shadow-md transition-shadow">
-                        <div class="absolute top-0 right-0 w-1.5 h-full bg-teal-500"></div>
-                        <div class="flex items-center gap-3 mb-6">
-                            <div
-                                class="w-8 h-8 rounded-full bg-teal-50 text-teal-600 flex items-center justify-center font-bold text-sm border border-teal-100">
-                                1</div>
-                            <h3 class="font-bold text-gray-800 text-lg">تفاصيل الحملة</h3>
-                        </div>
-                        <div class="space-y-5">
-                            <div>
-                                <label class="block text-sm font-bold text-gray-700 mb-2">اسم الحملة</label>
-                                <input type="text" id="campaignName" placeholder="مثال: عروض نهاية العام"
-                                    class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3.5 text-sm focus:bg-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition font-medium">
-                            </div>
-                            <div>
-                                <div class="flex justify-between items-center mb-2">
-                                    <label class="block text-sm font-bold text-gray-700">الجمهور المستهدف</label>
-                                    <a href="/customers"
-                                        class="text-xs text-teal-600 hover:text-teal-800 font-bold transition bg-teal-50 px-2 py-1 rounded-md"><i
-                                            class="fa-solid fa-users-gear ml-1"></i> إدارة القوائم</a>
-                                </div>
-                                <div class="relative">
-                                    <select id="audience"
-                                        class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3.5 text-sm focus:bg-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition appearance-none font-medium cursor-pointer">
-                                        <option value="all">جميع العملاء ({{ contacts_count }})</option>
-                                        <option value="vip">العملاء المميزين (VIP)</option>
-                                        <option value="abandoned">أصحاب السلات المتروكة</option>
-                                        <option value="test">رقم تجريبي (للتجربة)</option>
-                                    </select>
-                                    <div
-                                        class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
-                                        <i class="fa-solid fa-chevron-down text-xs"></i>
-                                    </div>
-                                </div>
-                                <p class="text-[11px] text-gray-500 mt-2 flex items-center gap-1.5">
-                                    <i class="fa-solid fa-shield-halved text-emerald-500"></i>
-                                    يرسل النظام الرسائل بسرعة آمنة تلقائياً لحماية رقمك من الحظر 🛡️
-                                </p>
-                            </div>
-                        </div>
+                    <div class="flex-1">
+                        <p class="text-sm font-bold text-gray-700 group-hover:text-blue-600 transition">اضغط لرفع صورة</p>
+                        <p class="text-[10px] text-gray-400">JPG, PNG (Max 5MB)</p>
                     </div>
-
-                    <!-- Step 2: Message Content (was Step 3, now Step 2 since we removed campaign type) -->
-                    <div
-                        class="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 relative overflow-hidden hover:shadow-md transition-shadow">
-                        <div class="absolute top-0 right-0 w-1.5 h-full bg-blue-500"></div>
-                        <div class="flex items-center gap-3 mb-6">
-                            <div
-                                class="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-sm border border-blue-100">
-                                2</div>
-                            <h3 class="font-bold text-gray-800 text-lg">محتوى الرسالة</h3>
-                        </div>
-
-                        {% if channel_mode == 'api' %}
-                        <!-- وضع WhatsApp API: قوالب معتمدة من Meta -->
-                        <div class="mb-4 flex items-start gap-2 p-3 rounded-xl text-xs" style="background:#eff6ff;border:1px solid #bfdbfe;color:#1d4ed8;">
-                            <i class="fa-solid fa-circle-info mt-0.5"></i>
-                            <span>أنت متصل عبر <strong>WhatsApp API</strong>. حسب قواعد Meta، الحملات الإعلانية تُرسَل عبر <strong>قالب معتمد مسبقاً</strong> (مو نص حر).</span>
-                        </div>
-                        <div class="mb-3">
-                            <label class="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wide">اختر القالب المعتمد</label>
-                            {% if templates and templates.length > 0 %}
-                            <select id="templateSelect" onchange="previewTemplate()" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3.5 text-sm focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition">
-                                <option value="">— اختر قالباً —</option>
-                                {% for t in templates %}
-                                <option value="{{ t.name }}" data-lang="{{ t.language }}" data-body="{{ t.body }}">{{ t.name }} ({{ t.language }})</option>
-                                {% endfor %}
-                            </select>
-                            <div id="templatePreview" class="hidden mt-3 p-3 rounded-xl text-sm text-gray-700 whitespace-pre-line" style="background:#d9fdd3;border:1px solid #b6e8ad;"></div>
-                            <p class="text-[11px] text-gray-400 mt-2">💡 {{1}} في القالب يُستبدل تلقائياً باسم العميل عند الإرسال.</p>
-                            {% else %}
-                            <div class="p-4 rounded-xl text-center text-sm" style="background:#fffbeb;border:1px solid #fde68a;color:#b45309;">
-                                ما فيه قوالب معتمدة في حساب Meta. أنشئ قالباً واعتمده من
-                                <a href="https://business.facebook.com" target="_blank" class="underline font-bold">Meta Business</a> ليظهر هنا.
-                            </div>
-                            {% endif %}
-                        </div>
-                        {% else %}
-
-                        <!-- Image Upload -->
-                        <div class="mb-5">
-                            <label class="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wide">صورة
-                                (اختياري)</label>
-                            <label for="campaignImage"
-                                class="flex items-center gap-4 p-3 border border-gray-200 border-dashed rounded-xl cursor-pointer hover:bg-gray-50 transition group bg-gray-50/30">
-                                <div
-                                    class="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center text-gray-400 group-hover:bg-white group-hover:text-blue-500 transition shadow-inner relative overflow-hidden">
-                                    <img id="imagePreviewThumbnail"
-                                        class="absolute inset-0 w-full h-full object-cover hidden">
-                                    <i class="fa-regular fa-image text-2xl" id="uploadIcon"></i>
-                                </div>
-                                <div class="flex-1">
-                                    <p class="text-sm font-bold text-gray-700 group-hover:text-blue-600 transition">اضغط
-                                        لرفع صورة</p>
-                                    <p class="text-[10px] text-gray-400">JPG, PNG (Max 5MB)</p>
-                                </div>
-                                <div id="removeImageBtn"
-                                    class="hidden text-red-500 hover:bg-red-50 p-2 rounded-full transition"><i
-                                        class="fa-solid fa-trash-can"></i></div>
-                                <input id="campaignImage" type="file" class="hidden" accept="image/*">
-                            </label>
-                        </div>
-
-                        <!-- Variables Chips -->
-                        <div class="mb-3">
-                            <div class="flex items-center justify-between mb-2">
-                                <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide">نص
-                                    الرسالة</label>
-                                <div class="flex gap-2">
-                                    {% raw %}
-                                    <button type="button" onclick="insertVariable('{{name}}')"
-                                        class="text-[10px] bg-blue-50 hover:bg-blue-100 text-blue-600 px-2 py-1 rounded-md font-bold transition">اسم
-                                        العميل +</button>
-                                    <button type="button" onclick="insertVariable('{{discount_code}}')"
-                                        class="text-[10px] bg-purple-50 hover:bg-purple-100 text-purple-600 px-2 py-1 rounded-md font-bold transition">كود
-                                        خصم +</button>
-                                    {% endraw %}
-                                </div>
-                            </div>
-
-                            <div class="relative">
-                                <textarea id="campaignMessage" maxlength="500"
-                                    class="meta-textarea w-full bg-white border border-gray-200 rounded-xl p-4 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all shadow-inner leading-relaxed"
-                                    placeholder="اكتب رسالتك هنا..." oninput="autoResize(this)"></textarea>
-                                <div class="absolute bottom-3 left-3 text-[10px] text-gray-400 bg-white/80 px-2 py-0.5 rounded-full backdrop-blur-sm border border-gray-100 shadow-sm"
-                                    id="charCount">
-                                    0 / 500 حرف
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Link -->
-                        <div>
-                            <label class="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wide">رابط الزر
-                                (اختياري)</label>
-                            <div class="relative">
-                                <div
-                                    class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
-                                    <i class="fa-solid fa-link"></i>
-                                </div>
-                                <input type="url" id="campaignUrl" placeholder="https://" dir="ltr"
-                                    class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 pl-10 text-sm focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition font-mono">
-                            </div>
-                        </div>
-                        {% endif %}
+                    <div id="removeImageBtn" class="hidden text-red-500 hover:bg-red-50 p-2 rounded-full transition">
+                        <i class="fa-solid fa-trash-can"></i>
                     </div>
-
-                    <!-- Step 3: Plan Summary -->
-                    <div class="bg-gray-50 p-4 rounded-2xl border border-gray-200">
-                        <div class="flex items-center gap-3 mb-3">
-                            <div
-                                class="w-8 h-8 rounded-full bg-teal-50 text-teal-600 flex items-center justify-center font-bold text-sm border border-teal-100">
-                                3</div>
-                            <h3 class="font-bold text-gray-700 text-sm">معلومات الباقة</h3>
-                        </div>
-                        <div class="grid grid-cols-3 gap-3">
-                            <div class="bg-white p-3 rounded-xl border border-gray-100 text-center">
-                                <p class="text-[10px] text-gray-400 font-bold uppercase">الباقة</p>
-                                <p class="text-sm font-black text-teal-600 mt-1">{{ plan_name }}</p>
-                            </div>
-                            <div class="bg-white p-3 rounded-xl border border-gray-100 text-center">
-                                <p class="text-[10px] text-gray-400 font-bold uppercase">الرصيد المتبقي</p>
-                                <p
-                                    class="text-sm font-black {% if messages_remaining != -1 and messages_remaining < 100 %}text-red-500{% else %}text-gray-800{% endif %} mt-1">
-                                    {% if messages_remaining == -1 %}∞{% else %}{{ messages_remaining }}{% endif %}
-                                    <span class="text-[10px] text-gray-400 font-medium">رسالة</span>
-                                </p>
-                            </div>
-                            <div class="bg-white p-3 rounded-xl border border-gray-100 text-center">
-                                <p class="text-[10px] text-gray-400 font-bold uppercase">العملاء</p>
-                                <p class="text-sm font-black text-gray-800 mt-1">{{ contacts_count }}</p>
-                            </div>
-                        </div>
-                        {% if messages_remaining != -1 and messages_remaining < 50 %} <div
-                            class="mt-3 bg-red-50 border border-red-200 rounded-xl p-3 flex items-center gap-2">
-                            <i class="fa-solid fa-triangle-exclamation text-red-500"></i>
-                            <p class="text-xs text-red-600 font-bold">رصيدك منخفض جداً! <a href="/pricing"
-                                    class="underline">ترقية الباقة</a></p>
-                    </div>
-                    {% endif %}
-                </div>
+                    <input id="campaignImage" type="file" class="hidden" accept="image/*">
+                </label>
             </div>
 
-            <!-- Left Column: Sticky Preview -->
-            <div class="meta-preview-col">
-                <div
-                    class="meta-phone relative select-none shadow-2xl rounded-[35px] bg-[#1a1a1a] border-[8px] border-[#2c2c2c] ring-1 ring-black/20">
-                    <!-- Screen -->
-                    <div class="absolute inset-0 bg-[#EFECE5] rounded-[26px] overflow-hidden flex flex-col font-sans">
-                        <!-- Wallpaper -->
-                        <div
-                            class="absolute inset-0 opacity-100 z-0 bg-[url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png')] bg-[length:260px]">
-                        </div>
+            <!-- Variables Chips -->
+            <div class="mb-3">
+                <div class="flex items-center justify-between mb-2">
+                    <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide">نص الرسالة</label>
+                    <div class="flex gap-2">
+                        {% raw %}
+                        <button type="button" onclick="insertVariable('{{name}}')" class="text-[10px] bg-blue-50 hover:bg-blue-100 text-blue-600 px-2 py-1 rounded-md font-bold transition">اسم العميل +</button>
+                        <button type="button" onclick="insertVariable('{{discount_code}}')" class="text-[10px] bg-purple-50 hover:bg-purple-100 text-purple-600 px-2 py-1 rounded-md font-bold transition">كود خصم +</button>
+                        {% endraw %}
+                    </div>
+                </div>
 
-                        <!-- Header -->
-                        <div id="appHeader"
-                            class="bg-[#008069] h-[55px] z-10 flex items-center px-3 text-white relative shadow-sm shrink-0"
-                            dir="rtl">
-                            <i class="fa-solid fa-arrow-right text-sm ml-2"></i>
-                            <div
-                                class="w-9 h-9 rounded-full bg-gray-200 border border-white/20 mr-2 flex items-center justify-center overflow-hidden">
-                                <i class="fa-solid fa-store text-gray-400 text-xs"></i>
-                            </div>
-                            <div class="mr-1 flex-1">
-                                <p class="text-[13px] font-bold leading-tight truncate w-32 text-white">{{
-                                    user.merchant.name
-                                    or 'اسم المتجر' }}</p>
-                            </div>
-                            <div class="flex gap-4 text-sm ml-1 opacity-50">
-                                <i class="fa-solid fa-ellipsis-vertical"></i>
-                            </div>
-                        </div>
-
-                        <!-- Chat Area -->
-                        <div class="flex-1 p-3 z-10 flex flex-col meta-chat-scroll chat-scroll">
-                            <!-- Message Bubble -->
-                            <div
-                                class="self-end max-w-[90%] mb-1 relative group mt-2 flex flex-col shadow-[0_1px_0.5px_rgba(0,0,0,0.13)] rounded-lg rounded-tl-none bg-[#d9fdd3] overflow-hidden min-w-[120px]">
-                                <div class="p-1 relative pb-5">
-                                    <!-- Image Preview -->
-                                    <div id="previewImageContainer"
-                                        class="hidden rounded-md overflow-hidden mb-1 bg-black/5">
-                                        <img id="previewImage" src="" class="w-full h-auto object-cover max-h-[160px]">
-                                    </div>
-                                    <!-- Text -->
-                                    <div class="px-2 pt-1 pb-1">
-                                        <p id="previewText"
-                                            class="text-[13px] text-[#111b21] leading-[1.4] whitespace-pre-wrap text-right"
-                                            dir="auto">نص الرسالة...</p>
-                                    </div>
-                                    <!-- Link Preview -->
-                                    <div id="previewLinkContainer"
-                                        class="hidden bg-[#CFE9BA] p-1.5 rounded mb-0.5 mx-1 border-l-2 border-[#A8CD99]">
-                                        <a href="#" id="previewLink"
-                                            class="text-[11px] text-blue-600 truncate block">Link</a>
-                                    </div>
-                                    <!-- Time -->
-                                    <div class="absolute bottom-1 left-2 flex items-center gap-0.5">
-                                        <span class="text-[9px] text-gray-500">9:41 م</span>
-                                        <i class="fa-solid fa-check-double text-[#53bdeb] text-[9px]"></i>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Input Bar -->
-                        <div
-                            class="bg-[#f0f2f5] h-[50px] flex items-center px-2 gap-2 z-20 shrink-0 border-t border-gray-200">
-                            <div
-                                class="w-7 h-7 rounded-full bg-white flex items-center justify-center text-gray-500 text-sm shadow-sm">
-                                <i class="fa-solid fa-plus"></i>
-                            </div>
-                            <div
-                                class="flex-1 bg-white h-9 rounded-full flex items-center px-4 text-gray-400 text-[12px] shadow-sm text-right">
-                                مراسلة</div>
-                            <i class="fa-solid fa-microphone text-gray-500 text-base mx-1"></i>
-                        </div>
-
-                        <!-- Home Bar -->
-                        <div
-                            class="absolute bottom-1.5 left-1/2 -translate-x-1/2 w-24 h-1 bg-black/30 rounded-full z-20">
-                        </div>
+                <div class="relative">
+                    <textarea id="campaignMessage" maxlength="500" class="meta-textarea w-full bg-white border border-gray-200 rounded-xl p-4 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all shadow-inner leading-relaxed" placeholder="اكتب رسالتك هنا..." oninput="autoResize(this)"></textarea>
+                    <div class="absolute bottom-3 left-3 text-[10px] text-gray-400 bg-white/80 px-2 py-0.5 rounded-full backdrop-blur-sm border border-gray-100 shadow-sm" id="charCount">
+                        0 / 500 حرف
                     </div>
                 </div>
             </div>
 
-    </div>
-    {% endif %}
+            <!-- Link -->
+            <div>
+                <label class="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wide">رابط الزر (اختياري)</label>
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                        <i class="fa-solid fa-link"></i>
+                    </div>
+                    <input type="url" id="campaignUrl" placeholder="https://" dir="ltr" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 pl-10 text-sm focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition font-mono">
+                </div>
+            </div>
+            {% endif %}
+        </div>
 
-    </div>
-    </main>
-    </div>
-
-    <!-- 📅 نافذة جدولة الحملة -->
-    <div id="scheduleModal" class="fixed inset-0 z-50 hidden items-center justify-center" style="background:rgba(15,23,42,0.5);">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden">
-            <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-                <h3 class="font-bold text-slate-800 flex items-center gap-2"><i class="fa-regular fa-clock text-teal-500"></i> جدولة الحملة</h3>
-                <button onclick="closeSchedule()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+        <!-- Step 3: Plan Summary -->
+        <div class="bg-gray-50 p-4 rounded-2xl border border-gray-200">
+            <div class="flex items-center gap-3 mb-3">
+                <div class="w-8 h-8 rounded-full bg-teal-50 text-teal-600 flex items-center justify-center font-bold text-sm border border-teal-100">3</div>
+                <h3 class="font-bold text-gray-700 text-sm">معلومات الباقة</h3>
             </div>
-            <div class="p-6">
-                <label class="block text-xs font-bold text-slate-500 mb-2">اختر تاريخ ووقت الإرسال</label>
-                <input id="scheduleInput" type="datetime-local" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:bg-white focus:ring-2 focus:ring-teal-500 outline-none transition">
-                <p class="text-[11px] text-slate-400 mt-2">💡 سيرسل النظام الحملة تلقائياً في الوقت المحدد. (الجدولة للنص — للصور استخدم الإرسال الفوري)</p>
+            <div class="grid grid-cols-3 gap-3">
+                <div class="bg-white p-3 rounded-xl border border-gray-100 text-center">
+                    <p class="text-[10px] text-gray-400 font-bold uppercase">الباقة</p>
+                    <p class="text-sm font-black text-teal-600 mt-1">{{ plan_name }}</p>
+                </div>
+                <div class="bg-white p-3 rounded-xl border border-gray-100 text-center">
+                    <p class="text-[10px] text-gray-400 font-bold uppercase">الرصيد المتبقي</p>
+                    <p class="text-sm font-black {% if messages_remaining != -1 and messages_remaining < 100 %}text-red-500{% else %}text-gray-800{% endif %} mt-1">
+                        {% if messages_remaining == -1 %}∞{% else %}{{ messages_remaining }}{% endif %}
+                        <span class="text-[10px] text-gray-400 font-medium">رسالة</span>
+                    </p>
+                </div>
+                <div class="bg-white p-3 rounded-xl border border-gray-100 text-center">
+                    <p class="text-[10px] text-gray-400 font-bold uppercase">العملاء</p>
+                    <p class="text-sm font-black text-gray-800 mt-1">{{ contacts_count }}</p>
+                </div>
             </div>
-            <div class="px-6 py-4 bg-slate-50 flex gap-3 justify-end">
-                <button onclick="closeSchedule()" class="px-4 py-2.5 rounded-xl text-sm font-bold text-slate-500 hover:bg-slate-200 transition">إلغاء</button>
-                <button onclick="confirmSchedule()" class="px-5 py-2.5 rounded-xl text-sm font-bold text-white shadow-lg" style="background:linear-gradient(135deg,#0d9488,#0ea5e9);">تأكيد الجدولة</button>
+            {% if messages_remaining != -1 and messages_remaining < 50 %}
+            <div class="mt-3 bg-red-50 border border-red-200 rounded-xl p-3 flex items-center gap-2">
+                <i class="fa-solid fa-triangle-exclamation text-red-500"></i>
+                <p class="text-xs text-red-600 font-bold">رصيدك منخفض جداً! <a href="/pricing" class="underline">ترقية الباقة</a></p>
             </div>
+            {% endif %}
         </div>
     </div>
 
-    <!-- Scripts -->
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script>window.CHANNEL_MODE = "{{ channel_mode }}";</script>
-    {% raw %}
-    <script>
-        (function () {
-            const messageInput = document.getElementById('campaignMessage');
-            const previewText = document.getElementById('previewText');
-            const urlInput = document.getElementById('campaignUrl');
-            const previewLinkContainer = document.getElementById('previewLinkContainer');
-            const previewLink = document.getElementById('previewLink');
+    <!-- Left Column: Sticky Preview -->
+    <div id="previewCol" class="meta-preview-col hidden lg:flex">
+        <div class="meta-phone relative select-none shadow-2xl rounded-[35px] bg-[#1a1a1a] border-[8px] border-[#2c2c2c] ring-1 ring-black/20">
+            <!-- Screen -->
+            <div class="absolute inset-0 bg-[#EFECE5] rounded-[26px] overflow-hidden flex flex-col font-sans">
+                <!-- Wallpaper -->
+                <div class="absolute inset-0 opacity-100 z-0 bg-[url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png')] bg-[length:260px]"></div>
 
-            const campaignImageInput = document.getElementById('campaignImage');
-            const imagePreviewThumbnail = document.getElementById('imagePreviewThumbnail');
-            const removeImageBtn = document.getElementById('removeImageBtn');
-            const previewImageContainer = document.getElementById('previewImageContainer');
-            const previewImage = document.getElementById('previewImage');
+                <!-- Header -->
+                <div id="appHeader" class="bg-[#008069] h-[55px] z-10 flex items-center px-3 text-white relative shadow-sm shrink-0" dir="rtl">
+                    <i class="fa-solid fa-arrow-right text-sm ml-2"></i>
+                    <div class="w-9 h-9 rounded-full bg-gray-200 border border-white/20 mr-2 flex items-center justify-center overflow-hidden">
+                        <i class="fa-solid fa-store text-gray-400 text-xs"></i>
+                    </div>
+                    <div class="mr-1 flex-1">
+                        <p class="text-[13px] font-bold leading-tight truncate w-32 text-white">{{ user.merchant.name or 'اسم المتجر' }}</p>
+                    </div>
+                    <div class="flex gap-4 text-sm ml-1 opacity-50">
+                        <i class="fa-solid fa-ellipsis-vertical"></i>
+                    </div>
+                </div>
 
-            const mockData = { '{{name}}': 'عبدالله', '{{discount_code}}': 'OFF20' };
-            const defaultText = 'مرحباً {{name}} 👋\nلا تفوت عروضنا الخاصة لهذا الأسبوع! 😍\nخصم حصري لك بقيمة 20% باستخدام الكود: {{discount_code}}\nاطلب الآن قبل نفاذ الكمية 🏃‍♂️';
-            const defaultImageUrl = 'https://images.unsplash.com/photo-1549465220-1a8b9238cd48?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80';
+                <!-- Chat Area -->
+                <div class="flex-1 p-3 z-10 flex flex-col meta-chat-scroll chat-scroll">
+                    <!-- Message Bubble -->
+                    <div class="self-end max-w-[90%] mb-1 relative group mt-2 flex flex-col shadow-[0_1px_0.5px_rgba(0,0,0,0.13)] rounded-lg rounded-tl-none bg-[#d9fdd3] overflow-hidden min-w-[120px]">
+                        <div class="p-1 relative pb-5">
+                            <!-- Image Preview -->
+                            <div id="previewImageContainer" class="hidden rounded-md overflow-hidden mb-1 bg-black/5">
+                                <img id="previewImage" src="" class="w-full h-auto object-cover max-h-[160px]">
+                            </div>
+                            <!-- Text -->
+                            <div class="px-2 pt-1 pb-1">
+                                <p id="previewText" class="text-[13px] text-[#111b21] leading-[1.4] whitespace-pre-wrap text-right" dir="auto">نص الرسالة...</p>
+                            </div>
+                            <!-- Link Preview -->
+                            <div id="previewLinkContainer" class="hidden bg-[#CFE9BA] p-1.5 rounded mb-0.5 mx-1 border-l-2 border-[#A8CD99]">
+                                <a href="#" id="previewLink" class="text-[11px] text-blue-600 truncate block">Link</a>
+                            </div>
+                            <!-- Time -->
+                            <div class="absolute bottom-1 left-2 flex items-center gap-0.5">
+                                <span class="text-[9px] text-gray-500">9:41 م</span>
+                                <i class="fa-solid fa-check-double text-[#53bdeb] text-[9px]"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-            let isCustomImage = false;
+                <!-- Input Bar -->
+                <div class="bg-[#f0f2f5] h-[50px] flex items-center px-2 gap-2 z-20 shrink-0 border-t border-gray-200">
+                    <div class="w-7 h-7 rounded-full bg-white flex items-center justify-center text-gray-500 text-sm shadow-sm">
+                        <i class="fa-solid fa-plus"></i>
+                    </div>
+                    <div class="flex-1 bg-white h-9 rounded-full flex items-center px-4 text-gray-400 text-[12px] shadow-sm text-right">مراسلة</div>
+                    <i class="fa-solid fa-microphone text-gray-500 text-base mx-1"></i>
+                </div>
 
-            function updatePreview() {
-                if (!messageInput) return;
+                <!-- Home Bar -->
+                <div class="absolute bottom-1.5 left-1/2 -translate-x-1/2 w-24 h-1 bg-black/30 rounded-full z-20"></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
 
-                // Text
-                let val = messageInput.value || defaultText;
-                for (const [key, value] of Object.entries(mockData)) {
-                    val = val.replaceAll(key, value);
+<!-- 📅 نافذة جدولة الحملة -->
+<div id="scheduleModal" class="fixed inset-0 z-50 hidden items-center justify-center" style="background:rgba(15,23,42,0.5);">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden">
+        <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+            <h3 class="font-bold text-slate-800 flex items-center gap-2"><i class="fa-regular fa-clock text-teal-500"></i> جدولة الحملة</h3>
+            <button onclick="closeSchedule()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="p-6">
+            <label class="block text-xs font-bold text-slate-500 mb-2">اختر تاريخ ووقت الإرسال</label>
+            <input id="scheduleInput" type="datetime-local" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:bg-white focus:ring-2 focus:ring-teal-500 outline-none transition">
+            <p class="text-[11px] text-slate-400 mt-2">💡 سيرسل النظام الحملة تلقائياً في الوقت المحدد. (الجدولة للنص — للصور استخدم الإرسال الفوري)</p>
+        </div>
+        <div class="px-6 py-4 bg-slate-50 flex gap-3 justify-end">
+            <button onclick="closeSchedule()" class="px-4 py-2.5 rounded-xl text-sm font-bold text-slate-500 hover:bg-slate-200 transition">إلغاء</button>
+            <button onclick="confirmSchedule()" class="px-5 py-2.5 rounded-xl text-sm font-bold text-white shadow-lg" style="background:linear-gradient(135deg,#0d9488,#0ea5e9);">تأكيد الجدولة</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>window.CHANNEL_MODE = "{{ channel_mode }}";</script>
+{% raw %}
+<script>
+    // دالة تبديل التبويبات على الجوال
+    window.switchMobileTab = function(tab) {
+        const tabFormBtn = document.getElementById('tabFormBtn');
+        const tabPreviewBtn = document.getElementById('tabPreviewBtn');
+        const formCol = document.getElementById('formCol');
+        const previewCol = document.getElementById('previewCol');
+        
+        if (tab === 'form') {
+            // تفعيل تبويب الفورم
+            tabFormBtn.classList.add('text-teal-600', 'bg-teal-50', 'border', 'border-teal-100', 'shadow-sm');
+            tabFormBtn.classList.remove('text-gray-500');
+            
+            // إلغاء تفعيل تبويب المعاينة
+            tabPreviewBtn.classList.remove('text-teal-600', 'bg-teal-50', 'border', 'border-teal-100', 'shadow-sm');
+            tabPreviewBtn.classList.add('text-gray-500');
+            
+            // التحكم بالعناصر
+            formCol.classList.remove('hidden');
+            previewCol.classList.add('hidden');
+            previewCol.classList.remove('flex');
+        } else {
+            // تفعيل تبويب المعاينة
+            tabPreviewBtn.classList.add('text-teal-600', 'bg-teal-50', 'border', 'border-teal-100', 'shadow-sm');
+            tabPreviewBtn.classList.remove('text-gray-500');
+            
+            // إلغاء تفعيل تبويب الفورم
+            tabFormBtn.classList.remove('text-teal-600', 'bg-teal-50', 'border', 'border-teal-100', 'shadow-sm');
+            tabFormBtn.classList.add('text-gray-500');
+            
+            // التحكم بالعناصر
+            formCol.classList.add('hidden');
+            previewCol.classList.remove('hidden');
+            previewCol.classList.add('flex');
+        }
+    };
+
+    (function () {
+        const messageInput = document.getElementById('campaignMessage');
+        const previewText = document.getElementById('previewText');
+        const urlInput = document.getElementById('campaignUrl');
+        const previewLinkContainer = document.getElementById('previewLinkContainer');
+        const previewLink = document.getElementById('previewLink');
+
+        const campaignImageInput = document.getElementById('campaignImage');
+        const imagePreviewThumbnail = document.getElementById('imagePreviewThumbnail');
+        const removeImageBtn = document.getElementById('removeImageBtn');
+        const previewImageContainer = document.getElementById('previewImageContainer');
+        const previewImage = document.getElementById('previewImage');
+
+        const mockData = { '{{name}}': 'عبدالله', '{{discount_code}}': 'OFF20' };
+        const defaultText = 'مرحباً {{name}} 👋\nلا تفوت عروضنا الخاصة لهذا الأسبوع! 😍\nخصم حصري لك بقيمة 20% باستخدام الكود: {{discount_code}}\nاطلب الآن قبل نفاذ الكمية 🏃‍♂️';
+        const defaultImageUrl = 'https://images.unsplash.com/photo-1549465220-1a8b9238cd48?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80';
+
+        let isCustomImage = false;
+
+        function updatePreview() {
+            if (!messageInput) return;
+
+            // Text
+            let val = messageInput.value || defaultText;
+            for (const [key, value] of Object.entries(mockData)) {
+                val = val.replaceAll(key, value);
+            }
+            if (previewText) previewText.textContent = val;
+
+            // Image
+            if (previewImage) {
+                if (!isCustomImage) {
+                    previewImage.src = defaultImageUrl;
+                    if (previewImageContainer) previewImageContainer.classList.remove('hidden');
                 }
-                if (previewText) previewText.textContent = val;
+            }
 
-                // Image
-                if (previewImage) {
-                    if (!isCustomImage) {
-                        previewImage.src = defaultImageUrl;
+            // Link
+            if (urlInput && urlInput.value && urlInput.value.length > 0) {
+                if (previewLinkContainer) {
+                    previewLinkContainer.classList.remove('hidden');
+                    previewLink.textContent = urlInput.value;
+                }
+            } else {
+                if (previewLinkContainer) previewLinkContainer.classList.add('hidden');
+            }
+        }
+
+        // Listeners
+        if (messageInput) messageInput.addEventListener('input', updatePreview);
+        if (urlInput) urlInput.addEventListener('input', updatePreview);
+
+        if (campaignImageInput) {
+            campaignImageInput.addEventListener('change', function (e) {
+                const file = e.target.files[0];
+                if (file) {
+                    isCustomImage = true;
+                    const reader = new FileReader();
+                    reader.onload = function (e) {
+                        const result = e.target.result;
+                        if (imagePreviewThumbnail) {
+                            imagePreviewThumbnail.src = result;
+                            imagePreviewThumbnail.classList.remove('hidden');
+                        }
+                        if (removeImageBtn) removeImageBtn.classList.remove('hidden');
+                        if (previewImage) previewImage.src = result;
                         if (previewImageContainer) previewImageContainer.classList.remove('hidden');
                     }
+                    reader.readAsDataURL(file);
                 }
-
-                // Link
-                if (urlInput && urlInput.value && urlInput.value.length > 0) {
-                    if (previewLinkContainer) {
-                        previewLinkContainer.classList.remove('hidden');
-                        previewLink.textContent = urlInput.value;
-                    }
-                } else {
-                    if (previewLinkContainer) previewLinkContainer.classList.add('hidden');
-                }
-            }
-
-            // Listeners
-            if (messageInput) messageInput.addEventListener('input', updatePreview);
-            if (urlInput) urlInput.addEventListener('input', updatePreview);
-
-            if (campaignImageInput) {
-                campaignImageInput.addEventListener('change', function (e) {
-                    const file = e.target.files[0];
-                    if (file) {
-                        isCustomImage = true;
-                        const reader = new FileReader();
-                        reader.onload = function (e) {
-                            const result = e.target.result;
-                            if (imagePreviewThumbnail) {
-                                imagePreviewThumbnail.src = result;
-                                imagePreviewThumbnail.classList.remove('hidden');
-                            }
-                            if (removeImageBtn) removeImageBtn.classList.remove('hidden');
-                            if (previewImage) previewImage.src = result;
-                            if (previewImageContainer) previewImageContainer.classList.remove('hidden');
-                        }
-                        reader.readAsDataURL(file);
-                    }
-                });
-            }
-
-            if (removeImageBtn) {
-                removeImageBtn.addEventListener('click', function (e) {
-                    e.preventDefault();
-                    if (campaignImageInput) campaignImageInput.value = '';
-                    isCustomImage = false;
-                    if (imagePreviewThumbnail) {
-                        imagePreviewThumbnail.src = '';
-                        imagePreviewThumbnail.classList.add('hidden');
-                    }
-                    if (removeImageBtn) removeImageBtn.classList.add('hidden');
-                    updatePreview();
-                });
-            }
-
-            updatePreview();
-        })();
-
-        window.autoResize = function (el) {
-            el.style.minHeight = '140px';
-            el.style.height = 'auto';
-            const newHeight = Math.min(Math.max(el.scrollHeight, 140), 280);
-            el.style.height = newHeight + 'px';
-
-            const counter = document.getElementById('charCount');
-            if (counter) counter.innerText = el.value.length + ' / 500 حرف';
-        };
-
-        window.insertVariable = function (text) {
-            const textarea = document.getElementById('campaignMessage');
-            if (!textarea) return;
-            const start = textarea.selectionStart;
-            const end = textarea.selectionEnd;
-            const val = textarea.value;
-            textarea.value = val.substring(0, start) + text + val.substring(end);
-            textarea.selectionStart = textarea.selectionEnd = start + text.length;
-            textarea.focus();
-            textarea.dispatchEvent(new Event('input'));
+            });
         }
 
-        // معاينة القالب المختار (وضع API) — تحدّث المعاينة الصغيرة + معاينة الجوال
-        function previewTemplate() {
+        if (removeImageBtn) {
+            removeImageBtn.addEventListener('click', function (e) {
+                e.preventDefault();
+                if (campaignImageInput) campaignImageInput.value = '';
+                isCustomImage = false;
+                if (imagePreviewThumbnail) {
+                    imagePreviewThumbnail.src = '';
+                    imagePreviewThumbnail.classList.add('hidden');
+                }
+                if (removeImageBtn) removeImageBtn.classList.add('hidden');
+                updatePreview();
+            });
+        }
+
+        updatePreview();
+    })();
+
+    window.autoResize = function (el) {
+        el.style.minHeight = '140px';
+        el.style.height = 'auto';
+        const newHeight = Math.min(Math.max(el.scrollHeight, 140), 280);
+        el.style.height = newHeight + 'px';
+
+        const counter = document.getElementById('charCount');
+        if (counter) counter.innerText = el.value.length + ' / 500 حرف';
+    };
+
+    window.insertVariable = function (text) {
+        const textarea = document.getElementById('campaignMessage');
+        if (!textarea) return;
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const val = textarea.value;
+        textarea.value = val.substring(0, start) + text + val.substring(end);
+        textarea.selectionStart = textarea.selectionEnd = start + text.length;
+        textarea.focus();
+        textarea.dispatchEvent(new Event('input'));
+    }
+
+    // معاينة القالب المختار (وضع API) — تحدّث المعاينة الصغيرة + معاينة الجوال
+    function previewTemplate() {
+        const sel = document.getElementById('templateSelect');
+        const prev = document.getElementById('templatePreview');
+        if (!sel || !prev) return;
+        const opt = sel.options[sel.selectedIndex];
+        const body = opt ? (opt.getAttribute('data-body') || '') : '';
+        const personalized = body.replace(/\{\{1\}\}/g, 'عبدالله');
+        if (sel.value && body) {
+            prev.textContent = personalized;
+            prev.classList.remove('hidden');
+        } else { prev.classList.add('hidden'); }
+        // 📱 تحدّث معاينة الجوال الكبيرة على اليسار
+        const phonePrev = document.getElementById('previewText');
+        if (phonePrev) phonePrev.textContent = personalized || 'اختر قالباً لمعاينة الرسالة';
+    }
+
+    // دالة مشتركة: إرسال فوري (scheduledAt=null) أو مجدول (ISO string)
+    async function submitCampaign(scheduledAt) {
+        const name = document.getElementById('campaignName').value;
+        const audience = document.getElementById('audience').value;
+        const isApi = window.CHANNEL_MODE === 'api';
+
+        if (!name) {
+            Swal.fire({ icon: 'error', title: 'بيانات ناقصة', text: 'يرجى إدخال اسم الحملة', confirmButtonColor: '#0d9488' });
+            return;
+        }
+
+        const payload = { name, audience, type: 'whatsapp_api' };
+        if (scheduledAt) payload.scheduled_at = scheduledAt;
+
+        if (isApi) {
+            // وضع API: لازم قالب معتمد
             const sel = document.getElementById('templateSelect');
-            const prev = document.getElementById('templatePreview');
-            if (!sel || !prev) return;
-            const opt = sel.options[sel.selectedIndex];
-            const body = opt ? (opt.getAttribute('data-body') || '') : '';
-            const personalized = body.replace(/\{\{1\}\}/g, 'عبدالله');
-            if (sel.value && body) {
-                prev.textContent = personalized;
-                prev.classList.remove('hidden');
-            } else { prev.classList.add('hidden'); }
-            // 📱 تحدّث معاينة الجوال الكبيرة على اليسار
-            const phonePrev = document.getElementById('previewText');
-            if (phonePrev) phonePrev.textContent = personalized || 'اختر قالباً لمعاينة الرسالة';
-        }
-
-        // دالة مشتركة: إرسال فوري (scheduledAt=null) أو مجدول (ISO string)
-        async function submitCampaign(scheduledAt) {
-            const name = document.getElementById('campaignName').value;
-            const audience = document.getElementById('audience').value;
-            const isApi = window.CHANNEL_MODE === 'api';
-
-            if (!name) {
-                Swal.fire({ icon: 'error', title: 'بيانات ناقصة', text: 'يرجى إدخال اسم الحملة', confirmButtonColor: '#0d9488' });
+            if (!sel || !sel.value) {
+                Swal.fire({ icon: 'error', title: 'اختر قالباً', text: 'الحملات عبر WhatsApp API تتطلب اختيار قالب معتمد من Meta', confirmButtonColor: '#0d9488' });
                 return;
             }
-
-            const payload = { name, audience, type: 'whatsapp_api' };
-            if (scheduledAt) payload.scheduled_at = scheduledAt;
-
-            if (isApi) {
-                // وضع API: لازم قالب معتمد
-                const sel = document.getElementById('templateSelect');
-                if (!sel || !sel.value) {
-                    Swal.fire({ icon: 'error', title: 'اختر قالباً', text: 'الحملات عبر WhatsApp API تتطلب اختيار قالب معتمد من Meta', confirmButtonColor: '#0d9488' });
-                    return;
-                }
-                payload.template_name = sel.value;
-                payload.template_lang = sel.options[sel.selectedIndex].getAttribute('data-lang') || 'ar';
-            } else {
-                // وضع QR: نص حر
-                let message = document.getElementById('campaignMessage').value;
-                const url = document.getElementById('campaignUrl').value;
-                const thumb = document.getElementById('imagePreviewThumbnail');
-                const image = (thumb && thumb.src && thumb.src.startsWith('data:')) ? thumb.src : null;
-                if (!message) {
-                    Swal.fire({ icon: 'error', title: 'بيانات ناقصة', text: 'يرجى إدخال نص الرسالة', confirmButtonColor: '#0d9488' });
-                    return;
-                }
-                if (url) message += `\n\n${url}`;
-                payload.message = message;
-                if (!scheduledAt && image) payload.image = image;  // الصور للإرسال الفوري فقط
+            payload.template_name = sel.value;
+            payload.template_lang = sel.options[sel.selectedIndex].getAttribute('data-lang') || 'ar';
+        } else {
+            // وضع QR: نص حر
+            let message = document.getElementById('campaignMessage').value;
+            const url = document.getElementById('campaignUrl').value;
+            const thumb = document.getElementById('imagePreviewThumbnail');
+            const image = (thumb && thumb.src && thumb.src.startsWith('data:')) ? thumb.src : null;
+            if (!message) {
+                Swal.fire({ icon: 'error', title: 'بيانات ناقصة', text: 'يرجى إدخال نص الرسالة', confirmButtonColor: '#0d9488' });
+                return;
             }
-
-            const sendBtn = document.getElementById('sendBtn');
-            const scheduleBtn = document.getElementById('scheduleBtn');
-            sendBtn.disabled = true; scheduleBtn.disabled = true;
-            sendBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> جاري المعالجة...';
-
-            try {
-                const response = await fetch('/api/campaigns/send', {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                const data = await response.json();
-                if (response.ok && data.success) {
-                    Swal.fire({
-                        title: data.scheduled ? 'تمت الجدولة! 📅' : 'تم الإرسال بنجاح! 🚀',
-                        text: data.scheduled ? 'سيتم إرسال الحملة في الوقت المحدد تلقائياً.' : 'بدأ إرسال الحملة لعملائك.',
-                        icon: 'success', timer: 2200, showConfirmButton: false
-                    }).then(() => { window.location.href = '/campaigns'; });
-                } else {
-                    throw new Error(data.message || 'حدث خطأ غير معروف');
-                }
-            } catch (error) {
-                Swal.fire({ icon: 'error', title: 'فشل العملية', text: error.message, confirmButtonText: 'حاول مرة أخرى' });
-                sendBtn.disabled = false; scheduleBtn.disabled = false;
-                sendBtn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> إرسال الآن';
-            }
+            if (url) message += `\n\n${url}`;
+            payload.message = message;
+            if (!scheduledAt && image) payload.image = image;  // الصور للإرسال الفوري فقط
         }
 
-        // زر الإرسال الفوري
         const sendBtn = document.getElementById('sendBtn');
-        if (sendBtn) sendBtn.onclick = () => submitCampaign(null);
-
-        // زر الجدولة — يفتح نافذة اختيار الوقت
         const scheduleBtn = document.getElementById('scheduleBtn');
-        if (scheduleBtn) scheduleBtn.onclick = () => {
-            const dt = document.getElementById('scheduleModal');
-            // اضبط الحد الأدنى = الآن + 5 دقائق
-            const min = new Date(Date.now() + 5 * 60000);
-            min.setMinutes(min.getMinutes() - min.getTimezoneOffset());
-            document.getElementById('scheduleInput').min = min.toISOString().slice(0, 16);
-            dt.classList.remove('hidden'); dt.classList.add('flex');
-        };
-        function closeSchedule() {
-            const dt = document.getElementById('scheduleModal');
-            dt.classList.add('hidden'); dt.classList.remove('flex');
-        }
-        function confirmSchedule() {
-            const val = document.getElementById('scheduleInput').value;
-            if (!val) { alert('اختر تاريخ ووقت الإرسال'); return; }
-            const when = new Date(val);
-            if (when.getTime() < Date.now() + 60000) { alert('اختر وقتاً في المستقبل'); return; }
-            closeSchedule();
-            submitCampaign(when.toISOString());
-        }
-    </script>
-    {% endraw %}
-</body>
+        sendBtn.disabled = true; scheduleBtn.disabled = true;
+        sendBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> جاري المعالجة...';
 
-</html>
+        try {
+            const response = await fetch('/api/campaigns/send', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await response.json();
+            if (response.ok && data.success) {
+                Swal.fire({
+                    title: data.scheduled ? 'تمت الجدولة! 📅' : 'تم الإرسال بنجاح! 🚀',
+                    text: data.scheduled ? 'سيتم إرسال الحملة في الوقت المحدد تلقائياً.' : 'بدأ إرسال الحملة لعملائك.',
+                    icon: 'success', timer: 2200, showConfirmButton: false
+                }).then(() => { window.location.href = '/campaigns'; });
+            } else {
+                throw new Error(data.message || 'حدث خطأ غير معروف');
+            }
+        } catch (error) {
+            Swal.fire({ icon: 'error', title: 'فشل العملية', text: error.message, confirmButtonText: 'حاول مرة أخرى' });
+            sendBtn.disabled = false; scheduleBtn.disabled = false;
+            sendBtn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> إرسال الآن';
+        }
+    }
+
+    // زر الإرسال الفوري
+    const sendBtn = document.getElementById('sendBtn');
+    if (sendBtn) sendBtn.onclick = () => submitCampaign(null);
+
+    // زر الجدولة — يفتح نافذة اختيار الوقت
+    const scheduleBtn = document.getElementById('scheduleBtn');
+    if (scheduleBtn) scheduleBtn.onclick = () => {
+        const dt = document.getElementById('scheduleModal');
+        // اضبط الحد الأدنى = الآن + 5 دقائق
+        const min = new Date(Date.now() + 5 * 60000);
+        min.setMinutes(min.getMinutes() - min.getTimezoneOffset());
+        document.getElementById('scheduleInput').min = min.toISOString().slice(0, 16);
+        dt.classList.remove('hidden'); dt.classList.add('flex');
+    };
+    window.closeSchedule = function() {
+        const dt = document.getElementById('scheduleModal');
+        dt.classList.add('hidden'); dt.classList.remove('flex');
+    };
+    window.confirmSchedule = function() {
+        const val = document.getElementById('scheduleInput').value;
+        if (!val) { alert('اختر تاريخ ووقت الإرسال'); return; }
+        const when = new Date(val);
+        if (when.getTime() < Date.now() + 60000) { alert('اختر وقتاً في المستقبل'); return; }
+        closeSchedule();
+        submitCampaign(when.toISOString());
+    };
+</script>
+{% endraw %}
+{% endblock %}
