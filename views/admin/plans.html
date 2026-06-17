@@ -101,7 +101,7 @@
                 <!-- Features Tab -->
                 <div id="tab-content-features-{{ plan.id }}" style="display:none;">
                     <div style="background:linear-gradient(135deg,#ede9fe,#f5f3ff);border:1px solid #ddd6fe;border-radius:12px;padding:14px;margin-bottom:14px;">
-                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;">
                             <span style="font-size:12px;font-weight:800;color:#4c1d95;display:flex;align-items:center;gap:6px;">
                                 <i class="fa-solid fa-robot"></i> الذكاء الاصطناعي
                             </span>
@@ -112,11 +112,7 @@
                                 </span>
                             </label>
                         </div>
-                        <select name="feat_ai_model" style="width:100%;font-size:11px;font-weight:700;background:#fff;border:none;border-radius:8px;padding:6px 10px;color:#374151;outline:none;box-shadow:0 1px 3px rgba(0,0,0,0.08);font-family:Cairo,sans-serif;">
-                            <option value="gpt-3.5-turbo" {{ 'selected' if f.ai_model=='gpt-3.5-turbo' }}>GPT-3.5 Turbo (Standard)</option>
-                            <option value="gpt-4" {{ 'selected' if f.ai_model=='gpt-4' }}>GPT-4 (Premium)</option>
-                            <option value="gpt-4o" {{ 'selected' if f.ai_model=='gpt-4o' }}>GPT-4o (Ultra Fast)</option>
-                        </select>
+                        <input type="hidden" name="feat_ai_model" value="gpt-4o-mini">
                     </div>
 
                     <div style="display:flex;flex-direction:column;gap:4px;">
