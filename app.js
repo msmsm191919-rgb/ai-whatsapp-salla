@@ -966,6 +966,7 @@ app.get("/account", ensureAuthenticated, function (req, res) {
   res.render("account.html", {
     user: req.user,
     isLogin: req.user,
+    support_whatsapp: process.env.SUPPORT_WHATSAPP_NUMBER || ''
   });
 });
 
