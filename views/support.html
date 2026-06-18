@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>الدعم الفني — مبهر AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Cairo', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-700 min-h-screen flex flex-col justify-between">
+
+    <!-- Header -->
+    <header class="bg-white border-b border-slate-100 py-4 px-6 sticky top-0 z-50 shadow-sm">
+        <div class="max-w-4xl mx-auto flex items-center justify-between">
+            <a href="/" class="flex items-center gap-2 text-slate-800 hover:opacity-95 transition-opacity">
+                <div class="relative w-8 h-8 bg-gradient-to-br from-[#06d6a0] to-[#118ab2] rounded-lg flex items-center justify-center shadow-md shadow-emerald-500/10">
+                    <i class="fa-solid fa-wand-magic-sparkles text-xs text-white"></i>
+                </div>
+                <span class="text-lg font-black text-slate-900">مبهر <span class="text-[#118ab2]">AI</span></span>
+            </a>
+            <a href="/" class="text-xs font-bold text-slate-500 hover:text-[#7b2ff7] flex items-center gap-1.5 transition-colors">
+                <i class="fa-solid fa-arrow-right"></i> العودة للرئيسية
+            </a>
+        </div>
+    </header>
+
+    <!-- Content -->
+    <main class="max-w-4xl mx-auto px-6 py-12 flex-1 w-full">
+        <div class="bg-white border border-slate-100 rounded-3xl p-8 sm:p-10 shadow-sm">
+            <div class="flex items-center gap-3.5 mb-6">
+                <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-[#06d6a0] border border-emerald-100/50 flex items-center justify-center text-xl shrink-0">
+                    <i class="fa-solid fa-headset"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-black text-slate-800">الدعم الفني والمساندة</h1>
+                    <p class="text-xs text-slate-400 mt-1">نسعد دائماً بمساعدتك والإجابة على استفساراتك</p>
+                </div>
+            </div>
+
+            <hr class="border-slate-100 my-6">
+
+            <div class="space-y-8 text-sm leading-relaxed text-slate-600">
+                <p class="text-slate-600 text-base">
+                    أهلاً بك في صفحة الدعم الفني الخاصة بمنصة <strong>مبهر AI</strong>. يمكنك التواصل معنا مباشرة لحل أي مشكلة تواجهك في ربط متجرك، أو للمساعدة في إعداد السيناريوهات، أو للاستفسار عن الباقات والاشتراكات.
+                </p>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Email Support Card -->
+                    <div class="flex flex-col justify-between p-6 border border-slate-100 rounded-2xl bg-slate-50/50 hover:bg-slate-50 transition-colors">
+                        <div>
+                            <div class="w-10 h-10 rounded-xl bg-violet-50 text-violet-500 flex items-center justify-center text-lg mb-4">
+                                <i class="fa-solid fa-envelope"></i>
+                            </div>
+                            <h3 class="text-slate-800 font-bold text-base mb-1">البريد الإلكتروني</h3>
+                            <p class="text-slate-500 text-xs mb-4">راسلنا في أي وقت وسنقوم بالرد عليك في غضون 24 ساعة عمل.</p>
+                        </div>
+                        <a href="mailto:support@mubhirbot.com" class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-700 font-bold text-xs hover:border-[#7b2ff7] hover:text-[#7b2ff7] transition-all">
+                            support@mubhirbot.com
+                        </a>
+                    </div>
+
+                    {% if support_whatsapp %}
+                    <!-- WhatsApp Support Card -->
+                    <div class="flex flex-col justify-between p-6 border border-[#06d6a0]/10 rounded-2xl bg-emerald-50/10 hover:bg-emerald-50/30 transition-colors">
+                        <div>
+                            <div class="w-10 h-10 rounded-xl bg-emerald-50 text-[#06d6a0] flex items-center justify-center text-lg mb-4">
+                                <i class="fa-brands fa-whatsapp"></i>
+                            </div>
+                            <h3 class="text-slate-800 font-bold text-base mb-1">محادثة واتساب الفورية</h3>
+                            <p class="text-slate-500 text-xs mb-4">تواصل مع الدعم الفني مباشرة وبشكل فوري عبر واتساب.</p>
+                        </div>
+                        <a href="https://wa.me/{{ support_whatsapp }}" target="_blank" class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#06d6a0] text-white font-bold text-xs hover:bg-[#05bfa0] transition-colors shadow-sm">
+                            <i class="fa-brands fa-whatsapp text-sm"></i> محادثة فورية
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="border-t border-slate-100 pt-6">
+                    <h2 class="text-base font-bold text-slate-800 mb-3 flex items-center gap-2">
+                        <span class="w-1.5 h-4 bg-[#7b2ff7] rounded-full inline-block"></span>
+                        أوقات العمل الرسمية
+                    </h2>
+                    <ul class="list-disc list-inside space-y-2 pr-2 text-slate-500">
+                        <li>من الأحد إلى الخميس: من الساعة 9:00 صباحاً وحتى 5:00 مساءً (توقيت مكة المكرمة).</li>
+                        <li>أيام الجمعة والسبت: الدعم مخصص للحالات الطارئة ومشاكل توقف النظام فقط.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-100 py-6 text-center text-xs text-slate-400">
+        <div class="max-w-4xl mx-auto px-6">
+            <p>© 2026 مبهر AI — جميع الحقوق محفوظة</p>
+        </div>
+    </footer>
+
+</body>
+</html>

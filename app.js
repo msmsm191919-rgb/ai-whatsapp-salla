@@ -371,6 +371,24 @@ app.use('/dashboard', dashboardRoutes);
 app.use('/settings', settingsRoutes);
 app.use('/admin', adminRoutes);
 
+// Public pages routes (Legal & Support)
+app.get('/privacy', (req, res) => {
+  res.render('privacy.html', { user: req.user, isLogin: req.user });
+});
+
+app.get('/terms', (req, res) => {
+  res.render('terms.html', { user: req.user, isLogin: req.user });
+});
+
+app.get('/support', (req, res) => {
+  res.render('support.html', {
+    user: req.user,
+    isLogin: req.user,
+    support_email: 'support@mubhirbot.com',
+    support_whatsapp: process.env.SUPPORT_WHATSAPP_NUMBER || ''
+  });
+});
+
 // 🎨 Interactive Widget Demo & Preview Page
 app.get('/widget-demo', async (req, res) => {
   try {
@@ -919,6 +937,7 @@ app.get("/", async function (req, res) {
   let userDetails = {
     user: req.user,
     isLogin: req.user,
+    support_whatsapp: process.env.SUPPORT_WHATSAPP_NUMBER || ''
   };
   if (req.user) {
     try {
