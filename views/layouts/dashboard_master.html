@@ -151,8 +151,7 @@
             .sidebar-collapsed #sidebar .sidebar-link span,
             .sidebar-collapsed #sidebar .sidebar-link .side-lock,
             .sidebar-collapsed #sidebar .sidebar-group-label,
-            .sidebar-collapsed #sidebar .user-details,
-            .sidebar-collapsed #sidebar .logout-btn {
+            .sidebar-collapsed #sidebar .user-details {
                 display: none !important;
             }
             .sidebar-collapsed #sidebar .logo-container {
@@ -165,10 +164,7 @@
                 padding: 10px;
                 gap: 0;
             }
-            .sidebar-collapsed #sidebar .user-footer {
-                justify-content: center;
-                padding: 16px 0;
-            }
+
             .sidebar-collapsed #sidebar #collapseIcon {
                 transform: rotate(180deg);
             }
@@ -412,29 +408,6 @@
             </a>
         </nav>
 
-        <!-- User Footer -->
-        <div class="relative z-10 border-t border-slate-100 p-4 user-footer bg-slate-50/50 flex-shrink-0">
-            <div class="flex items-center justify-between gap-3">
-                <a href="/account" class="flex items-center gap-3 hover:opacity-80 transition-opacity flex-1 min-w-0" style="text-decoration: none;">
-                    <div class="relative flex-shrink-0">
-                        <div class="w-9 h-9 rounded-xl gradient-teal flex items-center justify-center text-white font-bold text-sm shadow-md">
-                            {{ (user.merchant.name | first) if user.merchant.name else 'م' }}
-                        </div>
-                        <div class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 border-2 rounded-full" style="border-color: #ffffff;"></div>
-                    </div>
-                    <div class="flex-1 min-w-0 user-details">
-                        <p class="text-slate-800 text-sm font-bold truncate leading-tight">{{ user.merchant.name or 'متجر تجريبي' }}</p>
-                        <p class="text-teal-600 text-[10px] flex items-center gap-1 mt-0.5 font-bold">
-                            <i class="fa-solid fa-bolt text-[8px]"></i>
-                            {{ plan_name or 'الأساسية' }}
-                        </p>
-                    </div>
-                </a>
-                <a href="/logout" class="text-slate-400 hover:text-red-500 transition text-sm logout-btn flex-shrink-0" title="تسجيل الخروج">
-                    <i class="fa-solid fa-right-from-bracket"></i>
-                </a>
-            </div>
-        </div>
     </aside>
 
     <!-- ══════════════════════════════════════
@@ -454,33 +427,50 @@
                 </div>
             </div>
 
-            <div class="flex items-center gap-3">
+            <div class="flex items-center gap-2 sm:gap-3">
                 {% block header_actions %}{% endblock %}
+
                 <!-- System Status -->
                 <div class="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-emerald-50 border border-emerald-100 rounded-full">
                     <span class="w-2 h-2 rounded-full bg-emerald-500 pulse-dot"></span>
                     <span class="text-[11px] font-bold text-emerald-700">النظام يعمل</span>
                 </div>
 
-                <!-- Divider -->
-                <div class="hidden sm:block w-px h-8 bg-slate-200"></div>
-
                 <!-- Trial Badge -->
                 {% if trial_days_left %}
-                <div class="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 border border-blue-100 rounded-full">
+                <div class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 border border-blue-100 rounded-full">
                     <i class="fa-solid fa-clock text-blue-500 text-[10px]"></i>
                     <span class="text-[11px] font-bold text-blue-700">تجربة: {{ trial_days_left }} يوم</span>
                 </div>
                 {% endif %}
 
-                <!-- Avatar -->
-                <div class="flex items-center gap-2.5">
+                <!-- Divider -->
+                <div class="hidden sm:block w-px h-8 bg-slate-200"></div>
+
+                <!-- User Avatar + Logout Dropdown -->
+                <div class="relative flex items-center gap-2.5" id="userMenuWrapper">
+                    <!-- Store Name + Plan (desktop only) -->
                     <div class="text-right hidden md:block">
                         <p class="text-[13px] font-semibold text-slate-700 leading-tight">{{ user.merchant.name or 'متجر تجريبي' }}</p>
                         <p class="text-[10px] text-slate-400 leading-none mt-0.5">باقة {{ plan_name or 'الأساسية' }}</p>
                     </div>
-                    <div class="w-9 h-9 rounded-xl gradient-teal flex items-center justify-center text-white font-bold text-sm shadow-md flex-shrink-0">
-                        {{ (user.merchant.name|slice(0,1)) or 'م' }}
+
+                    <!-- Avatar Button (clickable) – round person icon with status dot -->
+                    <button onclick="toggleUserMenu()" class="relative w-9 h-9 rounded-full bg-teal-50 border-2 border-teal-600/30 flex items-center justify-center text-teal-600 hover:bg-teal-100/80 transition flex-shrink-0 shadow-sm" title="حسابي">
+                        <i class="fa-solid fa-user text-sm"></i>
+                        <span class="absolute bottom-0 right-0 block h-2.5 w-2.5 rounded-full {% if isConnected %}bg-emerald-500{% else %}bg-amber-500{% endif %} ring-2 ring-white" title="{% if isConnected %}واتساب متصل{% else %}واتساب غير متصل{% endif %}"></span>
+                    </button>
+
+                    <!-- Dropdown Menu -->
+                    <div id="userDropdown" class="hidden absolute top-full left-0 mt-2 w-44 bg-white border border-slate-100 rounded-2xl shadow-lg z-50 overflow-hidden" style="min-width:160px;">
+                        <a href="/account" class="flex items-center gap-2.5 px-4 py-3 text-sm text-slate-700 font-bold hover:bg-slate-50 transition border-b border-slate-100">
+                            <i class="fa-solid fa-user-circle text-slate-400 w-4 text-center"></i>
+                            <span>حسابي</span>
+                        </a>
+                        <a href="/logout" class="flex items-center gap-2.5 px-4 py-3 text-sm font-bold text-red-600 hover:bg-red-50 transition">
+                            <i class="fa-solid fa-right-from-bracket w-4 text-center"></i>
+                            <span>تسجيل الخروج</span>
+                        </a>
                     </div>
                 </div>
             </div>
@@ -509,6 +499,20 @@
         const isCollapsed = document.body.classList.contains('sidebar-collapsed');
         localStorage.setItem('sidebarCollapsed', isCollapsed ? '1' : '0');
     }
+
+    function toggleUserMenu() {
+        const dd = document.getElementById('userDropdown');
+        if (dd) dd.classList.toggle('hidden');
+    }
+
+    // Close user dropdown when clicking outside
+    document.addEventListener('click', function(e) {
+        const wrapper = document.getElementById('userMenuWrapper');
+        const dd = document.getElementById('userDropdown');
+        if (wrapper && dd && !wrapper.contains(e.target)) {
+            dd.classList.add('hidden');
+        }
+    });
 
     document.addEventListener('DOMContentLoaded', () => {
         const contentContainer = document.getElementById('pageContentContainer');
