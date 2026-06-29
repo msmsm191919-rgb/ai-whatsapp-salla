@@ -298,14 +298,53 @@ SALLA_OAUTH_CLIENT_REDIRECT_URI=http://localhost:8097/oauth/callback
         }
     } catch (e) {}
 
-    // Allow handles to release
-    await new Promise(r => setTimeout(r, 1000));
+    // Kill any orphan Chromium processes that held locks on temp_auth_dir
+    try {
+        const { execSync } = require('child_process');
+        const normalizedTemp = tempAuth.replace(/\\/g, '/');
+        if (process.platform === 'win32') {
+            // Find chrome.exe processes whose command line references our temp dir
+            const list = execSync(
+                `wmic process where "name='chrome.exe'" get processid,commandline /format:csv`,
+                { encoding: 'utf8', timeout: 5000 }
+            );
+            for (const line of list.split('\n')) {
+                if (line.includes('temp_auth_dir') || line.includes('session-777')) {
+                    const parts = line.trim().split(',');
+                    const pid = parts[parts.length - 1];
+                    if (pid && /^\d+$/.test(pid)) {
+                        try { process.kill(Number(pid), 'SIGTERM'); } catch (_) {}
+                    }
+                }
+            }
+        }
+    } catch (e) { /* wmic may not be available — non-critical */ }
 
-    // Clean up temporary files
-    cleanFolder(tempDb);
-    cleanFolder(tempAuth);
+    // Allow all handles and Chromium processes to fully release
+    await new Promise(r => setTimeout(r, 3000));
+
+    // Retry folder cleanup with exponential backoff (Windows file lock delay)
+    for (let attempt = 1; attempt <= 5; attempt++) {
+        cleanFolder(tempDb);
+        cleanFolder(tempAuth);
+        if (!fs.existsSync(tempAuth) && !fs.existsSync(tempDb)) break;
+        if (attempt < 5) {
+            console.log(`  ⏳ Cleanup retry ${attempt}/5 — waiting for file locks to release...`);
+            await new Promise(r => setTimeout(r, 1000 * attempt));
+        }
+    }
+
     if (fs.existsSync(envStagingPath)) {
         try { fs.unlinkSync(envStagingPath); } catch (e) {}
+    }
+
+    // Final verification
+    if (fs.existsSync(tempAuth)) {
+        console.warn('⚠️ temp_auth_dir still exists after retries — force cleanup');
+        try { fs.rmSync(tempAuth, { recursive: true, force: true, maxRetries: 3, retryDelay: 500 }); } catch (e) {}
+    }
+    if (fs.existsSync(tempDb)) {
+        try { fs.unlinkSync(tempDb); } catch (e) {}
     }
 
     console.log('========================================================');
