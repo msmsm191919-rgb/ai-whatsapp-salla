@@ -2915,9 +2915,23 @@ SallaDatabase.connect().then(async (connection) => {
 });
 
 // 🔒 GRACEFUL SHUTDOWN HANDLERS (Zero-Downtime & Session Protection)
-const gracefulShutdown = async (signal) => {
+let shutdownInProgress = false;
+
+const gracefulShutdown = async (signal, err = null) => {
+  if (shutdownInProgress) return;
+  shutdownInProgress = true;
+
   console.log(`\n⚠️ [SHUTDOWN] Received ${signal}. Starting graceful shutdown...`);
-  
+  if (err) {
+    console.error('Shutdown Reason (Fatal Error):', err.stack || err);
+  }
+
+  // Set total safety watchdog timer of 25 seconds
+  const timeoutTimer = setTimeout(() => {
+    console.error('❌ [SHUTDOWN] Graceful shutdown timed out (25s expired)! Exiting immediately.');
+    process.exit(1);
+  }, 25000);
+
   // 1. Close HTTP server first
   if (server && server.listening) {
     server.close(() => {
@@ -2943,9 +2957,18 @@ const gracefulShutdown = async (signal) => {
     console.error('Error closing database connection:', e.message);
   }
 
+  clearTimeout(timeoutTimer);
   console.log('👋 Graceful shutdown complete. Exiting.');
-  process.exit(0);
+  process.exit(signal === 'uncaughtException' || signal === 'unhandledRejection' ? 1 : 0);
 };
 
 process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+
+process.on('uncaughtException', (err) => {
+  gracefulShutdown('uncaughtException', err);
+});
+process.on('unhandledRejection', (reason, promise) => {
+  const err = reason instanceof Error ? reason : new Error(String(reason));
+  gracefulShutdown('unhandledRejection', err);
+});
