@@ -1,12 +1,95 @@
-// Import Deps & Configure Environment Files (Loads production or development separately)
+// Import Deps & Configure Environment Files (Loads single-source env resolution)
 const path = require("path");
-const envFile = process.env.NODE_ENV === "production" ? ".env.production" : ".env.development";
-require("dotenv").config({ path: path.join(__dirname, envFile) });
-require("dotenv").config({ path: path.join(__dirname, ".env") }); // Fallback to default .env
+const dotenv = require("dotenv");
+const fs = require("fs");
+
+const nodeEnv = process.env.NODE_ENV || 'development';
+
+const envFileByEnvironment = {
+  production: '.env.production',
+  staging: '.env.staging',
+  development: '.env.development',
+  test: '.env.test'
+};
+
+const envFile = envFileByEnvironment[nodeEnv] || '.env.development';
+const resolvedEnvPath = path.join(__dirname, envFile);
+
+if (fs.existsSync(resolvedEnvPath)) {
+  dotenv.config({ path: resolvedEnvPath, override: false });
+} else {
+  if (nodeEnv === "production" || nodeEnv === "staging") {
+    console.error(`❌ FATAL: Environment config file ${envFile} is missing in ${nodeEnv} mode!`);
+    process.exit(1);
+  }
+}
+
+// Initialize Global Runtime Guard
+const isStaging = nodeEnv === 'staging';
+const isSafeModeFlag = process.env.STAGING_SAFE_MODE === 'true';
+
+global.RUNTIME_GUARD = Object.freeze({
+  environment: nodeEnv,
+  staging: isStaging,
+  safeModeEnabled: isStaging && isSafeModeFlag,
+  locked: true
+});
+
+// Assert Runtime Guard Helper Function
+function assertRuntimeGuard() {
+  const guard = global.RUNTIME_GUARD;
+
+  if (!guard || guard.locked !== true) {
+    throw new Error('RUNTIME_GUARD_NOT_INITIALIZED');
+  }
+
+  if (process.env.NODE_ENV !== guard.environment) {
+    throw new Error('ENV_MISMATCH_DETECTED');
+  }
+
+  if (guard.staging && guard.safeModeEnabled !== true) {
+    throw new Error('STAGING_SAFE_MODE_REQUIRED');
+  }
+}
+
+// Run Initial Boot Validation
+assertRuntimeGuard();
+
+// Initialize Global Safe Mode Immutable Guard (Backward Compatibility Layer)
+global.SAFE_MODE = Object.freeze({
+  enabled: global.RUNTIME_GUARD.safeModeEnabled,
+  locked: true
+});
+
+if (global.SAFE_MODE.enabled) {
+  console.log("🛡️ [SAFE MODE] Immutable Safe Mode guard activated.");
+}
+
+// Initialize Global Deterministic Worker Factory
+global.createWorker = function createWorker(workerFn) {
+  if (global.SAFE_MODE?.enabled === true) {
+    const fnName = workerFn.name || 'anonymous';
+    return function NOOP_WORKER() {
+      console.log(`🛡️ [SAFE MODE] Deterministic worker execution bypassed: ${fnName}`);
+      return null;
+    };
+  }
+  return workerFn;
+};
 
 const express = require("express");
 const app = express();
 app.set('trust proxy', true);
+
+// Runtime validation middleware (Graceful Shutdown instead of process.exit)
+app.use((req, res, next) => {
+  if (process.env.NODE_ENV !== global.RUNTIME_GUARD.environment) {
+    console.error("❌ CRITICAL: NODE_ENV changed at runtime! Triggering central graceful shutdown...");
+    gracefulShutdown('ENV_MISMATCH_DETECTED', new Error('NODE_ENV changed from ' + global.RUNTIME_GUARD.environment + ' to ' + process.env.NODE_ENV));
+    return res.status(500).send("500 Internal Server Error");
+  }
+  next();
+});
 const session = require("express-session");
 const passport = require("passport");
 const nunjucks = require("nunjucks");
@@ -57,7 +140,7 @@ const ScenarioService = require('./services/ScenarioService');
 
 
 // Event Listeners for Scenarios
-SallaWebhook.on('basket.abandoned', async (data, next) => {
+SallaWebhook.on('basket.abandoned', createWorker(async (data, next) => {
   try {
     console.log('🛒 Basket Abandoned Event Received');
     const ScenarioService = require('./services/ScenarioService');
@@ -65,14 +148,14 @@ SallaWebhook.on('basket.abandoned', async (data, next) => {
   } catch (e) {
     console.error("Webhook Delegate Error:", e);
   }
-});
+}));
 
-SallaWebhook.on('order.created', async (data, next) => {
+SallaWebhook.on('order.created', createWorker(async (data, next) => {
   console.log('📦 New Order Created:', data.data.id);
   // Optional: Send Order Confirmation here
-});
+}));
 
-SallaWebhook.on('order.shipping.delivered', async (data, next) => {
+SallaWebhook.on('order.shipping.delivered', createWorker(async (data, next) => {
   try {
     console.log('🚚 Order Delivered Event (Triggering Review Request)');
     const ScenarioService = require('./services/ScenarioService');
@@ -80,24 +163,24 @@ SallaWebhook.on('order.shipping.delivered', async (data, next) => {
   } catch (e) {
     console.error("Order Delivered Error:", e);
   }
-});
+}));
 
-SallaWebhook.on('application/store', async (data, next) => {
+SallaWebhook.on('application/store', createWorker(async (data, next) => {
   console.log('🔔 Salla Store Updated:', data.merchant);
-});
+}));
 
 // ── سيناريو "تحديث حالة الطلب" ── يستجيب لـ Salla webhook
 const orderStatusScenario = require('./services/scenarios/orderStatus.scenario');
-SallaWebhook.on('order.status.updated', async (data, next) => {
+SallaWebhook.on('order.status.updated', createWorker(async (data, next) => {
   try {
     await orderStatusScenario.handle(data);
   } catch (e) {
     console.error('order.status.updated handler error:', e);
   }
-});
+}));
 
 // ── اشتراكات التطبيق الرسمية من سلة (Salla App Plans Subscriptions) ──
-SallaWebhook.on('app.subscription.started', async (data, next) => {
+SallaWebhook.on('app.subscription.started', createWorker(async (data, next) => {
   try {
     const merchantId = data.merchant;
     const planId = data.data?.plan?.id;
@@ -116,9 +199,9 @@ SallaWebhook.on('app.subscription.started', async (data, next) => {
   } catch (e) {
     console.error('Error in app.subscription.started listener:', e);
   }
-});
+}));
 
-SallaWebhook.on('app.subscription.renewed', async (data, next) => {
+SallaWebhook.on('app.subscription.renewed', createWorker(async (data, next) => {
   try {
     const merchantId = data.merchant;
     const planId = data.data?.plan?.id;
@@ -136,9 +219,9 @@ SallaWebhook.on('app.subscription.renewed', async (data, next) => {
   } catch (e) {
     console.error('Error in app.subscription.renewed listener:', e);
   }
-});
+}));
 
-SallaWebhook.on('app.subscription.expired', async (data, next) => {
+SallaWebhook.on('app.subscription.expired', createWorker(async (data, next) => {
   try {
     const merchantId = data.merchant;
     const subscriptionId = data.data?.id;
@@ -148,7 +231,7 @@ SallaWebhook.on('app.subscription.expired', async (data, next) => {
   } catch (e) {
     console.error('Error in app.subscription.expired listener:', e);
   }
-});
+}));
 
 
 const SallaAPI = new SallaAPIFactory({
@@ -295,8 +378,26 @@ app.use(express.json({ limit: '12mb' }));            // 12mb لاستقبال ص
 app.use(express.urlencoded({ extended: true, limit: '12mb' }));
 
 // Session & Passport configuration (MUST BE BEFORE ANY ROUTER OR ROUTE GUARD)
+if (process.env.NODE_ENV === 'staging' || process.env.NODE_ENV === 'production') {
+  const secret = process.env.SESSION_SECRET;
+  if (!secret) {
+    console.error("❌ FATAL: SESSION_SECRET is not defined in environment variables!");
+    process.exit(1);
+  }
+  if (secret.length < 32 || secret === "keyboard cat" || secret.includes("secret") || secret.includes("12345")) {
+    console.error("❌ FATAL: SESSION_SECRET is too weak or uses insecure default values (must be at least 32 characters long)!");
+    process.exit(1);
+  }
+}
+
+const sessionCookieName = process.env.SESSION_COOKIE_NAME || "connect.sid";
 app.use(
-  session({ secret: process.env.SESSION_SECRET || "keyboard cat", resave: true, saveUninitialized: true })
+  session({
+    name: sessionCookieName,
+    secret: process.env.SESSION_SECRET || "keyboard cat",
+    resave: true,
+    saveUninitialized: true
+  })
 );
 app.use(passport.initialize());
 app.use(passport.session());
@@ -341,7 +442,7 @@ app.use(async (req, res, next) => {
 
 // ⛔ حارس endpoints التطوير — يرجّع 404 في الإنتاج (يمنع تزوير الترقية/الدفع)
 const devOnly = (req, res, next) => {
-  if (process.env.NODE_ENV === 'production') {
+  if (process.env.NODE_ENV !== 'development') {
     return res.status(404).json({ ok: false, error: 'Not found' });
   }
   next();
@@ -505,6 +606,10 @@ app.post("/webhook", (req, res) => {
     }
 
     if (isValid) {
+      if (global.SAFE_MODE?.enabled === true && process.env.ALLOW_INSECURE_STAGING !== 'true') {
+        console.log('🛡️ [SAFE MODE] Blocked Salla webhook side effects (validation only allowed).');
+        return;
+      }
       SallaWebhook.checkActions(req.body, SALLA_WEBHOOK_SECRET || token, {
         /* userArgs */
       });
@@ -540,6 +645,11 @@ app.get("/webhook/meta", (req, res) => {
 // 2. Incoming Messages
 app.post("/webhook/meta", async (req, res) => {
   res.sendStatus(200); // Ack immediately
+
+  if (global.SAFE_MODE?.enabled === true && process.env.ALLOW_INSECURE_STAGING !== 'true') {
+    console.log('🛡️ [SAFE MODE] Blocked Meta webhook side effects (validation only allowed).');
+    return;
+  }
 
   const body = req.body;
   if (!body || !body.object) return;
@@ -1571,8 +1681,8 @@ app.post("/api/scenarios/save", async (req, res) => {
 // 🛠️ DEV ONLY — تبديل الباقة الحالية للتطوير
 // GET /dev/switch-plan/:plan  → الأساسية | النمو | التاجر المحترف | الشركات
 // ⛔ محمي: يعمل فقط في بيئة التطوير. في الإنتاج يرجّع 404.
-app.get("/dev/switch-plan/:plan", async (req, res) => {
-  if (process.env.NODE_ENV === 'production') {
+app.get("/dev/switch-plan/:plan", devOnly, async (req, res) => {
+  if (process.env.NODE_ENV !== 'development') {
     return res.status(404).json({ ok: false, error: 'Not found' });
   }
   try {
@@ -2360,8 +2470,7 @@ async function dispatchCampaign(campaignId, campaignImage = null) {
   console.log(`[Campaign] ✅ #${campaign.id} done. Sent: ${totalSent}, Failed: ${totalFailed}`);
 }
 
-// ⏰ معالج الحملات المجدولة — يفحص كل دقيقة
-setInterval(async () => {
+setInterval(createWorker(async function campaignPollerWorker() {
   try {
     const db = SallaDatabase.connection;
     if (!db || !db.models.Campaign) return;
@@ -2374,7 +2483,7 @@ setInterval(async () => {
       dispatchCampaign(c.id).catch(e => console.error('Scheduled dispatch error:', e.message));
     }
   } catch (e) { /* تجاهل */ }
-}, 60000);
+}), 60000);
 
 app.post("/api/campaigns/send", async (req, res) => {
   try {
@@ -2882,23 +2991,33 @@ SallaDatabase.connect().then(async (connection) => {
 
   // ── شغّل المُجدوِل (Cron) لسيناريوهات: birthday | reactivation | price_drop
   try {
-    const scheduler = require('./jobs/scheduler');
-    scheduler.start();
+    assertRuntimeGuard();
+    const startScheduler = createWorker(function startSchedulerWorker() {
+      const scheduler = require('./jobs/scheduler');
+      scheduler.start();
+    });
+    startScheduler();
   } catch (e) {
     console.error('⚠️ Scheduler failed to start:', e.message);
   }
 
   // ── 🔄 استعادة جلسات واتساب (QR) المحفوظة للتجار المتصلين سابقاً
   try {
-    waWeb.restoreAll();
+    assertRuntimeGuard();
+    const restoreAllSessions = createWorker(function restoreAllSessionsWorker() {
+      waWeb.restoreAll();
+    });
+    restoreAllSessions();
   } catch (e) {
     console.error('⚠️ waWeb restore failed:', e.message);
   }
 
+  assertRuntimeGuard();
   const startServer = (retryPort) => {
-    const serverInstance = server.listen(retryPort, () => {
-      console.log(`🚀 SaaS System Ready on http://localhost:${retryPort}`);
-      console.log(`💻 Dashboard: http://localhost:${retryPort}/dashboard`);
+    const host = process.env.HOST || '0.0.0.0';
+    const serverInstance = server.listen(retryPort, host, () => {
+      console.log(`🚀 SaaS System Ready on http://${host}:${retryPort}`);
+      console.log(`💻 Dashboard: http://${host}:${retryPort}/dashboard`);
     });
 
     serverInstance.on('error', (e) => {

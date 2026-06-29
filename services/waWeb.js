@@ -11,6 +11,22 @@ const qrcode = require('qrcode');
 
 const WEB_VERSION = 'https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.3000.1040093096-alpha.html';
 
+const createWorker = global.createWorker || function(fn) {
+    if (global.SAFE_MODE && global.SAFE_MODE.locked !== true) {
+        console.error("❌ FATAL: SAFE_MODE.locked is compromised!");
+        process.exit(1);
+    }
+    const isSafe = global.SAFE_MODE?.enabled || (
+        process.env.NODE_ENV === 'staging' &&
+        process.env.STAGING_SAFE_MODE === 'true' &&
+        process.env.FORCE_SAFE_BYPASS !== 'true'
+    );
+    if (isSafe) {
+        return function NOOP_WORKER() { return null; };
+    }
+    return fn;
+};
+
 // خريطة الجلسات: المفتاح = معرّف التاجر، القيمة = حالة جلسته
 const sessions = new Map();
 
@@ -69,7 +85,7 @@ function _startReadyPoller(tenantId) {
     const s = _session(tenantId);
     if (s.poller) return;
     let tries = 0;
-    s.poller = setInterval(async () => {
+    s.poller = setInterval(async function readyPollerWorker() {
         tries++;
         if (s.status === 'ready' || tries > 40 || !s.client) { clearInterval(s.poller); s.poller = null; return; }
         try {
@@ -89,7 +105,8 @@ function _cleanLocks(clientId) {
     try {
         const fs = require('fs');
         const path = require('path');
-        const sessDir = path.join(process.cwd(), '.wwebjs_auth', 'session-' + clientId);
+        const authDataPath = process.env.WWEBJS_AUTH_PATH || './.wwebjs_auth';
+        const sessDir = path.resolve(authDataPath, 'session-' + clientId);
         for (const f of ['SingletonLock', 'SingletonCookie', 'SingletonSocket']) {
             const p = path.join(sessDir, f);
             if (fs.existsSync(p)) { try { fs.rmSync(p, { force: true }); } catch (e) {} }
@@ -274,7 +291,7 @@ async function handleTechnicalFailure(tenantId, reason) {
 
     console.log(`⏳ [waWeb:${k}] Scheduling recovery attempt #${s.reconnectAttempt} in ${finalDelay}ms`);
 
-    s.reconnectTimer = setTimeout(async () => {
+    s.reconnectTimer = setTimeout(async function reconnectWorker() {
         const checkAcc = await pGate.checkTenantAccess(k);
         if (!checkAcc.allowed || s.logoutIntent) {
             console.log(`[waWeb:${k}] Recovery attempt aborted: status is ${checkAcc.reason}`);
@@ -338,8 +355,22 @@ function start(tenantId) {
 
             _cleanLocks(k);
 
+            const fs = require('fs');
+            const path = require('path');
+            const authDataPath = process.env.WWEBJS_AUTH_PATH || './.wwebjs_auth';
+            const resolvedPath = path.resolve(authDataPath);
+            if (!fs.existsSync(resolvedPath)) {
+                fs.mkdirSync(resolvedPath, { recursive: true, mode: 0o700 });
+                if (process.env.NODE_ENV === 'staging') {
+                    console.log(`🛡️ [STAGING] Created staging session directory: ${resolvedPath}`);
+                }
+            }
+
             const client = new Client({
-                authStrategy: new LocalAuth({ clientId: k }),
+                authStrategy: new LocalAuth({
+                    clientId: k,
+                    dataPath: resolvedPath
+                }),
                 webVersionCache: { type: 'remote', remotePath: WEB_VERSION },
                 puppeteer: {
                     headless: true,
@@ -566,11 +597,12 @@ async function restart(tenantId) {
     return start(k);
 }
 
-function restoreAll() {
+const restoreAll = createWorker(function restoreAllSessionsWorker() {
     try {
         const fs = require('fs');
         const path = require('path');
-        const authDir = path.join(process.cwd(), '.wwebjs_auth');
+        const authDataPath = process.env.WWEBJS_AUTH_PATH || './.wwebjs_auth';
+        const authDir = path.resolve(authDataPath);
         if (!fs.existsSync(authDir)) return [];
         const ids = fs.readdirSync(authDir)
             .filter(d => d.startsWith('session-'))
@@ -586,7 +618,7 @@ function restoreAll() {
         console.error('[waWeb] restoreAll error:', e.message);
         return [];
     }
-}
+});
 
 async function destroyAll() {
     console.log(`🧹 [waWeb] Destroying all active WhatsApp clients gracefully...`);
@@ -604,7 +636,7 @@ async function destroyAll() {
 }
 
 // Health check poller (runs background check every 30 seconds)
-setInterval(async () => {
+setInterval(async function healthCheckPollerWorker() {
     for (const [k, s] of sessions.entries()) {
         if (s.client && s.status === 'ready') {
             try {

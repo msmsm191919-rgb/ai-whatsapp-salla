@@ -26,9 +26,20 @@ module.exports = {
     const dbDialect = process.env.SALLA_DATABASE_DIALECT || 'mysql';
 
     if (dbDialect === 'sqlite') {
+      const fs = require('fs');
+      const path = require('path');
+      const dbStorage = process.env.SALLA_DATABASE_STORAGE || './database/salla_saas_v4.sqlite';
+      const resolvedStorage = path.resolve(dbStorage);
+      const parentDir = path.dirname(resolvedStorage);
+      if (!fs.existsSync(parentDir)) {
+        fs.mkdirSync(parentDir, { recursive: true });
+      }
+      if (process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'staging') {
+        console.log(`🔌 Connecting to SQLite database at: ${resolvedStorage}`);
+      }
       sequelize = new Sequelize({
         dialect: 'sqlite',
-        storage: './database/salla_saas_v4.sqlite',
+        storage: resolvedStorage,
         logging: false,
       });
     } else {

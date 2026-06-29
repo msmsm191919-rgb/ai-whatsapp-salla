@@ -4,6 +4,10 @@
 .env
 .env.local
 .env.production
+.env.staging
+.env.development
+!.env.example
+!.env.staging.example
 *.pem
 *.key
 *.cert
@@ -53,6 +57,7 @@ Thumbs.db
 # 🧪 Dev/Test scripts — لا تنشرها للإنتاج
 # ═══════════════════════════════════════════════════
 test_*.js
+!tests/reliability/test_*.js
 check_*.js
 simulate_*.js
 switch_to_*.js
