@@ -58,6 +58,7 @@ Thumbs.db
 # ═══════════════════════════════════════════════════
 test_*.js
 !tests/reliability/test_*.js
+!tests/security/test_*.js
 check_*.js
 simulate_*.js
 switch_to_*.js

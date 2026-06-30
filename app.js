@@ -423,7 +423,7 @@ app.use((req, res, next) => {
 // 'qr' = ربط QR متصل | 'api' = WhatsApp API مفعّل | 'none' = ما ربط شي بعد
 app.use(async (req, res, next) => {
   try {
-    const merchantId = req.user?.merchant?.id || 123456789;
+    const merchantId = req.user?.merchant?.id || (process.env.NODE_ENV === 'development' ? 123456789 : null);
     const db = SallaDatabase.connection;
     if (!db || !db.models?.Tenant) { res.locals.activeChannel = 'none'; return next(); }
     const tenant = await db.models.Tenant.findOne({ where: { salla_merchant_id: merchantId } });
@@ -493,7 +493,7 @@ app.get('/support', (req, res) => {
 // 🎨 Interactive Widget Demo & Preview Page
 app.get('/widget-demo', async (req, res) => {
   try {
-    const merchantId = req.user?.merchant?.id || 123456789;
+    const merchantId = req.user?.merchant?.id || (process.env.NODE_ENV === 'development' ? 123456789 : null);
     const db = SallaDatabase.connection;
     let planName = 'الأساسية';
     if (db && db.models?.Tenant) {
@@ -813,64 +813,116 @@ app.get("/health", (req, res) => {
 // OTHER ROUTES
 // ---------------------------------------------------------
 
-app.get("/login/bypass", async (req, res) => {
+// Secure CLI-based login token exchange route (STAGING & DEVELOPMENT ONLY)
+app.get("/login/token", async (req, res) => {
   if (process.env.NODE_ENV === 'production') {
-    return res.status(404).json({ ok: false, error: 'Not found' });
+    return res.status(404).send("Not Found");
   }
+  const token = req.query.token;
+  if (!token) return res.status(400).send("Missing token");
 
-  const secret = req.query.secret;
-  if (secret !== 'mubhir1919') {
-    return res.status(403).send("🔒 Access Denied: Invalid Secret Code.");
-  }
+  const tokenPath = process.env.NODE_ENV === 'staging'
+    ? '/opt/mubhir-staging/data/login_tokens.json'
+    : path.resolve(__dirname, 'tests/security/login_tokens.json');
 
-  const merchantId = req.query.merchant_id || "682209569";
-  const storeName = req.query.store_name || "متجر محتوى بلس";
+  if (!fs.existsSync(tokenPath)) return res.status(403).send("Invalid or expired token");
 
+  let tokens = [];
   try {
-    const db = SallaDatabase.connection;
-    if (!db || !db.models?.Tenant) {
-      return res.status(500).send("Database not ready yet.");
+    tokens = JSON.parse(fs.readFileSync(tokenPath, 'utf8'));
+  } catch (e) {
+    return res.status(500).send("Error reading tokens");
+  }
+
+  const tokenRecordIndex = tokens.findIndex(t => t.token === token && t.expiresAt > Date.now());
+  if (tokenRecordIndex === -1) {
+    return res.status(403).send("Invalid or expired token");
+  }
+
+  const tokenRecord = tokens[tokenRecordIndex];
+
+  // Remove token (single-use)
+  tokens.splice(tokenRecordIndex, 1);
+  try {
+    fs.writeFileSync(tokenPath, JSON.stringify(tokens), 'utf8');
+  } catch (e) {
+    return res.status(500).send("Error updating tokens store");
+  }
+
+  const userSession = {
+    merchant: {
+      id: tokenRecord.merchantId,
+      name: tokenRecord.storeName
+    },
+    tenant_id: tokenRecord.tenantId,
+    platform: "salla"
+  };
+
+  req.login(userSession, (err) => {
+    if (err) return res.status(500).send("Login session error: " + err.message);
+    req.session.save((saveErr) => {
+      if (saveErr) return res.status(500).send("Session save error: " + saveErr.message);
+      res.redirect("/dashboard?welcome=1");
+    });
+  });
+});
+
+if (process.env.NODE_ENV === 'development') {
+  app.get("/login/bypass", async (req, res) => {
+    const secret = req.query.secret;
+    if (secret !== 'mubhir1919') {
+      return res.status(403).send("🔒 Access Denied: Invalid Secret Code.");
     }
 
-    // 1. Create or Find Tenant in DB
-    let tenant = await db.models.Tenant.findOne({ where: { salla_merchant_id: merchantId } });
-    if (!tenant) {
-      tenant = await db.models.Tenant.create({
-        salla_merchant_id: merchantId,
-        store_name: storeName,
-        email: "bypass@mubhirbot.com",
-        store_domain: "bypass-store.salla.sa",
-        platform: "salla"
-      });
-      // Ensure Trial Subscription
-      await SallaDatabase.ensureTrialSubscription(tenant.id);
-    }
+    const merchantId = req.query.merchant_id || "682209569";
+    const storeName = req.query.store_name || "متجر محتوى بلس";
 
-    // 2. Persist local test session through Passport
-    const userSession = {
-      merchant: {
-        id: merchantId,
-        name: storeName
-      },
-      tenant_id: tenant.id,
-      platform: "salla"
-    };
-
-    req.login(userSession, (err) => {
-      if (err) {
-        return res.status(500).send("Login session error: " + err.message);
+    try {
+      const db = SallaDatabase.connection;
+      if (!db || !db.models?.Tenant) {
+        return res.status(500).send("Database not ready yet.");
       }
 
-      req.session.save((saveErr) => {
-        if (saveErr) return res.status(500).send("Session save error: " + saveErr.message);
-        res.redirect("/dashboard?welcome=1");
+      // 1. Create or Find Tenant in DB
+      let tenant = await db.models.Tenant.findOne({ where: { salla_merchant_id: merchantId } });
+      if (!tenant) {
+        tenant = await db.models.Tenant.create({
+          salla_merchant_id: merchantId,
+          store_name: storeName,
+          email: "bypass@mubhirbot.com",
+          store_domain: "bypass-store.salla.sa",
+          platform: "salla"
+        });
+        // Ensure Trial Subscription
+        await SallaDatabase.ensureTrialSubscription(tenant.id);
+      }
+
+      // 2. Persist local test session through Passport
+      const userSession = {
+        merchant: {
+          id: merchantId,
+          name: storeName
+        },
+        tenant_id: tenant.id,
+        platform: "salla"
+      };
+
+      req.login(userSession, (err) => {
+        if (err) {
+          return res.status(500).send("Login session error: " + err.message);
+        }
+
+        req.session.save((saveErr) => {
+          if (saveErr) return res.status(500).send("Session save error: " + saveErr.message);
+          res.redirect("/dashboard?welcome=1");
+        });
       });
-    });
-  } catch (e) {
-    console.error("Bypass login error:", e);
-    res.status(500).send("Error: " + e.message);
-  }
-});
+    } catch (e) {
+      console.error("Bypass login error:", e);
+      res.status(500).send("Error: " + e.message);
+    }
+  });
+}
 
 app.get(["/oauth/redirect", "/login"], passport.authenticate("salla"));
 
@@ -1127,6 +1179,11 @@ function ensureAuthenticated(req, res, next) {
   }
   console.log(`- Access Result: DENIED`);
   console.log(`- Fallback Reason: No authenticated session found (req.user is undefined or missing merchant ID)`);
+  if (req.originalUrl.startsWith('/api/')) {
+    console.log(`- Action: Returning 401 Unauthorized for API route`);
+    console.log(`============================================================\n`);
+    return res.status(401).json({ ok: false, error: 'Authentication required' });
+  }
   console.log(`- Action: Redirecting to /login`);
   console.log(`============================================================\n`);
   res.redirect('/login');
@@ -2216,7 +2273,7 @@ app.get("/customers", async (req, res) => {
 // يحلّ معرّف التاجر الحالي (للجلسة المنفصلة)
 async function _waTenantId(req) {
   if (!req.user) {
-    if (process.env.NODE_ENV === 'production') return null;
+    if (process.env.NODE_ENV !== 'development') return null;
     req.user = { merchant: { id: 123456789, name: 'Demo Merchant' } };
   }
   const db = SallaDatabase.connection;
@@ -2273,7 +2330,7 @@ function _normalizePhone(p) {
 
 async function _getCustomerTenant(req) {
   if (!req.user) {
-    if (process.env.NODE_ENV === 'production') return { db: SallaDatabase.connection, tenant: null };
+    if (process.env.NODE_ENV !== 'development') return { db: SallaDatabase.connection, tenant: null };
     req.user = { merchant: { id: 123456789, name: 'Demo Merchant' } };
   }
   const db = SallaDatabase.connection;
