@@ -165,7 +165,7 @@ function isLogoutReason(reason) {
     if (!reason) return false;
     const r = typeof reason === 'string' ? reason : (reason.message || String(reason));
     const norm = r.toUpperCase();
-    return norm.includes('LOGOUT') || norm.includes('UNPAIRED') || norm.includes('DISCONNECTED');
+    return norm.includes('LOGOUT') || norm.includes('UNPAIRED');
 }
 
 // دالة تصنيف للتحقق من إلغاء الترخيص أو فقدان الجلسة بشكل كامل
