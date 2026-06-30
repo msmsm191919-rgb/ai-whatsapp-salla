@@ -3150,8 +3150,7 @@ process.on('unhandledRejection', (reason, promise) => {
     msg.includes('detached Frame') ||
     msg.includes('Execution context was destroyed') ||
     msg.includes('Target closed') ||
-    msg.includes('Protocol error') ||
-    msg.includes('auth timeout')
+    msg.includes('Protocol error')
   ) {
     console.warn('⚠️ [WARNING] Ignored transient Puppeteer rejection to prevent crash:', msg);
     return;

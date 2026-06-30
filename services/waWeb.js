@@ -153,20 +153,75 @@ function _killProcessTree(pid) {
     }
 }
 
-// الدالة الموحدة لتنظيف موارد الجلسة وعمليات المتصفح العالقة
+// دالة تصنيف للتحقق من المهلة المؤقتة أثناء الربط
+function isTransientAuthTimeout(err) {
+    if (!err) return false;
+    const msg = typeof err === 'string' ? err : (err.message || String(err));
+    return msg.toLowerCase().includes('auth timeout');
+}
+
+// دالة تصنيف للتحقق من أسباب تسجيل الخروج أو إزالة الجهاز
+function isLogoutReason(reason) {
+    if (!reason) return false;
+    const r = typeof reason === 'string' ? reason : (reason.message || String(reason));
+    const norm = r.toUpperCase();
+    return norm.includes('LOGOUT') || norm.includes('UNPAIRED') || norm.includes('DISCONNECTED');
+}
+
+// دالة تصنيف للتحقق من إلغاء الترخيص أو فقدان الجلسة بشكل كامل
+function isRevokedSession(errOrReason) {
+    if (!errOrReason) return false;
+    const r = typeof errOrReason === 'string' ? errOrReason : (errOrReason.message || String(errOrReason));
+    const norm = r.toUpperCase();
+    return norm.includes('LOGOUT') || norm.includes('UNPAIRED') || norm.includes('AUTH_FAILURE') || norm.includes('REVOKED');
+}
+
+// دالة تحليل آمنة لمهلة الربط للتأكد من قيمتها وحدودها
+function getAuthTimeoutMs() {
+    const rawVal = process.env.STAGING_AUTH_TIMEOUT_MS || process.env.AUTH_TIMEOUT_MS;
+    let parsed = parseInt(rawVal, 10);
+    const defaultVal = 300000; // 5 دقائق كقيمة افتراضية
+    const minVal = 15000;      // حد أدنى 15 ثانية
+    const maxVal = 900000;     // حد أقصى 15 دقيقة
+    if (isNaN(parsed) || parsed <= 0) {
+        return defaultVal;
+    }
+    if (parsed < minVal) return minVal;
+    if (parsed > maxVal) return maxVal;
+    return parsed;
+}
+
+// الدالة الموحدة لتنظيف موارد الجلسة وعمليات المتصفح العالقة مع حماية المجلدات
 function _deleteSessionDirectory(clientId) {
+    const tenantIdStr = String(clientId);
+    // 1. تحقق من أن معرف التاجر هو رقم صالح فقط لمنع الهجمات
+    if (!/^\d+$/.test(tenantIdStr)) {
+        console.error(`❌ [waWeb:${tenantIdStr}] _deleteSessionDirectory: Invalid tenant ID format.`);
+        return;
+    }
+
     try {
         const fs = require('fs');
         const path = require('path');
         const authDataPath = process.env.WWEBJS_AUTH_PATH || './.wwebjs_auth';
-        const resolvedPath = path.resolve(authDataPath);
-        const sessDir = path.join(resolvedPath, 'session-' + clientId);
-        if (fs.existsSync(sessDir)) {
-            fs.rmSync(sessDir, { recursive: true, force: true });
-            console.log(`🧹 [waWeb:${clientId}] Deleted session directory: ${sessDir}`);
+        
+        // 2. استخدام realpath/resolve
+        const resolvedAuthPath = path.resolve(authDataPath);
+        const targetDir = path.join(resolvedAuthPath, 'session-' + tenantIdStr);
+        const resolvedTargetDir = path.resolve(targetDir);
+
+        // 3. تأكد أن المسار النهائي يقع داخل مجلد الجلسات الرئيسي فقط (منع Path Traversal)
+        if (!resolvedTargetDir.startsWith(resolvedAuthPath + path.sep)) {
+            console.error(`❌ [waWeb:${tenantIdStr}] _deleteSessionDirectory: Path traversal attempt blocked! Path: ${resolvedTargetDir}`);
+            return;
+        }
+
+        if (fs.existsSync(resolvedTargetDir)) {
+            fs.rmSync(resolvedTargetDir, { recursive: true, force: true });
+            console.log(`🧹 [waWeb:${tenantIdStr}] Deleted session directory: ${resolvedTargetDir}`);
         }
     } catch (e) {
-        console.error(`❌ [waWeb:${clientId}] Failed to delete session directory:`, e.message);
+        console.error(`❌ [waWeb:${tenantIdStr}] Failed to delete session directory:`, e.message);
     }
 }
 
@@ -273,10 +328,10 @@ async function handleTechnicalFailure(tenantId, reason) {
     console.warn(`⚠️ [waWeb:${k}] Technical failure triggered: ${reason}`);
 
     // Check if this is an official logout / disconnect from phone
-    const isLogout = reason.includes('LOGOUT') || reason.includes('logout');
+    const isLogout = isLogoutReason(reason) || isRevokedSession(reason);
 
     if (isLogout) {
-        console.log(`[waWeb:${k}] Official logout/disconnect detected. Stopping session and cleaning auth.`);
+        console.log(`[waWeb:${k}] Official logout/disconnect/revocation detected. Stopping session and cleaning auth.`);
         await cleanupSessionResources(k, 'auth_failure'); // Sets status to auth_required
         _deleteSessionDirectory(k); // Clean session directory
         return;
@@ -412,7 +467,7 @@ function start(tenantId) {
                 }
             }
 
-            const authTimeout = parseInt(process.env.STAGING_AUTH_TIMEOUT_MS || process.env.AUTH_TIMEOUT_MS) || 300000;
+            const authTimeout = getAuthTimeoutMs();
             console.log(`🚀 [waWeb:${k}] Initializing client with authTimeoutMs: ${authTimeout}`);
 
             const client = new Client({
@@ -608,13 +663,13 @@ function start(tenantId) {
             await client.initialize();
         } catch (e) {
             _starting.delete(k);
-            console.error(`❌ [waWeb:${k}] Initialization error:`, e.message || e);
-            
-            const isTimeout = String(e.message || e).includes('auth timeout') || String(e).includes('auth timeout');
+            const isTimeout = isTransientAuthTimeout(e);
+            const attempt = s.initTries + 1;
+            console.error(`❌ [waWeb:${k}] Initialization failed on attempt ${attempt}/2. Error: ${e.message || e}`);
             
             if (isTimeout && s.initTries < 2) {
                 s.initTries++;
-                console.log(`⚠️ [waWeb:${k}] Temporary timeout (Attempt ${s.initTries}/2). Re-initializing client...`);
+                console.log(`⚠️ [waWeb:${k}] Temporary timeout (Attempt ${s.initTries}/2). Re-initializing client without destroying auth files...`);
                 s.status = s.status === 'qr' ? 'starting' : 'syncing';
                 await cleanupSessionResources(k, 'timeout_retry');
                 setTimeout(() => {
