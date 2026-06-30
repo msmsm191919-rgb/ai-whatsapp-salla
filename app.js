@@ -3146,5 +3146,15 @@ process.on('uncaughtException', (err) => {
 });
 process.on('unhandledRejection', (reason, promise) => {
   const err = reason instanceof Error ? reason : new Error(String(reason));
+  const msg = err.message || '';
+  if (
+    msg.includes('detached Frame') ||
+    msg.includes('Execution context was destroyed') ||
+    msg.includes('Target closed') ||
+    msg.includes('Protocol error')
+  ) {
+    console.warn('⚠️ [WARNING] Ignored transient Puppeteer rejection to prevent crash:', msg);
+    return;
+  }
   gracefulShutdown('unhandledRejection', err);
 });
