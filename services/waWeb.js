@@ -53,7 +53,9 @@ function _session(tenantId) {
             lastVerifiedAt: 0,
             lastErrorCode: '',
             logoutIntent: false,
-            halfOpenTrial: false
+            halfOpenTrial: false,
+            cleaning: false,
+            syncPercent: 0
         });
     }
     return sessions.get(k);
@@ -152,89 +154,115 @@ function _killProcessTree(pid) {
 }
 
 // الدالة الموحدة لتنظيف موارد الجلسة وعمليات المتصفح العالقة
+function _deleteSessionDirectory(clientId) {
+    try {
+        const fs = require('fs');
+        const path = require('path');
+        const authDataPath = process.env.WWEBJS_AUTH_PATH || './.wwebjs_auth';
+        const resolvedPath = path.resolve(authDataPath);
+        const sessDir = path.join(resolvedPath, 'session-' + clientId);
+        if (fs.existsSync(sessDir)) {
+            fs.rmSync(sessDir, { recursive: true, force: true });
+            console.log(`🧹 [waWeb:${clientId}] Deleted session directory: ${sessDir}`);
+        }
+    } catch (e) {
+        console.error(`❌ [waWeb:${clientId}] Failed to delete session directory:`, e.message);
+    }
+}
+
+// الدالة الموحدة لتنظيف موارد الجلسة وعمليات المتصفح العالقة
 async function cleanupSessionResources(tenantId, reason) {
     const k = String(tenantId);
     const s = sessions.get(k);
     if (!s) return;
-
-    console.log(`🧹 [waWeb:${k}] Cleaning up resources (Reason: ${reason})...`);
-
-    // Capture PID fallback if not already captured
-    if (!s.browserPid && s.client && s.client.pupBrowser && s.client.pupBrowser.process()) {
-        s.browserPid = s.client.pupBrowser.process().pid;
-        console.log(`[waWeb:${k}] Captured browser process PID on cleanup fallback: ${s.browserPid}`);
+    if (s.cleaning) {
+        console.log(`[waWeb:${k}] cleanupSessionResources: cleanup already in progress (ignored)`);
+        return;
     }
+    s.cleaning = true;
 
-    // 1. إيقاف الـ Timers والـ Pollers الخاصة بالجلسة
-    if (s.poller) { clearInterval(s.poller); s.poller = null; }
-    if (s.reconnectTimer) { clearTimeout(s.reconnectTimer); s.reconnectTimer = null; }
+    try {
+        console.log(`🧹 [waWeb:${k}] Cleaning up resources (Reason: ${reason})...`);
 
-    // 2. إزالة مستمعي الأحداث الذين تمت إضافتهم بواسطة مبهر
-    if (s.client) {
-        try {
-            s.client.removeAllListeners('qr');
-            s.client.removeAllListeners('loading_screen');
-            s.client.removeAllListeners('authenticated');
-            s.client.removeAllListeners('ready');
-            s.client.removeAllListeners('auth_failure');
-            s.client.removeAllListeners('disconnected');
-            s.client.removeAllListeners('message_create');
-        } catch (e) {
-            console.error(`[waWeb:${k}] Error removing listeners:`, e.message);
+        // Capture PID fallback if not already captured
+        if (!s.browserPid && s.client && s.client.pupBrowser && s.client.pupBrowser.process()) {
+            s.browserPid = s.client.pupBrowser.process().pid;
+            console.log(`[waWeb:${k}] Captured browser process PID on cleanup fallback: ${s.browserPid}`);
         }
-    }
 
-    // 3. تدمير العميل بأمان مع مهلة أمان قصوى 8 ثوانٍ
-    let destroyedGracefully = false;
-    const originalClient = s.client;
-    if (originalClient) {
-        try {
-            const destroyPromise = originalClient.destroy().then(() => { destroyedGracefully = true; });
-            const timeoutPromise = new Promise(r => setTimeout(r, 8000));
-            await Promise.race([destroyPromise, timeoutPromise]);
-        } catch (e) {
-            console.error(`[waWeb:${k}] Error destroying client:`, e.message);
-        }
-    }
+        // 1. إيقاف الـ Timers والـ Pollers الخاصة بالجلسة
+        if (s.poller) { clearInterval(s.poller); s.poller = null; }
+        if (s.reconnectTimer) { clearTimeout(s.reconnectTimer); s.reconnectTimer = null; }
 
-    // 4. محاولة إغلاق المتصفح طبيعياً
-    if (originalClient && originalClient.pupBrowser && !destroyedGracefully) {
-        try {
-            await originalClient.pupBrowser.close();
-        } catch (e) {
-            // تجاهل
-        }
-    }
-
-    // 5. قتل العمليات المستهدفة يدوياً كخيار أخير إذا بقيت العملية حية
-    const pid = s.browserPid;
-    if (pid) {
-        try {
-            let exists = false;
+        // 2. إزالة مستمعي الأحداث الذين تمت إضافتهم بواسطة مبهر
+        if (s.client) {
             try {
-                process.kill(pid, 0);
-                exists = true;
+                s.client.removeAllListeners('qr');
+                s.client.removeAllListeners('loading_screen');
+                s.client.removeAllListeners('authenticated');
+                s.client.removeAllListeners('ready');
+                s.client.removeAllListeners('auth_failure');
+                s.client.removeAllListeners('disconnected');
+                s.client.removeAllListeners('message_create');
             } catch (e) {
-                exists = false;
+                console.error(`[waWeb:${k}] Error removing listeners:`, e.message);
             }
-            if (exists) {
-                _killProcessTree(pid);
-            }
-        } catch (e) {
-            // تجاهل
         }
-        s.browserPid = null;
-    }
 
-    s.client = null;
+        // 3. تدمير العميل بأمان مع مهلة أمان قصوى 8 ثوانٍ
+        let destroyedGracefully = false;
+        const originalClient = s.client;
+        if (originalClient) {
+            try {
+                const destroyPromise = originalClient.destroy().then(() => { destroyedGracefully = true; });
+                const timeoutPromise = new Promise(r => setTimeout(r, 8000));
+                await Promise.race([destroyPromise, timeoutPromise]);
+            } catch (e) {
+                console.error(`[waWeb:${k}] Error destroying client:`, e.message);
+            }
+        }
 
-    // 6. تحديث الحالة
-    if (reason === 'logout' || reason === 'auth_failure') {
-        s.status = (reason === 'auth_failure') ? 'auth_required' : 'disconnected';
-        s.qr = '';
-    } else if (reason === 'expired') {
-        s.status = 'subscription_expired';
-        s.qr = '';
+        // 4. محاولة إغلاق المتصفح طبيعياً
+        if (originalClient && originalClient.pupBrowser && !destroyedGracefully) {
+            try {
+                await originalClient.pupBrowser.close();
+            } catch (e) {
+                // تجاهل
+            }
+        }
+
+        // 5. قتل العمليات المستهدفة يدوياً كخيار أخير إذا بقيت العملية حية
+        const pid = s.browserPid;
+        if (pid) {
+            try {
+                let exists = false;
+                try {
+                    process.kill(pid, 0);
+                    exists = true;
+                } catch (e) {
+                    exists = false;
+                }
+                if (exists) {
+                    _killProcessTree(pid);
+                }
+            } catch (e) {
+                // تجاهل
+            }
+            s.browserPid = null;
+        }
+
+        s.client = null;
+
+        // 6. تحديث الحالة
+        if (reason === 'logout' || reason === 'auth_failure') {
+            s.status = (reason === 'auth_failure') ? 'auth_required' : 'disconnected';
+            s.qr = '';
+        } else if (reason === 'expired') {
+            s.status = 'subscription_expired';
+            s.qr = '';
+        }
+    } finally {
+        s.cleaning = false;
     }
 }
 
@@ -243,6 +271,16 @@ async function handleTechnicalFailure(tenantId, reason) {
     const s = _session(k);
     _starting.delete(k);
     console.warn(`⚠️ [waWeb:${k}] Technical failure triggered: ${reason}`);
+
+    // Check if this is an official logout / disconnect from phone
+    const isLogout = reason.includes('LOGOUT') || reason.includes('logout');
+
+    if (isLogout) {
+        console.log(`[waWeb:${k}] Official logout/disconnect detected. Stopping session and cleaning auth.`);
+        await cleanupSessionResources(k, 'auth_failure'); // Sets status to auth_required
+        _deleteSessionDirectory(k); // Clean session directory
+        return;
+    }
 
     // تنظيف الموارد فوراً
     await cleanupSessionResources(k, 'disconnected');
@@ -314,8 +352,14 @@ function start(tenantId) {
         return getState(k);
     }
 
+    // 🔒 Block: إذا كانت الجلسة قيد التنظيف
+    if (s.cleaning) {
+        console.log(`[waWeb:${k}] start() مستدعى بينما الجلسة قيد التنظيف — تم التجاهل`);
+        return getState(k);
+    }
+
     // 🔒 Guard: جلسة شغّالة فعلاً
-    if (s.client && ['starting', 'qr', 'authenticated', 'ready'].includes(s.status)) {
+    if (s.client && ['starting', 'qr', 'authenticated', 'ready', 'syncing'].includes(s.status)) {
         console.log(`[waWeb:${k}] start() مستدعى والجلسة جاهزة (${s.status}) — تم التجاهل`);
         return getState(k);
     }
@@ -335,7 +379,9 @@ function start(tenantId) {
 
     // إقلاع غير متزامن
     _starting.add(k);
-    s.status = 'starting';
+    if (s.status !== 'syncing' && s.status !== 'starting') {
+        s.status = 'starting';
+    }
     s.qr = '';
     s.error = '';
     s.autoReplyActivatedTime = 0;
@@ -366,11 +412,16 @@ function start(tenantId) {
                 }
             }
 
+            const authTimeout = parseInt(process.env.STAGING_AUTH_TIMEOUT_MS || process.env.AUTH_TIMEOUT_MS) || 300000;
+            console.log(`🚀 [waWeb:${k}] Initializing client with authTimeoutMs: ${authTimeout}`);
+
             const client = new Client({
                 authStrategy: new LocalAuth({
                     clientId: k,
                     dataPath: resolvedPath
                 }),
+                authTimeoutMs: authTimeout,
+                qrMaxRetries: 5,
                 webVersionCache: { type: 'remote', remotePath: WEB_VERSION },
                 puppeteer: {
                     headless: true,
@@ -390,13 +441,15 @@ function start(tenantId) {
             client.on('loading_screen', (pct, msg) => {
                 if (s.client !== client) return;
                 _capturePid(s);
+                s.status = 'syncing';
+                s.syncPercent = pct;
                 console.log(`⏳ [waWeb:${k}] تحميل ${pct}% ${msg || ''}`);
             });
 
             client.on('authenticated', () => {
                 if (s.client !== client) return;
                 _capturePid(s);
-                s.status = 'authenticated';
+                s.status = 'syncing';
                 s.qr = '';
                 console.log(`🔑 [waWeb:${k}] تمت المصادقة`);
                 _startReadyPoller(k);
@@ -408,6 +461,7 @@ function start(tenantId) {
                 _starting.delete(k);
                 s.status = 'ready';
                 s.qr = '';
+                s.initTries = 0;
                 s.lastVerifiedAt = Date.now();
                 s.reconnectAttempt = 0; // تصفير العداد بعد النجاح الفعلي
                 s.circuitOpen = false;  // Ensure circuit is closed
@@ -421,6 +475,7 @@ function start(tenantId) {
                 _starting.delete(k);
                 console.error(`❌ [waWeb:${k}] فشل المصادقة`, m);
                 await cleanupSessionResources(k, 'auth_failure');
+                _deleteSessionDirectory(k);
                 s.error = String(m);
             });
 
@@ -429,7 +484,7 @@ function start(tenantId) {
                 await handleTechnicalFailure(k, `disconnected: ${r}`);
             });
 
-            // 💬 رد تلقائي ذكي
+            // 📩 الاستماع للرسائل الواردة
             client.on('message_create', async (msg) => {
                 if (s.client !== client) return;
                 try {
@@ -445,9 +500,9 @@ function start(tenantId) {
                         const cleanChatKey = HandoffService.getChatKey(chatKey);
 
                         const botCache = s.aiSentMsgs;
-                        const msgBodyTrimmed = (msg.body || '').trim();
-                        if (botCache && botCache.has(msgBodyTrimmed)) {
-                            botCache.delete(msgBodyTrimmed);
+                        const msgBodyTrimred = (msg.body || '').trim();
+                        if (botCache && botCache.has(msgBodyTrimred)) {
+                            botCache.delete(msgBodyTrimred);
                             return;
                         }
 
@@ -553,8 +608,24 @@ function start(tenantId) {
             await client.initialize();
         } catch (e) {
             _starting.delete(k);
-            console.error(`❌ [waWeb:${k}] Initialization error:`, e.message);
-            await handleTechnicalFailure(k, `init_failed: ${e.message}`);
+            console.error(`❌ [waWeb:${k}] Initialization error:`, e.message || e);
+            
+            const isTimeout = String(e.message || e).includes('auth timeout') || String(e).includes('auth timeout');
+            
+            if (isTimeout && s.initTries < 2) {
+                s.initTries++;
+                console.log(`⚠️ [waWeb:${k}] Temporary timeout (Attempt ${s.initTries}/2). Re-initializing client...`);
+                s.status = s.status === 'qr' ? 'starting' : 'syncing';
+                await cleanupSessionResources(k, 'timeout_retry');
+                setTimeout(() => {
+                    start(k);
+                }, 3000);
+            } else {
+                s.initTries = 0;
+                await handleTechnicalFailure(k, `init_failed: ${e.message || e}`);
+                s.status = 'auth_required';
+                s.error = String(e.message || e);
+            }
         }
     })();
 
@@ -587,6 +658,7 @@ async function logout(tenantId) {
     s.logoutIntent = true;
     _starting.delete(k);
     await cleanupSessionResources(k, 'logout');
+    _deleteSessionDirectory(k);
     s.logoutIntent = false;
 }
 

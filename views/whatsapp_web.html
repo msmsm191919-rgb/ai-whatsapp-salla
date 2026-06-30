@@ -100,9 +100,11 @@
             starting: ['#dbeafe', '#1d4ed8', 'جاري الإقلاع...'],
             initializing_recovery: ['#fef3c7', '#b45309', 'جاري إعادة تهيئة ربط واتساب... يرجى الانتظار'],
             qr: ['#dbeafe', '#1d4ed8', 'امسح الرمز من جوالك'],
-            authenticated: ['#dbeafe', '#1d4ed8', 'جاري المصادقة...'],
+            authenticated: ['#dbeafe', '#1d4ed8', 'تم مسح الرمز — جاري المزامنة...'],
+            syncing: ['#dbeafe', '#1d4ed8', 'جاري تهيئة واتساب ومزامنة الحساب... لا تغلق الصفحة'],
             ready: ['#dcfce7', '#16a34a', 'متصل ✅'],
-            error: ['#fee2e2', '#dc2626', 'خطأ — حاول مرة ثانية']
+            error: ['#fee2e2', '#dc2626', 'خطأ — حاول مرة ثانية'],
+            auth_required: ['#fee2e2', '#dc2626', 'مطلوب مصادقة جديدة — اضغط ابدأ الربط للحصول على رمز QR']
         };
         const status = state.status || 'disconnected';
         const [bg, color, defaultLabel] = map[status] || map.disconnected;
@@ -134,6 +136,19 @@
             el('qrArea').classList.add('hidden');
             el('scanSteps').classList.add('hidden');
             el('connectedBox').classList.remove('hidden');
+        } else if (status === 'authenticated' || status === 'syncing') {
+            el('qrArea').classList.remove('hidden');
+            el('qrImage').classList.add('hidden');
+            el('qrPlaceholder').classList.remove('hidden');
+            el('scanSteps').classList.add('hidden');
+            el('connectedBox').classList.add('hidden');
+            el('qrPlaceholderText').innerHTML = `
+                <div class="py-2 leading-relaxed">
+                    <p class="font-extrabold text-slate-800 text-sm mb-1">تم مسح الرمز</p>
+                    <p class="text-xs text-slate-500 mb-1">جاري تهيئة واتساب ومزامنة الحساب</p>
+                    <p class="text-[10px] font-bold text-amber-600 animate-pulse">لا تغلق الصفحة ⚠️</p>
+                </div>
+            `;
         } else {
             el('qrArea').classList.remove('hidden');
             el('qrImage').classList.add('hidden');
@@ -147,14 +162,14 @@
                 el('qrPlaceholderText').textContent = 'جاري إعداد المتصفح والاتصال...';
             } else if (status === 'initializing_recovery') {
                 el('qrPlaceholderText').textContent = 'جاري إعادة تهيئة ربط واتساب... يرجى الانتظار';
-            } else if (status === 'authenticated') {
-                el('qrPlaceholderText').textContent = 'تمت المصادقة، جاري التجهيز...';
+            } else if (status === 'auth_required') {
+                el('qrPlaceholderText').textContent = 'مطلوب مصادقة جديدة — اضغط ابدأ الربط للحصول على رمز QR';
             } else if (status === 'error') {
                 el('qrPlaceholderText').textContent = label;
             }
         }
 
-        if (status === 'disconnected') {
+        if (status === 'disconnected' || status === 'auth_required') {
             el('startBtn').innerHTML = '<i class="fa-solid fa-qrcode ml-1"></i> ابدأ الربط';
             el('startBtn').classList.remove('hidden');
         } else if (status === 'error') {
@@ -170,13 +185,13 @@
             el('refreshBtn').classList.add('hidden');
         }
 
-        if (status === 'ready' || status === 'qr') {
+        if (status === 'ready' || status === 'qr' || status === 'authenticated' || status === 'syncing') {
             el('logoutBtn').classList.remove('hidden');
         } else {
             el('logoutBtn').classList.add('hidden');
         }
 
-        if (['error', 'disconnected', 'ready'].includes(status)) {
+        if (['error', 'disconnected', 'ready', 'auth_required'].includes(status)) {
             if (pollTimer) {
                 clearInterval(pollTimer);
                 pollTimer = null;
