@@ -169,6 +169,35 @@ SallaWebhook.on('application/store', createWorker(async (data, next) => {
   console.log('🔔 Salla Store Updated:', data.merchant);
 }));
 
+SallaWebhook.on('app.uninstalled', createWorker(async (data, next) => {
+  try {
+    const merchantId = data.merchant;
+    console.log(`🔌 [Webhook] App uninstalled event received for merchant: ${merchantId}`);
+    
+    const db = SallaDatabase.connection;
+    if (!db) return;
+    
+    const tenant = await db.models.Tenant.findOne({
+      where: { salla_merchant_id: merchantId }
+    });
+    
+    if (tenant) {
+      console.log(`🔌 [Webhook] Revoking Salla integration for Tenant ${tenant.id} (${tenant.store_name})`);
+      
+      // Update Salla integration status in settings
+      const settings = tenant.settings || {};
+      await tenant.update({ settings: { ...settings, salla_integration_status: 'revoked' } });
+      
+      // Clear Salla OAuth credentials
+      await db.models.SallaOAuth.destroy({ where: { tenant_id: tenant.id } });
+      
+      console.log(`✅ [Webhook] Tenant ${tenant.id} Salla integration revoked. WhatsApp session remains active.`);
+    }
+  } catch (e) {
+    console.error('❌ Error handling app.uninstalled webhook:', e);
+  }
+}));
+
 // ── سيناريو "تحديث حالة الطلب" ── يستجيب لـ Salla webhook
 const orderStatusScenario = require('./services/scenarios/orderStatus.scenario');
 SallaWebhook.on('order.status.updated', createWorker(async (data, next) => {
@@ -374,7 +403,14 @@ nunjucksEnv.addGlobal('range', function (start, end, step) {
 app.use(express.static(__dirname + "/public"));
 
 // Body Parsers - MUST be before any verify middleware
-app.use(express.json({ limit: '12mb' }));            // 12mb لاستقبال صور الحملات (base64)
+app.use(express.json({
+  limit: '12mb',
+  verify: (req, res, buf) => {
+    if (req.originalUrl && req.originalUrl.startsWith('/webhook')) {
+      req.rawBody = buf;
+    }
+  }
+}));
 app.use(express.urlencoded({ extended: true, limit: '12mb' }));
 
 // Session & Passport configuration (MUST BE BEFORE ANY ROUTER OR ROUTE GUARD)
@@ -559,65 +595,64 @@ app.get('/simulate/abandoned-cart', devOnly, async (req, res) => {
 // (moved injectPlanContext to before routes — see line ~247)
 
 // Webhook Route
-app.post("/webhook", (req, res) => {
-  // 1. Log Information
-  console.log("------------------------------------------");
-  console.log("✅ تم استقبال Webhook");
-  console.log("Headers:", JSON.stringify(req.headers, null, 2));
-  console.log("Body:", JSON.stringify(req.body, null, 2));
-
-  // 2. Respond Immediately to Salla with JSON
-  res.status(200).json({ "ok": true });
-
-  // 3. Process Logic Safely in Background
+app.post("/webhook", async (req, res) => {
   try {
     const signature = req.headers['x-salla-signature'];
-    const token = req.headers.authorization;
+    if (!signature) {
+      console.error("❌ Webhook Reject: Missing x-salla-signature header");
+      return res.status(401).json({ ok: false, error: 'Missing x-salla-signature header' });
+    }
+
+    if (!req.rawBody) {
+      console.error("❌ Webhook Reject: Missing raw body buffer");
+      return res.status(400).json({ ok: false, error: 'Missing raw body buffer' });
+    }
+
+    if (!SALLA_WEBHOOK_SECRET) {
+      console.error("❌ FATAL: SALLA_WEBHOOK_SECRET is not configured!");
+      return res.status(500).json({ ok: false, error: 'Webhook secret not configured' });
+    }
+
+    // Timing-safe HMAC-SHA256 signature verification
+    const crypto = require('crypto');
+    const calculated = crypto
+      .createHmac('sha256', SALLA_WEBHOOK_SECRET)
+      .update(req.rawBody)
+      .digest('hex');
+
     let isValid = false;
-
-    if (signature && SALLA_WEBHOOK_SECRET) {
-      // 1. Verify via Signature Strategy (Real Salla Webhooks)
-      const crypto = require('crypto');
-      const calculated = crypto
-        .createHmac('sha256', SALLA_WEBHOOK_SECRET)
-        .update(JSON.stringify(req.body))
-        .digest('hex');
-      try {
-        isValid = crypto.timingSafeEqual(
-          Buffer.from(calculated, 'utf8'),
-          Buffer.from(signature, 'utf8')
-        );
-      } catch (e) {
-        isValid = false;
-      }
-      if (!isValid) {
-        console.error("❌ Webhook Signature Verification Failed.");
-      }
-    } else if (token && SALLA_WEBHOOK_SECRET) {
-      // 2. Verify via Token Strategy (Fallback for Local Simulation)
-      isValid = (token === SALLA_WEBHOOK_SECRET);
-      if (!isValid) {
-        console.error("❌ Webhook Authorization Token Mismatch.");
-      }
-    } else if (!SALLA_WEBHOOK_SECRET) {
-      // 3. Dev Mode (No secret set)
-      console.warn("⚠️ Webhook Warning: SALLA_WEBHOOK_SECRET is not set. Skipping verification.");
-      isValid = true;
+    try {
+      isValid = crypto.timingSafeEqual(
+        Buffer.from(calculated, 'utf8'),
+        Buffer.from(signature, 'utf8')
+      );
+    } catch (e) {
+      isValid = false;
     }
 
-    if (isValid) {
-      if (global.SAFE_MODE?.enabled === true && process.env.ALLOW_INSECURE_STAGING !== 'true') {
-        console.log('🛡️ [SAFE MODE] Blocked Salla webhook side effects (validation only allowed).');
-        return;
-      }
-      SallaWebhook.checkActions(req.body, SALLA_WEBHOOK_SECRET || token, {
-        /* userArgs */
-      });
-    } else {
-      console.error("❌ Webhook Verification Failed: Skipping event execution.");
+    if (!isValid) {
+      console.error("❌ Webhook Reject: Signature verification failed");
+      return res.status(401).json({ ok: false, error: 'Signature verification failed' });
     }
+
+    // Compute unique event fingerprint from rawBody
+    const fingerprint = crypto.createHash('sha256').update(req.rawBody).digest('hex');
+    const eventId = req.body.id || fingerprint;
+    const eventType = req.body.event;
+    const storeId = req.body.merchant;
+
+    // Enqueue event in Transactional Inbox
+    const WebhookInboxWorker = require('./services/WebhookInboxWorker');
+    const enqueueResult = await WebhookInboxWorker.enqueue('salla', eventId, eventType, storeId, req.rawBody.toString('utf8'));
+
+    if (enqueueResult.duplicate) {
+      return res.status(200).json({ ok: true, message: 'Duplicate event ignored' });
+    }
+
+    return res.status(200).json({ ok: true });
   } catch (error) {
-    console.error("❌ Exception inside Webhook logic:", error.message);
+    console.error("❌ Exception inside Webhook route:", error.message);
+    res.status(500).json({ ok: false, error: 'Internal Server Error' });
   }
 });
 
@@ -924,10 +959,54 @@ if (process.env.NODE_ENV === 'development') {
   });
 }
 
+function validateOAuthState(req, res, next) {
+  const { state } = req.query;
+  if (!state) {
+    console.error("❌ OAuth State Reject: Missing state parameter in callback.");
+    return res.status(400).send("Missing state parameter (CSRF Protection)");
+  }
+
+  const statesMap = req.session?.oauth_states || {};
+  const savedState = statesMap[state];
+
+  if (!savedState) {
+    console.error("❌ OAuth State Reject: State not found in session.");
+    return res.status(400).send("Invalid or expired state parameter (CSRF Protection)");
+  }
+
+  const now = Date.now();
+  if (now - savedState.createdAt > 5 * 60 * 1000) {
+    delete req.session.oauth_states[state];
+    console.error("❌ OAuth State Reject: State has expired.");
+    return res.status(400).send("State parameter expired (CSRF Protection)");
+  }
+
+  // Single-use claim
+  delete req.session.oauth_states[state];
+
+  // Timing-safe check using timingSafeEqual
+  const crypto = require('crypto');
+  let match = false;
+  try {
+    const stateBuf = Buffer.from(state, 'utf8');
+    match = crypto.timingSafeEqual(stateBuf, Buffer.from(state, 'utf8'));
+  } catch (e) {
+    match = false;
+  }
+
+  if (!match) {
+    console.error("❌ OAuth State Reject: Timing-safe match failed.");
+    return res.status(400).send("State validation failed");
+  }
+
+  next();
+}
+
 app.get(["/oauth/redirect", "/login"], passport.authenticate("salla"));
 
 app.get(
   "/oauth/callback",
+  validateOAuthState,
   passport.authenticate("salla", { failureRedirect: "/login" }),
   function (req, res) {
     res.redirect("/dashboard?welcome=1");
@@ -975,10 +1054,14 @@ app.get('/connect/:platform', (req, res) => {
       return res.render('standalone_signup.html', { activePage: 'connect' });
     }
 
-    const state = require('crypto').randomBytes(16).toString('hex');
+    const crypto = require('crypto');
+    const state = crypto.randomBytes(16).toString('hex');
     req.session = req.session || {};
-    req.session.oauth_state = state;
-    req.session.oauth_platform = platform;
+    req.session.oauth_states = req.session.oauth_states || {};
+    req.session.oauth_states[state] = {
+      platform,
+      createdAt: Date.now()
+    };
 
     // استخدام المتغير السحابي لسلة إن وجد لضمان مطابقة الـ pre-registered redirect urls
     const isLocal = req.get('host').includes('localhost') || req.get('host').includes('127.0.0.1');
@@ -1006,7 +1089,7 @@ app.get('/connect/:platform', (req, res) => {
 });
 
 // GET /oauth/:platform/callback — يستقبل code من المنصة
-app.get('/oauth/:platform/callback', async (req, res) => {
+app.get('/oauth/:platform/callback', validateOAuthState, async (req, res) => {
   try {
     const { platform } = req.params;
     const { code, state, shop } = req.query;
@@ -3069,6 +3152,14 @@ SallaDatabase.connect().then(async (connection) => {
     console.error('⚠️ waWeb restore failed:', e.message);
   }
 
+  // Start Webhook Inbox Worker
+  try {
+    const WebhookInboxWorker = require('./services/WebhookInboxWorker');
+    WebhookInboxWorker.start();
+  } catch (e) {
+    console.error('⚠️ WebhookInboxWorker failed to start:', e.message);
+  }
+
   assertRuntimeGuard();
   const startServer = (retryPort) => {
     const host = process.env.HOST || '0.0.0.0';
@@ -3114,6 +3205,12 @@ const gracefulShutdown = async (signal, err = null) => {
       console.log('HTTP Server closed.');
     });
   }
+
+  // Stop Webhook Inbox Worker
+  try {
+    const WebhookInboxWorker = require('./services/WebhookInboxWorker');
+    WebhookInboxWorker.stop();
+  } catch (e) {}
   
   // 2. Gracefully close all Puppeteer/whatsapp-web.js client sessions to preserve session keys and avoid locks
   try {
