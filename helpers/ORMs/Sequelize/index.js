@@ -11,6 +11,7 @@ const Campaign = require("./models/campaign");
 const Customer = require("./models/customer");
 const Cart = require("./models/cart");
 const Payment = require("./models/payment");
+const WebhookEvent = require("./models/webhookevent");
 // const User = require("./models/user"); // Deprecated
 // const OauthTokens = require("./models/oauthtokens"); // Deprecated
 
@@ -63,6 +64,7 @@ module.exports = {
       Customer,
       Cart,
       Payment,
+      WebhookEvent,
     ];
 
     // 1. Init all models
