@@ -149,12 +149,12 @@ class BillingService {
                 await sub.save({ transaction: t });
             }
 
-            // 4. Unblock Tenant if needed
+            // 4. Unblock Tenant if needed & set billing_source to external
             const tenant = await this.db.models.Tenant.findByPk(payment.tenant_id, { transaction: t });
-            if (tenant.status !== 'active') {
-                tenant.status = 'active';
-                await tenant.save({ transaction: t });
-            }
+            const settings = tenant.settings || {};
+            tenant.status = 'active';
+            tenant.settings = { ...settings, billing_source: 'external' };
+            await tenant.save({ transaction: t });
 
             await t.commit();
             return { status: 'success', tenant_id: payment.tenant_id };
@@ -274,11 +274,11 @@ class BillingService {
                 await sub.save({ transaction: t });
             }
 
-            // 5. Unblock Tenant
-            if (tenant.status !== 'active') {
-                tenant.status = 'active';
-                await tenant.save({ transaction: t });
-            }
+            // 5. Unblock Tenant & set billing_source to salla
+            const settings = tenant.settings || {};
+            tenant.status = 'active';
+            tenant.settings = { ...settings, billing_source: 'salla', salla_integration_status: 'active' };
+            await tenant.save({ transaction: t });
 
             await t.commit();
             console.log(`✅ [Salla Subscription] Subscription updated successfully for tenant ${tenant.id} to plan ${planName}`);
@@ -313,9 +313,24 @@ class BillingService {
                 transaction: t
             });
 
-            if (sub) {
-                sub.status = 'expired';
-                await sub.save({ transaction: t });
+            const settings = tenant.settings || {};
+            const billingSource = settings.billing_source || 'salla';
+
+            if (billingSource === 'salla') {
+                if (sub) {
+                    sub.status = 'expired';
+                    await sub.save({ transaction: t });
+                }
+                tenant.status = 'inactive';
+                await tenant.save({ transaction: t });
+                console.log(`⚠️ [Salla Subscription Expired] Subscription set to expired & tenant set to inactive for tenant ${tenant.id}`);
+            } else {
+                // External billing is active, only disable Salla integration
+                tenant.settings = { ...settings, salla_integration_status: 'revoked' };
+                await tenant.save({ transaction: t });
+                // Delete OAuth tokens
+                await this.db.models.SallaOAuth.destroy({ where: { tenant_id: tenant.id }, transaction: t });
+                console.log(`⚠️ [Salla Subscription Expired] Salla integration revoked for tenant ${tenant.id} (External billing remains active)`);
             }
 
             await t.commit();

@@ -124,9 +124,58 @@ SallaWebhook.on("app.installed", (eventBody, userArgs) => {
   console.log("App Installed Event:", eventBody);
 });
 
-SallaWebhook.on("app.store.authorize", (eventBody, userArgs) => {
-  console.log("App Store Authorize Event:", eventBody);
-});
+SallaWebhook.on("app.store.authorize", createWorker(async (data, next) => {
+  try {
+    const merchantId = data.merchant;
+    const tokenData = data.data; // contains access_token, refresh_token, expires
+    
+    console.log(`🔑 [Webhook] Easy Mode app.store.authorize received for merchant: ${merchantId}`);
+    
+    if (!tokenData || !tokenData.access_token) {
+      throw new Error("Missing access_token in authorize payload");
+    }
+
+    const db = SallaDatabase.connection;
+    if (!db) return;
+
+    // 1. Fetch store info from Salla API using the new access token
+    const SallaAdapter = require('./services/platforms/SallaAdapter');
+    const storeInfo = await SallaAdapter.fetchStoreInfo(tokenData.access_token);
+
+    const ConnectService = require('./services/ConnectService');
+    
+    // 2. Create or update Tenant + Subscription + SallaOAuth (all handled by ConnectService.upsertTenantFromOAuth)
+    const expiresTimestamp = Number(tokenData.expires || 0);
+    const nowSecs = Math.floor(Date.now() / 1000);
+    const expires_in = expiresTimestamp > nowSecs ? (expiresTimestamp - nowSecs) : 86400;
+
+    const { tenant } = await ConnectService.upsertTenantFromOAuth({
+      platform: 'salla',
+      tokenData: {
+        access_token: tokenData.access_token,
+        refresh_token: tokenData.refresh_token,
+        expires_in: expires_in,
+        store_id: String(merchantId),
+        store_name: storeInfo.store_name,
+        store_domain: storeInfo.store_domain,
+        email: storeInfo.email,
+        owner_name: storeInfo.owner_name,
+        contact_phone: storeInfo.contact_phone
+      }
+    });
+
+    // Mark billing source as salla and integration status as active
+    const settings = tenant.settings || {};
+    await tenant.update({
+      status: 'active',
+      settings: { ...settings, billing_source: 'salla', salla_integration_status: 'active' }
+    });
+
+    console.log(`✅ [Webhook] Easy Mode tenant ${tenant.id} (${tenant.store_name}) authorized/updated successfully.`);
+  } catch (e) {
+    console.error("❌ Error processing app.store.authorize webhook:", e.message);
+  }
+}));
 
 SallaWebhook.on("all", (eventBody, userArgs) => {
   // Handle all events (Optional logging)
