@@ -8,21 +8,28 @@ class SallaService {
         this.clientSecret = process.env.SALLA_OAUTH_CLIENT_SECRET;
     }
 
-    /*
-     * Refresh the access token using the stored refresh token
-     */
     async refreshToken(tenantId) {
         const db = SallaDatabase.connection;
         if (!db) return false;
 
-        const transaction = await db.transaction();
+        const dialect = db.options.dialect || 'mysql';
+        const txOptions = {};
+        if (dialect === 'sqlite') {
+            txOptions.type = db.Sequelize.Transaction.TYPES.IMMEDIATE;
+        }
+
+        const transaction = await db.transaction(txOptions);
         try {
-            // 1. Lock the SallaOAuth row atomically using SELECT ... FOR UPDATE
-            const tokenRecord = await db.models.SallaOAuth.findOne({
+            // 1. Lock SallaOAuth row. SQLite locks database at transaction start; MySQL/Postgres locks row.
+            const findOptions = {
                 where: { tenant_id: tenantId },
-                transaction,
-                lock: transaction.LOCK.UPDATE
-            });
+                transaction
+            };
+            if (dialect !== 'sqlite') {
+                findOptions.lock = transaction.LOCK.UPDATE;
+            }
+
+            const tokenRecord = await db.models.SallaOAuth.findOne(findOptions);
 
             if (!tokenRecord || !tokenRecord.refresh_token) {
                 console.error(`❌ No refresh token found for tenant ${tenantId}`);

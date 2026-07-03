@@ -433,6 +433,84 @@ async function runTests() {
     assert.strictEqual(checkedExternalOAuth, null, "SallaOAuth credentials must be deleted");
     console.log("✅ Case B: External billing expiration (Integration revoked, WhatsApp active) passed.");
 
+    // -------------------------------------------------------------
+    // Test Set 10: Concurrency Lock & SQLite Write Lock Check
+    // -------------------------------------------------------------
+    console.log("\n--- [Test Set 10: Concurrency Lock & SQLite Write Lock Check] ---");
+    // SallaService and axios already declared in Test Set 8
+    const originalPostConcurrency = axios.post;
+    
+    // Seed new Salla OAuth credentials
+    const tenantLockTest = await db.models.Tenant.create({
+        platform: 'salla',
+        salla_merchant_id: 333333,
+        store_name: 'Lock Test Store',
+        status: 'active'
+    });
+    await db.models.SallaOAuth.create({
+        tenant_id: tenantLockTest.id,
+        access_token: 'mock_lock_access',
+        refresh_token: 'mock_lock_refresh',
+        expires_at: new Date(Date.now() - 3600000) // expired to force refresh
+    });
+
+    let sallaApiCallCount = 0;
+    axios.post = async () => {
+        sallaApiCallCount++;
+        // Simulate slight network delay of 50ms to ensure overlap
+        await new Promise(resolve => setTimeout(resolve, 50));
+        return {
+            data: {
+                access_token: `refreshed_access_${sallaApiCallCount}`,
+                refresh_token: `refreshed_refresh_${sallaApiCallCount}`,
+                expires_in: 86400
+            }
+        };
+    };
+
+    // Trigger concurrent refreshes
+    const [tokenA, tokenB] = await Promise.all([
+        SallaService.refreshToken(tenantLockTest.id),
+        SallaService.refreshToken(tenantLockTest.id)
+    ]);
+
+    // Assert that the Salla Identity API was only called once
+    assert.strictEqual(sallaApiCallCount, 1, "Salla Identity API must be called exactly once during concurrent token refreshes");
+    assert.strictEqual(tokenA, tokenB, "Both concurrent refresh calls must return the same fresh token");
+    console.log("✅ Concurrency Lock verified: exactly one API call made, both threads synchronized.");
+
+    // Restore axios
+    axios.post = originalPostConcurrency;
+
+    // -------------------------------------------------------------
+    // Test Set 11: Webhook Inbox Plaintext Leak Protection
+    // -------------------------------------------------------------
+    console.log("\n--- [Test Set 11: Webhook Inbox Plaintext Leak Protection] ---");
+    const secretToken = "super_secret_access_token_123_dont_leak";
+    const testPayload = JSON.stringify({
+        event: 'app.store.authorize',
+        merchant: 444444,
+        data: {
+            access_token: secretToken,
+            refresh_token: "super_secret_refresh_token_abc"
+        }
+    });
+
+    // Enqueue
+    const uniqueInboxEventId = "leak_test_event_id_unique";
+    await WebhookInboxWorker.enqueue('salla', uniqueInboxEventId, 'app.store.authorize', 444444, testPayload);
+
+    // Query SQLite database directly using raw query
+    const [inboxRow] = await db.query(`SELECT * FROM WebhookEvents WHERE event_id = 'leak_test_event_id_unique'`, { type: db.QueryTypes.SELECT });
+    assert(inboxRow, "Event record must exist in SQLite database");
+    
+    // Scan all columns for the plaintext token string
+    for (const key of Object.keys(inboxRow)) {
+        const val = String(inboxRow[key]);
+        assert(!val.includes(secretToken), `Security Violation: Plaintext token found inside database column '${key}'!`);
+    }
+    console.log("✅ Webhook Inbox Plaintext Leak Protection verified: no plain tokens saved in database columns.");
+
     console.log("\n🎉 ALL SALLA PRE-SUBMISSION SECURITY TESTS COMPLETED SUCCESSFULLY! 🎉");
     process.exit(0);
 }
