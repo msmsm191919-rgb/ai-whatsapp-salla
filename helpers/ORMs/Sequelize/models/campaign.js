@@ -8,7 +8,7 @@ module.exports = (sequelize) => {
             primaryKey: true,
         },
         tenant_id: {
-            type: DataTypes.BIGINT,
+            type: DataTypes.INTEGER,
             allowNull: false
         },
         name: {
