@@ -24,8 +24,6 @@ module.exports = (sequelize, DataTypes) => {
                 get() {
                     const rawValue = this.getDataValue('access_token');
                     if (!rawValue) return null;
-                    // If it is legacy plaintext (doesn't start with v1:), we return it raw so migration can run.
-                    if (!rawValue.startsWith('v1:')) return rawValue;
                     const cryptoHelper = require('../../../cryptoHelper');
                     return cryptoHelper.decrypt(rawValue, this.getDataValue('tenant_id'), 'access_token');
                 },
@@ -47,7 +45,6 @@ module.exports = (sequelize, DataTypes) => {
                 get() {
                     const rawValue = this.getDataValue('refresh_token');
                     if (!rawValue) return null;
-                    if (!rawValue.startsWith('v1:')) return rawValue;
                     const cryptoHelper = require('../../../cryptoHelper');
                     return cryptoHelper.decrypt(rawValue, this.getDataValue('tenant_id'), 'refresh_token');
                 },
