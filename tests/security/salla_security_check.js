@@ -2,12 +2,12 @@ const assert = require('assert');
 const crypto = require('crypto');
 
 // Set dummy env variables for the test suite before requiring models/helpers
-process.env.NODE_ENV = 'development';
-process.env.SESSION_SECRET = 'test-session-secret-must-be-very-long-32-chars-long';
-process.env.SALLA_DATABASE_DIALECT = 'sqlite';
-process.env.SALLA_DATABASE_STORAGE = './tests/security/test_db.sqlite';
-process.env.TOKENS_ENCRYPTION_KEY = crypto.randomBytes(32).toString('hex'); // Random secure key for test
-process.env.SALLA_WEBHOOK_SECRET = 'salla-webhook-secret-key-12345';
+process.env.NODE_ENV = process.env.NODE_ENV || 'development';
+process.env.SESSION_SECRET = process.env.SESSION_SECRET || 'test-session-secret-must-be-very-long-32-chars-long';
+process.env.SALLA_DATABASE_DIALECT = process.env.SALLA_DATABASE_DIALECT || 'sqlite';
+process.env.SALLA_DATABASE_STORAGE = process.env.SALLA_DATABASE_STORAGE || './tests/security/test_db.sqlite';
+process.env.TOKENS_ENCRYPTION_KEY = process.env.TOKENS_ENCRYPTION_KEY || crypto.randomBytes(32).toString('hex');
+process.env.SALLA_WEBHOOK_SECRET = process.env.SALLA_WEBHOOK_SECRET || 'salla-webhook-secret-key-12345';
 
 const cryptoHelper = require('../../helpers/cryptoHelper');
 const SallaDatabase = require('../../database/db_instance');
