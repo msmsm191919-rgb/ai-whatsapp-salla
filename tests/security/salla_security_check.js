@@ -26,7 +26,19 @@ async function runTests() {
     // 1. Initialize DB
     await SallaDatabase.connect();
     const db = SallaDatabase.connection;
-    console.log("✅ Database initialized.");
+    
+    // Drop all tables and re-sync to get a clean database for every test run (SQLite and MySQL)
+    await db.drop();
+    await db.sync({ force: true });
+    
+    // Re-seed plans for subscription tests
+    await db.models.Plan.bulkCreate([
+        { id: 1, name: 'الأساسية', price: 49 },
+        { id: 2, name: 'النمو', price: 149 },
+        { id: 3, name: 'الشركات', price: 299 }
+    ]);
+    
+    console.log("✅ Database initialized and plans seeded.");
 
     const SallaWebhook = require('@salla.sa/webhooks-actions');
     SallaWebhook.setSecret('salla-webhook-secret-key-12345');
