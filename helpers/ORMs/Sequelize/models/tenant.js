@@ -52,7 +52,7 @@ module.exports = (sequelize, DataTypes) => {
             contact_email: DataTypes.STRING,
             contact_phone: DataTypes.STRING,
             status: {
-                type: DataTypes.ENUM('active', 'blocked_over_limit', 'blocked_payment', 'suspended_manual', 'degraded_webhook'),
+                type: DataTypes.ENUM('active', 'blocked_over_limit', 'blocked_payment', 'suspended_manual', 'degraded_webhook', 'inactive'),
                 defaultValue: 'active'
             },
             // Metadata configuration (Flexible JSON for future settings)
