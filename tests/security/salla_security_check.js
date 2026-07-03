@@ -312,7 +312,8 @@ async function runTests() {
     // -------------------------------------------------------------
     console.log("\n--- [Test Set 6: Plaintext Runtime Rejection] ---");
     // Seed raw plaintext token directly via database query to bypass setter encryption
-    await db.query(`INSERT INTO SallaOAuth (tenant_id, access_token, refresh_token, created_at, updated_at) VALUES (${tenant.id}, 'plain_token_unencrypted', 'plain_refresh_unencrypted', datetime('now'), datetime('now'))`);
+    const nowFunc = db.options.dialect === 'sqlite' ? "datetime('now')" : "NOW()";
+    await db.query(`INSERT INTO SallaOAuth (tenant_id, access_token, refresh_token, created_at, updated_at) VALUES (${tenant.id}, 'plain_token_unencrypted', 'plain_refresh_unencrypted', ${nowFunc}, ${nowFunc})`);
     
     const plainRecord = await db.models.SallaOAuth.findOne({ where: { tenant_id: tenant.id } });
     assert.throws(() => {
