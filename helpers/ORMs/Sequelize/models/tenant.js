@@ -56,7 +56,24 @@ module.exports = (sequelize, DataTypes) => {
                 defaultValue: 'active'
             },
             // Metadata configuration (Flexible JSON for future settings)
-            settings: DataTypes.JSON
+            settings: {
+                type: DataTypes.JSON,
+                get() {
+                    const rawValue = this.getDataValue('settings');
+                    if (!rawValue) return {};
+                    if (typeof rawValue === 'string') {
+                        try {
+                            return JSON.parse(rawValue);
+                        } catch (e) {
+                            return {};
+                        }
+                    }
+                    return rawValue;
+                },
+                set(value) {
+                    this.setDataValue('settings', value);
+                }
+            }
         },
         {
             sequelize,
