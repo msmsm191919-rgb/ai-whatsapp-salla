@@ -1010,6 +1010,8 @@ if (process.env.NODE_ENV === 'development') {
 
 function validateOAuthState(req, res, next) {
   const { state } = req.query;
+  const platform = req.params.platform || 'salla';
+
   if (!state) {
     console.error("❌ OAuth State Reject: Missing state parameter in callback.");
     return res.status(400).send("Missing state parameter (CSRF Protection)");
@@ -1019,6 +1021,10 @@ function validateOAuthState(req, res, next) {
   const savedState = statesMap[state];
 
   if (!savedState) {
+    if (platform === 'salla') {
+      console.warn("⚠️ [validateOAuthState] State not found in session (direct install from Salla App Store). Proceeding to let Salla passport exchange the code.");
+      return next();
+    }
     console.error("❌ OAuth State Reject: State not found in session.");
     return res.status(400).send("Invalid or expired state parameter (CSRF Protection)");
   }
