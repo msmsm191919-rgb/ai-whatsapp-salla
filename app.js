@@ -296,8 +296,31 @@ app.use(express.urlencoded({ extended: true, limit: '12mb' }));
 
 // Session & Passport configuration (MUST BE BEFORE ANY ROUTER OR ROUTE GUARD)
 app.use(
-  session({ secret: process.env.SESSION_SECRET || "keyboard cat", resave: true, saveUninitialized: true })
+  session({
+    secret: process.env.SESSION_SECRET || "keyboard cat",
+    resave: true,
+    saveUninitialized: true,
+    cookie: {
+      secure: 'auto',
+      sameSite: 'lax'
+    }
+  })
 );
+
+// Dynamic session cookie attributes middleware for proxy (Nginx) & Salla iframe compatibility
+app.use((req, res, next) => {
+  if (req.session && req.session.cookie) {
+    const isSecure = req.secure || req.headers['x-forwarded-proto'] === 'https';
+    if (isSecure) {
+      req.session.cookie.secure = true;
+      req.session.cookie.sameSite = 'none';
+    } else {
+      req.session.cookie.secure = false;
+      req.session.cookie.sameSite = 'lax';
+    }
+  }
+  next();
+});
 app.use(passport.initialize());
 app.use(passport.session());
 
@@ -315,6 +338,7 @@ app.use(require('./services/planGate').injectPlanContext());
 // 🧪 حقن isDev للقوالب — يخفي أدوات التطوير (Dev Switcher) في الإنتاج
 app.use((req, res, next) => {
   res.locals.isDev = process.env.NODE_ENV !== 'production';
+  res.locals.APP_URL = process.env.APP_URL || '';
   next();
 });
 
@@ -384,7 +408,7 @@ app.get('/support', (req, res) => {
   res.render('support.html', {
     user: req.user,
     isLogin: req.user,
-    support_email: 'support@mubhirbot.com',
+    support_email: 'mubhirbot@gmail.com',
     support_whatsapp: process.env.SUPPORT_WHATSAPP_NUMBER || ''
   });
 });
@@ -762,13 +786,24 @@ app.get("/login/bypass", async (req, res) => {
   }
 });
 
-app.get(["/oauth/redirect", "/login"], passport.authenticate("salla"));
+app.get(["/oauth/redirect", "/login"], (req, res, next) => {
+  if (req.isAuthenticated() || (req.user && req.user.merchant && req.user.merchant.id)) {
+    const redirectTo = req.query.next || '/dashboard';
+    return res.redirect(redirectTo);
+  }
+  if (req.query.next) {
+    req.session.redirectTo = req.query.next;
+  }
+  next();
+}, passport.authenticate("salla"));
 
 app.get(
   "/oauth/callback",
   passport.authenticate("salla", { failureRedirect: "/login" }),
   function (req, res) {
-    res.redirect("/dashboard?welcome=1");
+    const redirectTo = req.session.redirectTo || "/dashboard?welcome=1";
+    delete req.session.redirectTo;
+    res.redirect(redirectTo);
   }
 );
 
@@ -888,7 +923,9 @@ app.get('/oauth/:platform/callback', async (req, res) => {
         return res.status(500).send('Login session initialization failed');
       }
       req.session.save(() => {
-        res.redirect(`/dashboard?welcome=${created ? '1' : '0'}&platform=${platform}`);
+        const redirectTo = req.session.redirectTo || `/dashboard?welcome=${created ? '1' : '0'}&platform=${platform}`;
+        delete req.session.redirectTo;
+        res.redirect(redirectTo);
       });
     });
   } catch (e) {
@@ -1017,9 +1054,9 @@ function ensureAuthenticated(req, res, next) {
   }
   console.log(`- Access Result: DENIED`);
   console.log(`- Fallback Reason: No authenticated session found (req.user is undefined or missing merchant ID)`);
-  console.log(`- Action: Redirecting to /login`);
+  console.log(`- Action: Redirecting to /login?next=/dashboard`);
   console.log(`============================================================\n`);
-  res.redirect('/login');
+  res.redirect('/login?next=/dashboard');
 }
 
 async function ensureSubscriptionActive(req, res, next) {

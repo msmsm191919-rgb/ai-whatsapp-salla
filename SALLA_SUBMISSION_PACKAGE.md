@@ -79,7 +79,7 @@
 * **رابط سياسة الخصوصية:** `https://app.mubhirbot.com/privacy`
 * **رابط الشروط والأحكام:** `https://app.mubhirbot.com/terms`
 * **رابط الدعم الفني:** `https://app.mubhirbot.com/support`
-* **بريد الدعم الفني المعتمد:** `support@mubhirbot.com`
+* **بريد الدعم الفني المعتمد:** `mubhirbot@gmail.com`
 * **واتساب الدعم الفني:** `+966501577963`
 
 ---
