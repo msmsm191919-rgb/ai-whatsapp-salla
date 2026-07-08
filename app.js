@@ -481,9 +481,28 @@ app.use(
     name: sessionCookieName,
     secret: process.env.SESSION_SECRET || "keyboard cat",
     resave: true,
-    saveUninitialized: true
+    saveUninitialized: true,
+    cookie: {
+      secure: 'auto',
+      sameSite: 'lax'
+    }
   })
 );
+
+// Dynamic session cookie attributes middleware for proxy (Nginx) & Salla iframe compatibility
+app.use((req, res, next) => {
+  if (req.session && req.session.cookie) {
+    const isSecure = req.secure || req.headers['x-forwarded-proto'] === 'https';
+    if (isSecure) {
+      req.session.cookie.secure = true;
+      req.session.cookie.sameSite = 'none';
+    } else {
+      req.session.cookie.secure = false;
+      req.session.cookie.sameSite = 'lax';
+    }
+  }
+  next();
+});
 app.use(passport.initialize());
 app.use(passport.session());
 
@@ -501,6 +520,7 @@ app.use(require('./services/planGate').injectPlanContext());
 // 🧪 حقن isDev للقوالب — يخفي أدوات التطوير (Dev Switcher) في الإنتاج
 app.use((req, res, next) => {
   res.locals.isDev = process.env.NODE_ENV !== 'production';
+  res.locals.APP_URL = process.env.APP_URL || '';
   next();
 });
 
@@ -570,7 +590,7 @@ app.get('/support', (req, res) => {
   res.render('support.html', {
     user: req.user,
     isLogin: req.user,
-    support_email: 'support@mubhirbot.com',
+    support_email: 'mubhirbot@gmail.com',
     support_whatsapp: process.env.SUPPORT_WHATSAPP_NUMBER || ''
   });
 });
@@ -1051,14 +1071,38 @@ function validateOAuthState(req, res, next) {
   next();
 }
 
-app.get(["/oauth/redirect", "/login"], passport.authenticate("salla"));
+app.get(["/oauth/redirect", "/login"], (req, res, next) => {
+  if (req.isAuthenticated() || (req.user && req.user.merchant && req.user.merchant.id)) {
+    const redirectTo = req.query.next || '/dashboard';
+    return res.redirect(redirectTo);
+  }
+  if (req.query.next) {
+    req.session.redirectTo = req.query.next;
+  }
+  
+  // Generate safe state for CSRF validation
+  const crypto = require('crypto');
+  const state = crypto.randomBytes(16).toString('hex');
+  
+  req.session.oauth_states = req.session.oauth_states || {};
+  req.session.oauth_states[state] = {
+    createdAt: Date.now()
+  };
+
+  passport.authenticate("salla", { 
+    state,
+    scope: ["offline_access", "products.read", "orders.read", "customers.read"] 
+  })(req, res, next);
+});
 
 app.get(
-  "/oauth/callback",
+  ["/oauth/callback", "/oauth"],
   validateOAuthState,
   passport.authenticate("salla", { failureRedirect: "/login" }),
   function (req, res) {
-    res.redirect("/dashboard?welcome=1");
+    const redirectTo = req.session.redirectTo || "/dashboard?welcome=1";
+    delete req.session.redirectTo;
+    res.redirect(redirectTo);
   }
 );
 
@@ -1137,6 +1181,19 @@ app.get('/connect/:platform', (req, res) => {
   }
 });
 
+// Redirect Salla direct callback /oauth/salla/callback to /oauth/callback
+app.get('/oauth/salla/callback', (req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  res.setHeader('Referrer-Policy', 'no-referrer');
+  
+  const { code, state } = req.query;
+  const queryParams = new URLSearchParams();
+  if (code) queryParams.set('code', code);
+  if (state) queryParams.set('state', state);
+  
+  return res.redirect(`/oauth/callback?${queryParams.toString()}`);
+});
+
 // GET /oauth/:platform/callback — يستقبل code من المنصة
 app.get('/oauth/:platform/callback', validateOAuthState, async (req, res) => {
   try {
@@ -1182,7 +1239,9 @@ app.get('/oauth/:platform/callback', validateOAuthState, async (req, res) => {
         return res.status(500).send('Login session initialization failed');
       }
       req.session.save(() => {
-        res.redirect(`/dashboard?welcome=${created ? '1' : '0'}&platform=${platform}`);
+        const redirectTo = req.session.redirectTo || `/dashboard?welcome=${created ? '1' : '0'}&platform=${platform}`;
+        delete req.session.redirectTo;
+        res.redirect(redirectTo);
       });
     });
   } catch (e) {
@@ -1228,6 +1287,9 @@ app.post('/connect/standalone', async (req, res) => {
 });
 
 app.get("/", async function (req, res) {
+  if (req.isAuthenticated() || (req.user && req.user.merchant && req.user.merchant.id)) {
+    return res.redirect('/dashboard');
+  }
   let userDetails = {
     user: req.user,
     isLogin: req.user,
@@ -1316,9 +1378,9 @@ function ensureAuthenticated(req, res, next) {
     console.log(`============================================================\n`);
     return res.status(401).json({ ok: false, error: 'Authentication required' });
   }
-  console.log(`- Action: Redirecting to /login`);
+  console.log(`- Action: Redirecting to /login?next=/dashboard`);
   console.log(`============================================================\n`);
-  res.redirect('/login');
+  res.redirect('/login?next=/dashboard');
 }
 
 async function ensureSubscriptionActive(req, res, next) {

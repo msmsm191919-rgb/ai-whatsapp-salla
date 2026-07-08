@@ -272,7 +272,7 @@ router.get('/usage', async (req, res) => {
 const _settingsPath = require('path').join(process.cwd(), 'database', 'platform_settings.json');
 function _loadSettings() {
   try { return JSON.parse(require('fs').readFileSync(_settingsPath, 'utf8')); }
-  catch (e) { return { system_name: 'مبهر AI', support_email: 'support@mobhir.ai', maintenance: false, footer: 'جميع الحقوق محفوظة © 2026 مبهر AI' }; }
+  catch (e) { return { system_name: 'مبهر AI', support_email: 'mubhirbot@gmail.com', maintenance: false, footer: 'جميع الحقوق محفوظة © 2026 مبهر AI' }; }
 }
 
 router.get('/settings', async (req, res) => {
