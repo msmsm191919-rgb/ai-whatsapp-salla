@@ -346,11 +346,17 @@ async function runTests() {
     const easyEventId = "easy_mode_auth_test_111";
     await WebhookInboxWorker.enqueue('salla', easyEventId, 'app.store.authorize', easyModeMerchant, JSON.stringify(mockAuthPayload));
     
-    // Wait for background worker to process it
-    await new Promise(resolve => setTimeout(resolve, 100));
+    // Wait for the async listener to finish creating the tenant record
+    let easyTenant = null;
+    for (let i = 0; i < 50; i++) {
+        await new Promise(resolve => setTimeout(resolve, 20));
+        easyTenant = await db.models.Tenant.findOne({ where: { salla_merchant_id: easyModeMerchant } });
+        if (easyTenant) {
+            break;
+        }
+    }
     
     // Verify tenant created
-    const easyTenant = await db.models.Tenant.findOne({ where: { salla_merchant_id: easyModeMerchant } });
     assert(easyTenant, "Easy Mode tenant must be created on app.store.authorize");
     assert.strictEqual(easyTenant.settings.billing_source, 'salla', "Easy Mode tenant billing_source must be 'salla'");
     assert.strictEqual(easyTenant.settings.salla_integration_status, 'active', "Salla integration must be active");
