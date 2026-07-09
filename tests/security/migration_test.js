@@ -48,18 +48,24 @@ async function runMigrationTests() {
 
     await db.close();
 
-    console.log("2️⃣ Testing Migration undo (Rollback twice)...");
+    console.log("2️⃣ Testing Migration undo (Rollback three times)...");
     execSync('npx sequelize-cli db:migrate:undo', {
         env: { ...process.env, NODE_ENV: 'test', SALLA_DATABASE_STORAGE: dbPath },
         stdio: 'inherit'
     });
-    console.log("✅ Undone last migration (EmailOutbox).");
+    console.log("✅ Undone last migration (AiUsageLogs).");
 
     execSync('npx sequelize-cli db:migrate:undo', {
         env: { ...process.env, NODE_ENV: 'test', SALLA_DATABASE_STORAGE: dbPath },
         stdio: 'inherit'
     });
-    console.log("✅ Undone second to last migration (TenantLoginTokens).");
+    console.log("✅ Undone second to last migration (EmailOutbox).");
+
+    execSync('npx sequelize-cli db:migrate:undo', {
+        env: { ...process.env, NODE_ENV: 'test', SALLA_DATABASE_STORAGE: dbPath },
+        stdio: 'inherit'
+    });
+    console.log("✅ Undone third to last migration (TenantLoginTokens).");
 
     // Connect using a raw Sequelize connection to inspect DB without running SallaDatabase wrapper's auto-sync
     const db2 = new Sequelize({

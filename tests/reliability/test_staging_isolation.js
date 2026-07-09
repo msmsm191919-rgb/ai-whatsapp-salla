@@ -50,16 +50,25 @@ function cleanFolder(dir) {
     process.env.STAGING_SAFE_MODE = 'true';
     process.env.HOST = '127.0.0.1';
     process.env.PORT = '8097'; // Use port 8097 for isolation test
+    process.env.APP_URL = 'https://localhost:8097';
     process.env.SALLA_DATABASE_DIALECT = 'sqlite';
     process.env.SALLA_DATABASE_STORAGE = tempDb;
     process.env.WWEBJS_AUTH_PATH = tempAuth;
     process.env.SALLA_OAUTH_CLIENT_ID = 'mock_client_id';
+
+    process.env.SMTP_HOST = 'smtp.test.com';
+    process.env.SMTP_PORT = '2525';
+    process.env.SMTP_USER = 'mock_user';
+    process.env.SMTP_PASS = 'mock_pass';
+    process.env.SMTP_FROM = 'noreply@mobhir.ai';
+    process.env.TOKENS_ENCRYPTION_KEY = '0000000000000000000000000000000000000000000000000000000000000000';
 
     // Write temporary .env.staging file to satisfy app.js strict check in Patch v3
     const envStagingPath = path.join(workspaceDir, '.env.staging');
     fs.writeFileSync(envStagingPath, `
 NODE_ENV=staging
 STAGING_SAFE_MODE=true
+APP_URL=https://localhost:8097
 SESSION_SECRET=mock_staging_random_long_string_32_chars_or_more_without_forbidden_words
 SESSION_COOKIE_NAME=mubhir_staging_sid
 SALLA_DATABASE_DIALECT=sqlite
@@ -70,6 +79,12 @@ HOST=127.0.0.1
 SALLA_OAUTH_CLIENT_ID=mock_client_id
 SALLA_OAUTH_CLIENT_SECRET=mock_secret
 SALLA_OAUTH_CLIENT_REDIRECT_URI=http://localhost:8097/oauth/callback
+SMTP_HOST=smtp.test.com
+SMTP_PORT=2525
+SMTP_USER=mock_user
+SMTP_PASS=mock_pass
+SMTP_FROM=noreply@mobhir.ai
+TOKENS_ENCRYPTION_KEY=0000000000000000000000000000000000000000000000000000000000000000
     `);
     process.env.SESSION_COOKIE_NAME = 'mubhir_staging_sid';
     process.env.SESSION_SECRET = 'mock_staging_random_long_string_32_chars_or_more_without_forbidden_words';
@@ -77,6 +92,21 @@ SALLA_OAUTH_CLIENT_REDIRECT_URI=http://localhost:8097/oauth/callback
     process.env.SALLA_OAUTH_CLIENT_ID = 'mock_client_id_123';
     process.env.SALLA_OAUTH_CLIENT_SECRET = 'mock_client_secret_123';
     process.env.SALLA_OAUTH_CLIENT_REDIRECT_URI = 'http://127.0.0.1:8097/oauth/callback';
+
+    // Pre-migrate the temporary staging database
+    const { execSync } = require('child_process');
+    console.log('- Copying baseline sqlite database...');
+    fs.copyFileSync(defaultDb, tempDb);
+    console.log('- Pre-migrating staging test database...');
+    execSync('npx sequelize-cli db:migrate', {
+        env: {
+            ...process.env,
+            NODE_ENV: 'staging',
+            SALLA_DATABASE_STORAGE: tempDb,
+            SALLA_DATABASE_DIALECT: 'sqlite'
+        },
+        stdio: 'inherit'
+    });
 
     console.log('--- TEST 1: Database Path Isolation ---');
     const SallaDatabase = require(path.join(workspaceDir, 'database', 'db_instance'));
