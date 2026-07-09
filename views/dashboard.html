@@ -180,6 +180,26 @@
 <div class="space-y-4 pb-16">
 
     {# ─────────────────────────────────────────────
+       0. Welcome Email Status Alert
+    ───────────────────────────────────────────── #}
+    {% if tenant.settings.welcome_email_status == 'missing_recipient' %}
+    <div class="dash-card px-4 py-3 bg-rose-50 border border-rose-200/60 rounded-xl flex items-center justify-between gap-3 animate-in">
+        <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-lg bg-rose-100 text-rose-600 flex items-center justify-center text-sm flex-shrink-0">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <div>
+                <p class="text-xs font-bold text-rose-800">تنبيه: البريد الإلكتروني غير متوفر</p>
+                <p class="text-[10px] text-rose-600/90 mt-0.5">لم نتمكن من الحصول على بريد إلكتروني صالح لمتجرك من سلة. يرجى إضافة بريدك من صفحة الإعدادات لتلقي التحديثات وروابط الدخول الآمنة.</p>
+            </div>
+        </div>
+        <a href="/account" class="text-[9px] font-bold text-white bg-rose-600 hover:bg-rose-700 px-3 py-1.5 rounded-lg transition whitespace-nowrap">
+            تحديث الحساب
+        </a>
+    </div>
+    {% endif %}
+
+    {# ─────────────────────────────────────────────
        1.  Activation Stepper or Success Badge
     ───────────────────────────────────────────── #}
     {% if setup_completed %}

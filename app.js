@@ -124,12 +124,12 @@ SallaWebhook.on("app.installed", (eventBody, userArgs) => {
   console.log("App Installed Event:", eventBody);
 });
 
-SallaWebhook.on("app.store.authorize", createWorker(async (data, next) => {
+const handleStoreAuthorize = async (data, next) => {
   try {
     const merchantId = data.merchant;
     const tokenData = data.data; // contains access_token, refresh_token, expires
     
-    console.log(`🔑 [Webhook] Easy Mode app.store.authorize received for merchant: ${merchantId}`);
+    console.log(`🔑 [Webhook] Store authorize event received for merchant: ${merchantId}`);
     
     if (!tokenData || !tokenData.access_token) {
       throw new Error("Missing access_token in authorize payload");
@@ -171,10 +171,16 @@ SallaWebhook.on("app.store.authorize", createWorker(async (data, next) => {
       settings: { ...settings, billing_source: 'salla', salla_integration_status: 'active' }
     });
 
-    console.log(`✅ [Webhook] Easy Mode tenant ${tenant.id} (${tenant.store_name}) authorized/updated successfully.`);
+    console.log(`✅ [Webhook] Tenant ${tenant.id} (${tenant.store_name}) authorized/updated via Easy Mode.`);
   } catch (e) {
-    console.error("❌ Error processing app.store.authorize webhook:", e.message);
+    console.error("❌ [Webhook] Error processing store authorize:", e.message);
   }
+};
+
+SallaWebhook.on("app.store.authorize", createWorker(handleStoreAuthorize));
+SallaWebhook.on("app.store.authorized", createWorker(async (data, next) => {
+  console.warn("⚠️ [Webhook] Compatibility Alias 'app.store.authorized' event received.");
+  await handleStoreAuthorize(data, next);
 }));
 
 SallaWebhook.on("all", (eventBody, userArgs) => {
@@ -1076,6 +1082,12 @@ app.get(["/oauth/redirect", "/login"], (req, res, next) => {
     const redirectTo = req.query.next || '/dashboard';
     return res.redirect(redirectTo);
   }
+
+  if (process.env.SALLA_OAUTH_MODE === 'easy') {
+    const appId = process.env.SALLA_OAUTH_CLIENT_ID || '';
+    return res.redirect(`https://s.salla.sa/apps/install/${appId}`);
+  }
+
   if (req.query.next) {
     req.session.redirectTo = req.query.next;
   }
@@ -1105,6 +1117,80 @@ app.get(
     res.redirect(redirectTo);
   }
 );
+
+// GET /login/bootstrap — secure passwordless single-use bootstrap link
+app.get('/login/bootstrap', async (req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  res.setHeader('Referrer-Policy', 'no-referrer');
+
+  const { token } = req.query;
+  if (!token || typeof token !== 'string') {
+    return res.status(400).send('Invalid or missing bootstrap token');
+  }
+
+  const db = SallaDatabase.connection;
+  if (!db) {
+    return res.status(500).send('Database connection error');
+  }
+
+  const crypto = require('crypto');
+  const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+
+  const transaction = await db.transaction();
+  try {
+    const dbToken = await db.models.TenantLoginToken.findOne({
+      where: { token_hash: tokenHash },
+      transaction,
+      lock: transaction.LOCK.UPDATE
+    });
+
+    if (!dbToken) {
+      await transaction.rollback();
+      return res.status(403).send('Invalid login token');
+    }
+
+    if (dbToken.used_at || dbToken.revoked_at || new Date() > new Date(dbToken.expires_at)) {
+      await transaction.rollback();
+      return res.status(403).send('Token has expired, been used, or has been revoked');
+    }
+
+    // Atomically claim the token
+    await dbToken.update({ used_at: new Date() }, { transaction });
+    await transaction.commit();
+
+    // Find the tenant details to establish session
+    const tenant = await db.models.Tenant.findByPk(dbToken.tenant_id);
+    if (!tenant) {
+      return res.status(404).send('Tenant not found');
+    }
+
+    const userSession = {
+      merchant: {
+        id: tenant.salla_merchant_id || tenant.platform_store_id,
+        name: tenant.store_name
+      },
+      tenant_id: tenant.id,
+      platform: tenant.platform
+    };
+
+    req.login(userSession, function (err) {
+      if (err) {
+        console.error('❌ [Bootstrap Login] Failed to save passport session:', err);
+        return res.status(500).send('Session initialization failed');
+      }
+      req.session.save(() => {
+        console.log(`✅ [Bootstrap Login] Tenant ${tenant.store_name} logged in via bootstrap token.`);
+        res.redirect('/dashboard');
+      });
+    });
+  } catch (err) {
+    if (transaction.finished !== 'rollback' && transaction.finished !== 'commit') {
+      await transaction.rollback();
+    }
+    console.error('❌ [Bootstrap Login] Error during claim:', err.message);
+    res.status(500).send('Internal Server Error');
+  }
+});
 
 // ═══════════════════════════════════════════════════════════
 // 🌐 MULTI-PLATFORM OAUTH (Salla + Zid + Shopify + Standalone)

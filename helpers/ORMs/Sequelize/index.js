@@ -12,6 +12,8 @@ const Customer = require("./models/customer");
 const Cart = require("./models/cart");
 const Payment = require("./models/payment");
 const WebhookEvent = require("./models/webhookevent");
+const TenantLoginToken = require("./models/tenantlogintokens");
+const EmailOutbox = require("./models/emailoutbox");
 // const User = require("./models/user"); // Deprecated
 // const OauthTokens = require("./models/oauthtokens"); // Deprecated
 
@@ -65,6 +67,8 @@ module.exports = {
       Cart,
       Payment,
       WebhookEvent,
+      TenantLoginToken,
+      EmailOutbox,
     ];
 
     // 1. Init all models
