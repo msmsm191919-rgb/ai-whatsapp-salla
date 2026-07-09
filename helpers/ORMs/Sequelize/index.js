@@ -27,16 +27,19 @@ module.exports = {
     const dbName = process.env.DATABASE_NAME || 'mubhir';
     const dbPort = process.env.DATABASE_PORT || 3306;
 
+    const dialect = process.env.SALLA_DATABASE_DIALECT || process.env.DATABASE_DIALECT || 'mysql';
+    const storage = process.env.SALLA_DATABASE_STORAGE || process.env.DATABASE_STORAGE || './database/salla_saas_v4.sqlite';
+
     if (process.env.NODE_ENV === 'test') {
       sequelize = new Sequelize({
         dialect: 'sqlite',
         storage: ':memory:',
         logging: false
       });
-    } else if (process.env.DATABASE_DIALECT === 'sqlite') {
+    } else if (dialect === 'sqlite') {
       sequelize = new Sequelize({
         dialect: 'sqlite',
-        storage: './database/mubhir.sqlite',
+        storage: storage,
         logging: false
       });
     } else {
