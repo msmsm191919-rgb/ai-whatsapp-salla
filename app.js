@@ -1395,6 +1395,80 @@ app.post('/login/bootstrap/consume', express.json(), async (req, res) => {
   }
 });
 
+// Staging-only controlled reset route for E2E testing
+if (process.env.NODE_ENV === 'staging') {
+  app.post('/login/bootstrap/staging-reset', async (req, res) => {
+    const db = SallaDatabase.connection;
+    if (!db) {
+      return res.status(500).json({ ok: false, error: 'db_connection_error' });
+    }
+
+    try {
+      // Find Tenant 42 (merchant ID 109564260)
+      const tenant = await db.models.Tenant.findOne({
+        where: { salla_merchant_id: '109564260' }
+      });
+
+      if (!tenant) {
+        return res.status(404).json({ ok: false, error: 'Tenant 42 not found' });
+      }
+
+      // Delete existing EmailOutbox and TenantLoginToken to start fresh
+      await db.models.EmailOutbox.destroy({ where: { tenant_id: tenant.id } });
+      await db.models.TenantLoginToken.destroy({ where: { tenant_id: tenant.id } });
+
+      // Generate a new Magic bootstrap token
+      const crypto = require('crypto');
+      const bootstrapToken = crypto.randomBytes(32).toString('hex');
+      const tokenHash = crypto.createHash('sha256').update(bootstrapToken).digest('hex');
+      const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 mins
+
+      await db.models.TenantLoginToken.create({
+        tenant_id: tenant.id,
+        token_hash: tokenHash,
+        purpose: 'login',
+        expires_at: expiresAt
+      });
+
+      // Queue welcome email
+      const cleanEmail = tenant.email || 'support@salla.dev';
+      await db.models.EmailOutbox.create({
+        tenant_id: tenant.id,
+        template: 'salla_welcome',
+        recipient: cleanEmail,
+        status: 'pending',
+        attempts: 0
+      });
+
+      const appUrl = process.env.APP_URL;
+      if (!appUrl) {
+         return res.status(500).json({ ok: false, error: 'APP_URL is not set' });
+      }
+      const loginUrl = `${appUrl}/login/bootstrap#token=${bootstrapToken}`;
+
+      // Send email manually
+      const MailService = require('./services/MailService');
+      await MailService.sendWelcomeEmail({
+        tenantId: tenant.id,
+        recipient: cleanEmail,
+        storeName: tenant.store_name,
+        ownerName: 'تاجر متجر تجريبي',
+        loginUrl: loginUrl
+      });
+
+      res.json({
+        ok: true,
+        message: 'Staging reset complete. Welcome email resent.',
+        recipient: cleanEmail,
+        loginUrl: loginUrl
+      });
+    } catch (err) {
+      console.error('❌ Staging reset error:', err.message);
+      res.status(500).json({ ok: false, error: err.message });
+    }
+  });
+}
+
 // ═══════════════════════════════════════════════════════════
 // 🌐 MULTI-PLATFORM OAUTH (Salla + Zid + Shopify + Standalone)
 // ═══════════════════════════════════════════════════════════
