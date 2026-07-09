@@ -27,7 +27,7 @@
             <div class="kpi-icon" style="background:#fef2f2;color:#dc2626;"><i class="fa-solid fa-triangle-exclamation"></i></div>
             <div>
                 <p class="text-xs font-bold uppercase tracking-wider" style="color:#94a3b8;">عمليات فاشلة</p>
-                <p class="text-3xl font-black" style="color:#dc2626;font-family:Inter,sans-serif;margin-top:2px;">1</p>
+                <p class="text-3xl font-black" style="color:#dc2626;font-family:Inter,sans-serif;margin-top:2px;">{{ failedCount }}</p>
                 <span class="text-xs" style="color:#94a3b8;">تحتاج مراجعة</span>
             </div>
         </div>
@@ -59,13 +59,17 @@
                         <td style="color:#64748b;">{{ txn.Plan.name }}</td>
                         <td class="font-bold text-slate-800" style="font-family:Inter,sans-serif;">{{ txn.amount }} <span style="color:#94a3b8;font-weight:400;font-size:11px;">ر.س</span></td>
                         <td>
-                            {% if txn.status == 'paid' %}
+                            {% if txn.status == 'paid' or txn.status == 'success' or txn.status == 'completed' %}
                             <span style="background:#f0fdf4;color:#16a34a;padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700;border:1px solid #bbf7d0;display:inline-flex;align-items:center;gap:4px;">
                                 <i class="fa-solid fa-check-double"></i> مدفوعة
                             </span>
+                            {% elif txn.status == 'pending' %}
+                            <span style="background:#fffbeb;color:#d97706;padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700;border:1px solid #fde68a;display:inline-flex;align-items:center;gap:4px;">
+                                <i class="fa-solid fa-clock"></i> معلقة
+                            </span>
                             {% else %}
                             <span style="background:#fef2f2;color:#dc2626;padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700;border:1px solid #fecaca;display:inline-flex;align-items:center;gap:4px;">
-                                <i class="fa-solid fa-circle-exclamation"></i> فاشلة
+                                <i class="fa-solid fa-circle-exclamation"></i> فاشلة ({{ txn.status }})
                             </span>
                             {% endif %}
                         </td>
