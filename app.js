@@ -54,6 +54,7 @@ function assertRuntimeGuard() {
 
 // Run Initial Boot Validation
 assertRuntimeGuard();
+require('./helpers/envValidator')();
 
 // Initialize Global Safe Mode Immutable Guard (Backward Compatibility Layer)
 global.SAFE_MODE = Object.freeze({
@@ -1118,19 +1119,189 @@ app.get(
   }
 );
 
-// GET /login/bootstrap — secure passwordless single-use bootstrap link
-app.get('/login/bootstrap', async (req, res) => {
+// In-memory simple rate limiter for Magic Link claims
+const claimRateLimit = new Map();
+function isRateLimited(ip) {
+  const now = Date.now();
+  const limitWindow = 60000; // 1 minute
+  const maxAttempts = 5;
+  const ipData = claimRateLimit.get(ip) || { count: 0, resetTime: now + limitWindow };
+
+  if (now > ipData.resetTime) {
+    ipData.count = 1;
+    ipData.resetTime = now + limitWindow;
+    claimRateLimit.set(ip, ipData);
+    return false;
+  }
+
+  ipData.count++;
+  claimRateLimit.set(ip, ipData);
+  return ipData.count > maxAttempts;
+}
+
+// GET /login/bootstrap — serves secure CDNs-free verification page
+app.get('/login/bootstrap', (req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  res.setHeader('Referrer-Policy', 'no-referrer');
+  res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self'; frame-ancestors 'none'");
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+
+  res.send(`<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <title>مبهر AI - جاري تسجيل الدخول</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body {
+      background-color: #0b0f19;
+      color: #f3f4f6;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+      padding: 20px;
+    }
+    .card {
+      background: rgba(17, 24, 39, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 20px;
+      padding: 40px;
+      text-align: center;
+      max-width: 400px;
+      width: 100%;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(10px);
+    }
+    .spinner {
+      border: 3px solid rgba(255, 255, 255, 0.05);
+      border-top: 3px solid #7b2ff7;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 24px;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    h2 {
+      margin-top: 0;
+      color: #ffffff;
+      font-size: 20px;
+      font-weight: 700;
+    }
+    p {
+      color: #9ca3af;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    .error-icon {
+      color: #ef4444;
+      font-size: 48px;
+      margin-bottom: 24px;
+    }
+    .btn {
+      background: #7b2ff7;
+      color: #ffffff;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 10px;
+      font-weight: 600;
+      text-decoration: none;
+      display: inline-block;
+      margin-top: 24px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn:hover {
+      background: #6d28d9;
+    }
+  </style>
+</head>
+<body>
+  <div class="card" id="status-card">
+    <div class="spinner" id="spinner"></div>
+    <h2 id="title">جاري التحقق من الهوية...</h2>
+    <p id="msg">يرجى الانتظار لحين بدء جلستك الآمنة.</p>
+  </div>
+  <script>
+    (function() {
+      const hash = window.location.hash;
+      const card = document.getElementById('status-card');
+      const title = document.getElementById('title');
+      const msg = document.getElementById('msg');
+      const spinner = document.getElementById('spinner');
+
+      function showError(errorMsg) {
+        if (spinner) spinner.style.display = 'none';
+        card.innerHTML = '<div class="error-icon">⚠️</div><h2>فشل تسجيل الدخول</h2><p>' + errorMsg + '</p><a href="/login" class="btn">العودة لصفحة الدخول</a>';
+      }
+
+      if (!hash || !hash.includes('token=')) {
+        showError('رمز الدخول مفقود أو غير صالح.');
+        return;
+      }
+
+      const match = hash.match(/token=([a-fA-F0-9]{64})/);
+      if (!match) {
+        showError('رمز الدخول غير صالح أو تالف.');
+        return;
+      }
+
+      const token = match[1];
+
+      // Clean the fragment from the address bar immediately
+      if (window.history && window.history.replaceState) {
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+
+      fetch('/login/bootstrap/consume', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: token })
+      })
+      .then(function(res) {
+        return res.json().then(function(data) {
+          if (res.ok && data.ok) {
+            window.location.href = '/dashboard';
+          } else {
+            showError(data.error === 'invalid_or_expired' ? 'عذرًا، هذا الرابط منتهي الصلاحية أو تم استخدامه بالفعل.' : 'فشل الاتصال بالخادم. يرجى المحاولة لاحقًا.');
+          }
+        });
+      })
+      .catch(function(err) {
+        showError('حدث خطأ غير متوقع أثناء الاتصال بالخادم.');
+      });
+    })();
+  </script>
+</body>
+</html>`);
+});
+
+// POST /login/bootstrap/consume — processes fragment-based magic token consumption
+app.post('/login/bootstrap/consume', express.json(), async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
   res.setHeader('Referrer-Policy', 'no-referrer');
 
-  const { token } = req.query;
-  if (!token || typeof token !== 'string') {
-    return res.status(400).send('Invalid or missing bootstrap token');
+  // Rate Limiting
+  const clientIp = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+  if (isRateLimited(clientIp)) {
+    return res.status(429).json({ ok: false, error: 'too_many_requests' });
+  }
+
+  const { token } = req.body;
+  if (!token || typeof token !== 'string' || !/^[a-fA-F0-9]{64}$/.test(token)) {
+    return res.status(400).json({ ok: false, error: 'invalid_token_format' });
   }
 
   const db = SallaDatabase.connection;
   if (!db) {
-    return res.status(500).send('Database connection error');
+    return res.status(500).json({ ok: false, error: 'db_connection_error' });
   }
 
   const crypto = require('crypto');
@@ -1138,31 +1309,63 @@ app.get('/login/bootstrap', async (req, res) => {
 
   const transaction = await db.transaction();
   try {
+    const now = new Date();
+    // 1. Conditional Atomic Update: matches token_hash, unused, unrevoked, unexpired
+    const [updatedCount] = await db.models.TenantLoginToken.update(
+      { used_at: now },
+      {
+        where: {
+          token_hash: tokenHash,
+          used_at: null,
+          revoked_at: null,
+          expires_at: {
+            [db.Sequelize.Op.gt]: now
+          }
+        },
+        transaction
+      }
+    );
+
+    if (updatedCount !== 1) {
+      await transaction.rollback();
+      return res.status(403).json({ ok: false, error: 'invalid_or_expired' });
+    }
+
+    // 2. Fetch the claimed record
     const dbToken = await db.models.TenantLoginToken.findOne({
-      where: { token_hash: tokenHash },
-      transaction,
-      lock: transaction.LOCK.UPDATE
+      where: {
+        token_hash: tokenHash,
+        used_at: { [db.Sequelize.Op.ne]: null }
+      },
+      transaction
     });
 
     if (!dbToken) {
       await transaction.rollback();
-      return res.status(403).send('Invalid login token');
+      return res.status(403).json({ ok: false, error: 'claim_failed' });
     }
 
-    if (dbToken.used_at || dbToken.revoked_at || new Date() > new Date(dbToken.expires_at)) {
+    // 3. Verify purpose is 'login'
+    if (dbToken.purpose !== 'login') {
       await transaction.rollback();
-      return res.status(403).send('Token has expired, been used, or has been revoked');
+      return res.status(403).json({ ok: false, error: 'invalid_purpose' });
     }
 
-    // Atomically claim the token
-    await dbToken.update({ used_at: new Date() }, { transaction });
+    // 4. Verify tenant_id exists
+    if (!dbToken.tenant_id) {
+      await transaction.rollback();
+      return res.status(403).json({ ok: false, error: 'invalid_tenant_id' });
+    }
+
+    // 5. Verify Tenant exists and is active
+    const tenant = await db.models.Tenant.findByPk(dbToken.tenant_id, { transaction });
+    if (!tenant || tenant.status !== 'active') {
+      await transaction.rollback();
+      return res.status(403).json({ ok: false, error: 'tenant_inactive' });
+    }
+
+    // Commit transaction before setting passport session to release DB locks
     await transaction.commit();
-
-    // Find the tenant details to establish session
-    const tenant = await db.models.Tenant.findByPk(dbToken.tenant_id);
-    if (!tenant) {
-      return res.status(404).send('Tenant not found');
-    }
 
     const userSession = {
       merchant: {
@@ -1176,11 +1379,11 @@ app.get('/login/bootstrap', async (req, res) => {
     req.login(userSession, function (err) {
       if (err) {
         console.error('❌ [Bootstrap Login] Failed to save passport session:', err);
-        return res.status(500).send('Session initialization failed');
+        return res.status(500).json({ ok: false, error: 'session_init_failed' });
       }
       req.session.save(() => {
         console.log(`✅ [Bootstrap Login] Tenant ${tenant.store_name} logged in via bootstrap token.`);
-        res.redirect('/dashboard');
+        res.json({ ok: true });
       });
     });
   } catch (err) {
@@ -1188,7 +1391,7 @@ app.get('/login/bootstrap', async (req, res) => {
       await transaction.rollback();
     }
     console.error('❌ [Bootstrap Login] Error during claim:', err.message);
-    res.status(500).send('Internal Server Error');
+    res.status(500).json({ ok: false, error: 'internal_server_error' });
   }
 });
 

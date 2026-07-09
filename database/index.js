@@ -1,4 +1,3 @@
-///
 const { Sequelize } = require("sequelize");
 
 class SallaDatabase {
@@ -20,11 +19,7 @@ class SallaDatabase {
       const password = process.env.DATABASE_PASSWORD || '';
       const database = process.env.DATABASE_NAME || 'salla_whatsapp_saas';
 
-      // 1. Auto-Create Database if not exists (Zero Config)
-      // 1. Auto-Create Database (Skipped for SQLite)
-      // 1. Auto-Create Database for MySQL
-      // 1. Auto-Create Database (Skipped for SQLite)
-      // 1. Auto-Create Database for MySQL
+      // 1. Auto-Create Database if not exists
       if (process.env.SALLA_DATABASE_DIALECT !== 'sqlite') {
         try {
           console.log(`🔌 Checking MySQL Database (${host})...`);
@@ -46,14 +41,40 @@ class SallaDatabase {
       this.connection = this.connection || await this.Database.connect();
 
       // 3. Sync Schema
-      // 3. Sync Schema
       if (this.connection && this.connection.sync) {
-        // Re-enabling alter to sync new columns (to_phone)
-        try {
-          // Revert to safer sync (alter) now that we attempted rebuild
-          await this.connection.sync({ alter: true });
-          console.log("✅ Database Synced Successfully.");
+        const env = process.env.NODE_ENV || 'development';
+        const allowSync = process.env.ALLOW_SCHEMA_SYNC === 'true';
 
+        let syncSuccess = false;
+        if (env === 'production' || env === 'staging') {
+          if (allowSync) {
+            console.error('❌ FATAL: ALLOW_SCHEMA_SYNC=true is strictly forbidden in production/staging.');
+            process.exit(1);
+          }
+          console.log('📋 Production/Staging: Skipping schema sync. Database must be initialized via migrations.');
+          syncSuccess = true;
+        } else {
+          try {
+            if (allowSync) {
+              await this.connection.sync({ alter: true });
+              console.log("✅ Database Synced Successfully (alter) — Dev/Test mode.");
+            } else {
+              await this.connection.sync();
+              console.log("✅ Database Synced Successfully (safe) — Dev mode.");
+            }
+            syncSuccess = true;
+          } catch (e) {
+            console.warn("⚠️ Sync Failed, trying fallback normal sync...", e.message);
+            try {
+              await this.connection.sync();
+              syncSuccess = true;
+            } catch (fallbackErr) {
+              console.error("❌ Fallback Sync failed:", fallbackErr.message);
+            }
+          }
+        }
+
+        if (syncSuccess) {
           // SEED PLANS (SaaS Requirement - Competitive Update)
           const { PLANS } = require('../services/planGate');
           const plansData = Object.entries(PLANS).map(([name, cfg]) => ({
@@ -104,16 +125,13 @@ class SallaDatabase {
           } catch (migrationErr) {
             console.error("⚠️ Migration Failed:", migrationErr.message);
           }
-        } catch (e) {
-          console.warn("⚠️ Sync Alter Failed (might be locked), trying normal sync...");
-          await this.connection.sync();
         }
       }
 
       return this.connection;
     } catch (err) {
       console.error("❌ Database Connection Failed:");
-      console.error(err); // Log full error object
+      console.error(err);
       return null;
     }
   }
@@ -140,9 +158,6 @@ class SallaDatabase {
   }
 
   async createOrUpdateTenant(merchantData) {
-    // merchantData comes from Salla User user info
-    // Expected: { id (salla_id), name, email, domain, ... }
-
     if (this.DATABASE_ORM === "Sequelize") {
       const [tenant, created] = await this.connection.models.Tenant.findOrCreate({
         where: { salla_merchant_id: merchantData.id },
@@ -155,7 +170,6 @@ class SallaDatabase {
       });
 
       if (!created) {
-        // Update info if changed
         tenant.store_name = merchantData.name;
         tenant.email = merchantData.email;
         await tenant.save();
@@ -167,7 +181,6 @@ class SallaDatabase {
 
   async saveSallaOAuth(tenantId, tokenData) {
     if (this.DATABASE_ORM === "Sequelize") {
-      // Check if token exists for this tenant
       const existingToken = await this.connection.models.SallaOAuth.findOne({
         where: { tenant_id: tenantId }
       });
@@ -193,20 +206,17 @@ class SallaDatabase {
     if (this.DATABASE_ORM === "Sequelize") {
       const { Subscription, Plan } = this.connection.models;
 
-      // 1. Check if subscription exists
       const existingSub = await Subscription.findOne({ where: { tenant_id: tenantId } });
       if (existingSub) return existingSub;
 
-      // 2. Get Default Plan (Assuming 'الأساسية' is the trial plan)
       const defaultPlan = await Plan.findOne({ where: { name: 'الأساسية' } });
       if (!defaultPlan) {
         console.error("❌ Default plan 'الأساسية' not found for trial creation.");
         return null;
       }
 
-      // 3. Create Trial Subscription
       const startDate = new Date();
-      const trialDays = defaultPlan.trial_days || 7; // Fallback
+      const trialDays = defaultPlan.trial_days || 7;
       const endDate = new Date();
       endDate.setDate(startDate.getDate() + trialDays);
 

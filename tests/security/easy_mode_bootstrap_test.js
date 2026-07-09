@@ -7,8 +7,28 @@ process.env.SESSION_SECRET = 'test-session-secret-must-be-very-long-32-chars-lon
 process.env.SALLA_DATABASE_DIALECT = 'sqlite';
 process.env.SALLA_DATABASE_STORAGE = './tests/security/test_bootstrap_db.sqlite';
 process.env.TOKENS_ENCRYPTION_KEY = crypto.randomBytes(32).toString('hex');
+process.env.ALLOW_SCHEMA_SYNC = 'true';
+process.env.APP_URL = 'https://localhost:8095';
 
 const SallaDatabase = require('../../database/db_instance');
+
+async function claimToken(db, tokenHash) {
+    const now = new Date();
+    const [updatedCount] = await db.models.TenantLoginToken.update(
+        { used_at: now },
+        {
+            where: {
+                token_hash: tokenHash,
+                used_at: null,
+                revoked_at: null,
+                expires_at: {
+                    [db.Sequelize.Op.gt]: now
+                }
+            }
+        }
+    );
+    return updatedCount;
+}
 
 async function runBootstrapTests() {
     console.log("🧪 Starting Salla Easy Mode Session Bootstrap Integration Tests...\n");
@@ -134,9 +154,9 @@ async function runBootstrapTests() {
     console.log("✅ Welcome email status correctly marked as 'missing_recipient'.");
 
     // ──────────────────────────────────────────────────────────
-    // Test 4: Token Expiry & Claim Integrity
+    // Test 4: Token Expiry, Claim Integrity, Revocation
     // ──────────────────────────────────────────────────────────
-    console.log("\n--- [Test 4: Token Claim Validation & Expiry] ---");
+    console.log("\n--- [Test 4: Token Claim Validation, Expiry & Revocation] ---");
     
     // Create an expired token record
     const expiredTokenHash = crypto.createHash('sha256').update('expired_token').digest('hex');
@@ -147,11 +167,9 @@ async function runBootstrapTests() {
         expires_at: new Date(Date.now() - 5000) // expired 5 secs ago
     });
 
-    const checkExpired = await db.models.TenantLoginToken.findOne({
-        where: { token_hash: expiredTokenHash }
-    });
-    assert(new Date() > new Date(checkExpired.expires_at), "Token must be expired");
-    console.log("✅ Expired token verified.");
+    const claimExpiredRes = await claimToken(db, expiredTokenHash);
+    assert.strictEqual(claimExpiredRes, 0, "Claiming an expired token must update 0 rows");
+    console.log("✅ Expired token claim rejection verified.");
 
     // Create a used token record
     const usedTokenHash = crypto.createHash('sha256').update('used_token').digest('hex');
@@ -163,11 +181,85 @@ async function runBootstrapTests() {
         used_at: new Date()
     });
 
-    const checkUsed = await db.models.TenantLoginToken.findOne({
-        where: { token_hash: usedTokenHash }
+    const claimUsedRes = await claimToken(db, usedTokenHash);
+    assert.strictEqual(claimUsedRes, 0, "Claiming an already used token must update 0 rows");
+    console.log("✅ Already used token claim rejection verified.");
+
+    // Create a revoked token record
+    const revokedTokenHash = crypto.createHash('sha256').update('revoked_token').digest('hex');
+    await db.models.TenantLoginToken.create({
+        tenant_id: tenant.id,
+        token_hash: revokedTokenHash,
+        purpose: 'login',
+        expires_at: new Date(Date.now() + 60000),
+        revoked_at: new Date()
     });
-    assert(checkUsed.used_at, "Token must be marked as used");
-    console.log("✅ Already used token verified.");
+
+    const claimRevokedRes = await claimToken(db, revokedTokenHash);
+    assert.strictEqual(claimRevokedRes, 0, "Claiming a revoked token must update 0 rows");
+    console.log("✅ Revoked token claim rejection verified.");
+
+    // ──────────────────────────────────────────────────────────
+    // Test 5: Concurrent Claim Validation
+    // ──────────────────────────────────────────────────────────
+    console.log("\n--- [Test 5: Concurrent Token Claim Verification] ---");
+    const concurrentToken = 'concurrent_magic_token_value';
+    const concurrentHash = crypto.createHash('sha256').update(concurrentToken).digest('hex');
+
+    await db.models.TenantLoginToken.create({
+        tenant_id: tenant.id,
+        token_hash: concurrentHash,
+        purpose: 'login',
+        expires_at: new Date(Date.now() + 60000)
+    });
+
+    // Run claims concurrently
+    const [p1, p2] = await Promise.all([
+        claimToken(db, concurrentHash),
+        claimToken(db, concurrentHash)
+    ]);
+
+    assert.strictEqual(p1 + p2, 1, "Exactly one parallel claim attempt must succeed");
+    console.log(`✅ Concurrent claim verified. Success count: ${p1 + p2} (Attempt 1: ${p1}, Attempt 2: ${p2})`);
+
+    // ──────────────────────────────────────────────────────────
+    // Test 6: Environment Boot Validation checks
+    // ──────────────────────────────────────────────────────────
+    console.log("\n--- [Test 6: Env Boot Verification] ---");
+    const envValidator = require('../../helpers/envValidator');
+
+    // Staging without APP_URL must throw/exit
+    const origExit = process.exit;
+    let exitCode = null;
+    process.exit = (code) => {
+        exitCode = code;
+    };
+
+    process.env.NODE_ENV = 'staging';
+    delete process.env.APP_URL;
+
+    envValidator();
+    assert.strictEqual(exitCode, 1, "App must call process.exit(1) on staging if APP_URL is missing");
+    console.log("✅ Staging boot validation without APP_URL halts boot correctly.");
+
+    // Staging with invalid APP_URL (not https)
+    process.env.APP_URL = 'http://insecure-domain.com';
+    envValidator();
+    assert.strictEqual(exitCode, 1, "App must call process.exit(1) on staging if APP_URL does not start with https://");
+    console.log("✅ Staging boot validation with insecure APP_URL protocol halts boot correctly.");
+
+    // Staging with sync alter active
+    process.env.APP_URL = 'https://valid-domain.com';
+    process.env.ALLOW_SCHEMA_SYNC = 'true';
+    envValidator();
+    assert.strictEqual(exitCode, 1, "App must call process.exit(1) on staging if ALLOW_SCHEMA_SYNC=true is set");
+    console.log("✅ Staging boot validation with ALLOW_SCHEMA_SYNC=true halts boot correctly.");
+
+    // Restore env and exit mock
+    process.exit = origExit;
+    process.env.NODE_ENV = 'development';
+    process.env.ALLOW_SCHEMA_SYNC = 'true';
+    process.env.APP_URL = 'https://localhost:8095';
 
     console.log("\n🎉 ALL SESSION BOOTSTRAP AND EMAIL OUTBOX TESTS COMPLETED SUCCESSFULLY! 🎉\n");
 }

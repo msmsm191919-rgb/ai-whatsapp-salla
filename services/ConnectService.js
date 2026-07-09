@@ -168,8 +168,11 @@ class ConnectService {
             // 5. إرسال بريد الترحيب بالخلفية خارج الـ Transaction لضمان عدم حدوث Deadlocks
             if (created && cleanEmail && bootstrapToken) {
                 const MailService = require('./MailService');
-                const appUrl = process.env.APP_URL || 'https://app.mubhirbot.com';
-                const loginUrl = `${appUrl}/login/bootstrap?token=${bootstrapToken}`;
+                const appUrl = process.env.APP_URL;
+                if (!appUrl) {
+                    throw new Error('APP_URL is not configured. Cannot generate login link.');
+                }
+                const loginUrl = `${appUrl}/login/bootstrap#token=${bootstrapToken}`;
 
                 MailService.sendWelcomeEmail({
                     tenantId: tenant.id,

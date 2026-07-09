@@ -1,6 +1,4 @@
 const nodemailer = require('nodemailer');
-const fs = require('fs');
-const path = require('path');
 const SallaDatabase = require('../database/db_instance');
 
 class MailService {
@@ -90,17 +88,19 @@ class MailService {
         // 2. Perform Send
         let success = false;
         let lastError = null;
+        let messageId = null;
 
         if (this.transporter) {
             try {
-                await this.transporter.sendMail({
-                    from: `"مبهر AI" <${process.env.SMTP_FROM || process.env.SMTP_USER}>`,
+                const info = await this.transporter.sendMail({
+                    from: `"مبهر AI" <${process.env.SMTP_FROM}>`,
                     to: recipient,
                     subject,
                     text,
                     html
                 });
                 success = true;
+                messageId = info.messageId;
             } catch (err) {
                 lastError = err.message;
             }
@@ -108,15 +108,14 @@ class MailService {
             lastError = "SMTP credentials missing";
         }
 
-        // 3. Update Database & Logs
-        const isProd = process.env.NODE_ENV === 'production';
+        // 3. Update Database & Clean Logs
         if (success) {
             await outbox.update({
                 status: 'sent',
                 attempts: outbox.attempts + 1,
                 sent_at: new Date()
             });
-            console.log(`✉️ [MailService] Welcome email sent successfully to ${recipient}`);
+            console.log(`✉️ [MailService] Email delivery update: { tenant_id: ${tenantId}, outbox_id: ${outbox.id}, status: 'sent', attempts: ${outbox.attempts}, provider_message_id: '${messageId || "SMTP_SUCCESS"}' }`);
         } else {
             const finalStatus = outbox.attempts >= 3 ? 'failed' : 'pending';
             await outbox.update({
@@ -124,28 +123,7 @@ class MailService {
                 attempts: outbox.attempts + 1,
                 last_error_redacted: lastError.slice(0, 500)
             });
-
-            console.error(`❌ [MailService] Failed to send email to tenant ${tenantId}: ${lastError}`);
-
-            if (!isProd) {
-                // Staging/Dev: Write to emails.log for developer testing
-                const logDir = path.join(process.cwd(), 'logs');
-                if (!fs.existsSync(logDir)) {
-                    fs.mkdirSync(logDir, { recursive: true });
-                }
-                const logPath = path.join(logDir, 'emails.log');
-                const entry = `\n============================================================\n` +
-                    `Timestamp: ${new Date().toISOString()}\n` +
-                    `Tenant ID: ${tenantId}\n` +
-                    `To: ${recipient}\n` +
-                    `Subject: ${subject}\n` +
-                    `Body:\n${text}` +
-                    `============================================================\n`;
-                fs.appendFileSync(logPath, entry, 'utf8');
-                console.log(`✉️ [MailService] Staging preview written to logs/emails.log`);
-            } else {
-                console.log(`✉️ [MailService] Production fallback: login token details hidden from application logs.`);
-            }
+            console.error(`❌ [MailService] Email delivery update: { tenant_id: ${tenantId}, outbox_id: ${outbox.id}, status: '${finalStatus}', attempts: ${outbox.attempts}, error: 'SMTP_SEND_FAILED_REDACTED' }`);
         }
     }
 }

@@ -9,6 +9,8 @@ process.env.SALLA_DATABASE_STORAGE = process.env.SALLA_DATABASE_STORAGE || './te
 process.env.TOKENS_ENCRYPTION_KEY = process.env.TOKENS_ENCRYPTION_KEY || crypto.randomBytes(32).toString('hex');
 process.env.SALLA_WEBHOOK_SECRET = process.env.SALLA_WEBHOOK_SECRET || 'salla-webhook-secret-key-12345';
 process.env.SALLA_OAUTH_CLIENT_SECRET = ''; // Force mock mode for SallaAdapter in unit tests
+process.env.ALLOW_SCHEMA_SYNC = 'true';
+process.env.APP_URL = 'https://localhost:8095';
 
 const cryptoHelper = require('../../helpers/cryptoHelper');
 const SallaDatabase = require('../../database/db_instance');
