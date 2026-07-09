@@ -19,8 +19,12 @@
                     <p class="text-2xl font-black" style="color: #34d399; font-family: Inter, sans-serif;">{{ mrr }} <span class="text-sm font-normal" style="color: #475569;">ر.س</span></p>
                 </div>
                 <div class="text-center px-5 py-3 rounded-xl" style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08);">
-                    <p class="text-[10px] uppercase tracking-wider font-bold" style="color: #64748b;">المتاجر النشطة</p>
-                    <p class="text-2xl font-black" style="color: #60a5fa; font-family: Inter, sans-serif;">{{ active_tenants_count }} <span class="text-sm font-normal" style="color: #475569;">متجر</span></p>
+                    <p class="text-[10px] uppercase tracking-wider font-bold" style="color: #64748b;">المتاجر (نشط / تجريبي / منتهي)</p>
+                    <p class="text-base font-black" style="color: #60a5fa; font-family: Inter, sans-serif; margin-top: 4px;">
+                        {{ active_tenants_count }} <span class="text-xs font-normal" style="color: #94a3b8;">نشط</span> |
+                        {{ trial_subs_count }} <span class="text-xs font-normal" style="color: #94a3b8;">تجريبي</span> |
+                        {{ expired_subs_count }} <span class="text-xs font-normal" style="color: #94a3b8;">منتهي</span>
+                    </p>
                 </div>
             </div>
         </div>
@@ -35,7 +39,7 @@
             <div>
                 <p class="text-xs font-bold uppercase tracking-wider" style="color: #94a3b8;">متاجر جديدة</p>
                 <h3 class="text-2xl font-black text-slate-800 leading-tight mt-0.5" style="font-family: Inter, sans-serif;">{{ tenants_count }}</h3>
-                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full" style="background: #f0fdf4; color: #16a34a;">+2 اليوم</span>
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full" style="background: #f0fdf4; color: #16a34a;">+{{ todayNewCount }} اليوم</span>
             </div>
         </div>
         <div class="kpi-card" style="{% if disconnected_count > 0 %}border-right: 3px solid #ef4444;{% endif %}">
@@ -160,18 +164,12 @@
                     <canvas id="plansChart"></canvas>
                 </div>
                 <div class="space-y-2">
+                    {% for name, count in planDist %}
                     <div class="flex justify-between items-center text-xs">
-                        <span class="flex items-center gap-2"><span class="w-2 h-2 rounded-full inline-block" style="background:#0d9488;"></span> النمو</span>
-                        <span class="font-bold" style="font-family:Inter,sans-serif;">65%</span>
+                        <span class="flex items-center gap-2"><span class="w-2 h-2 rounded-full inline-block" style="background:#0d9488;"></span> {{ name }}</span>
+                        <span class="font-bold" style="font-family:Inter,sans-serif;">{{ count }}</span>
                     </div>
-                    <div class="flex justify-between items-center text-xs">
-                        <span class="flex items-center gap-2"><span class="w-2 h-2 rounded-full inline-block" style="background:#cbd5e1;"></span> الأساسية</span>
-                        <span class="font-bold" style="font-family:Inter,sans-serif;">30%</span>
-                    </div>
-                    <div class="flex justify-between items-center text-xs">
-                        <span class="flex items-center gap-2"><span class="w-2 h-2 rounded-full inline-block" style="background:#0f172a;"></span> الشركات</span>
-                        <span class="font-bold" style="font-family:Inter,sans-serif;">5%</span>
-                    </div>
+                    {% endfor %}
                 </div>
             </div>
 
@@ -186,21 +184,14 @@
     new Chart(document.getElementById('mainGrowthChart'), {
         type: 'line',
         data: {
-            labels: ['اليوم ١', 'اليوم ٢', 'اليوم ٣', 'اليوم ٤', 'اليوم ٥', 'اليوم ٦', 'اليوم'],
+            labels: {{ chartLabels|safe }},
             datasets: [
                 {
-                    label: 'الرسائل',
-                    data: [120, 190, 300, 500, 200, 350, 400],
+                    label: 'الرسائل الصادرة',
+                    data: {{ chartValues|safe }},
                     borderColor: '#0d9488',
                     backgroundColor: 'rgba(13,148,136,0.07)',
                     tension: 0.4, fill: true, pointRadius: 3, pointBackgroundColor: '#0d9488'
-                },
-                {
-                    label: 'ردود AI',
-                    data: [80, 150, 250, 420, 180, 300, 320],
-                    borderColor: '#8b5cf6',
-                    borderDash: [5, 5],
-                    tension: 0.4, pointRadius: 0
                 }
             ]
         },
@@ -218,8 +209,8 @@
     new Chart(document.getElementById('plansChart'), {
         type: 'doughnut',
         data: {
-            labels: ['النمو', 'الأساسية', 'الشركات'],
-            datasets: [{ data: [65, 30, 5], backgroundColor: ['#0d9488', '#cbd5e1', '#0f172a'], borderWidth: 0, hoverOffset: 4 }]
+            labels: {{ planLabels|safe }},
+            datasets: [{ data: {{ planValues|safe }}, backgroundColor: ['#0d9488', '#3b82f6', '#0f172a', '#cbd5e1', '#f59e0b'], borderWidth: 0, hoverOffset: 4 }]
         },
         options: {
             responsive: true, maintainAspectRatio: false, cutout: '72%',

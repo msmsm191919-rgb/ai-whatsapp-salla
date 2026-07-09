@@ -61,11 +61,9 @@
                         </td>
                         <td style="font-family:Inter,monospace;color:#94a3b8;font-size:12px;" dir="ltr">{{ sub.start_date }}</td>
                         <td style="font-family:Inter,monospace;font-size:12px;" dir="ltr">
-                            {% if sub.days_left < 7 %}
-                            <span style="color:#dc2626;font-weight:700;">{{ sub.end_date }} <span style="font-size:10px;">({{ sub.days_left }} يوم)</span></span>
-                            {% else %}
-                            <span style="color:#94a3b8;">{{ sub.end_date }}</span>
-                            {% endif %}
+                            <span style="{% if sub.days_left < 7 %}color:#dc2626;font-weight:700;{% else %}color:#64748b;{% endif %}">
+                                {{ sub.end_date }} <span style="font-size:10px;">({{ sub.days_left }} يوم)</span>
+                            </span>
                         </td>
                         <td class="text-center">
                             <button onclick="renewSub({{ sub.id }}, this)" style="color:#0d9488;font-size:11px;font-weight:700;background:none;border:none;cursor:pointer;text-decoration:underline;font-family:Cairo,sans-serif;">تجديد 30 يوم</button>

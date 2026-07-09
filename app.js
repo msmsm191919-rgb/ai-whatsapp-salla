@@ -24,6 +24,14 @@ if (fs.existsSync(resolvedEnvPath)) {
   }
 }
 
+// Fail-Fast: Verify admin credentials are set in production/staging environments
+if (nodeEnv === "production" || nodeEnv === "staging") {
+  if (!process.env.ADMIN_EMAILS || !process.env.ADMIN_PASSWORD) {
+    console.error("❌ FATAL: ADMIN_EMAILS and ADMIN_PASSWORD must be configured in environment variables!");
+    process.exit(1);
+  }
+}
+
 // Initialize Global Runtime Guard
 const isStaging = nodeEnv === 'staging';
 const isSafeModeFlag = process.env.STAGING_SAFE_MODE === 'true';
@@ -1721,6 +1729,16 @@ app.get("/logout", function (req, res) {
     }
     res.redirect("/");
   });
+});
+
+app.get("/admin/logout", function (req, res) {
+  if (req.session) {
+    req.session.destroy(function (err) {
+      res.redirect("/login");
+    });
+  } else {
+    res.redirect("/login");
+  }
 });
 
 function ensureAuthenticated(req, res, next) {

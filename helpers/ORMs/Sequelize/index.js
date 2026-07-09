@@ -14,6 +14,7 @@ const Payment = require("./models/payment");
 const WebhookEvent = require("./models/webhookevent");
 const TenantLoginToken = require("./models/tenantlogintokens");
 const EmailOutbox = require("./models/emailoutbox");
+const AiUsageLog = require("./models/aiusagelog");
 // const User = require("./models/user"); // Deprecated
 // const OauthTokens = require("./models/oauthtokens"); // Deprecated
 
@@ -25,32 +26,34 @@ module.exports = {
     const dbHost = process.env.DATABASE_SERVER || 'localhost';
     const dbUser = process.env.DATABASE_USERNAME || 'root';
     const dbPass = process.env.DATABASE_PASSWORD || '';
-    const dbName = process.env.DATABASE_NAME || 'salla_whatsapp_saas';
-    const dbDialect = process.env.SALLA_DATABASE_DIALECT || 'mysql';
+    const dbName = process.env.DATABASE_NAME || 'mubhir';
+    const dbPort = process.env.DATABASE_PORT || 3306;
 
-    if (dbDialect === 'sqlite') {
-      const fs = require('fs');
-      const path = require('path');
-      const dbStorage = process.env.SALLA_DATABASE_STORAGE || './database/salla_saas_v4.sqlite';
-      const resolvedStorage = path.resolve(dbStorage);
-      const parentDir = path.dirname(resolvedStorage);
-      if (!fs.existsSync(parentDir)) {
-        fs.mkdirSync(parentDir, { recursive: true });
-      }
-      if (process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'staging') {
-        console.log(`🔌 Connecting to SQLite database at: ${resolvedStorage}`);
-      }
+    if (process.env.NODE_ENV === 'test') {
       sequelize = new Sequelize({
         dialect: 'sqlite',
-        storage: resolvedStorage,
-        logging: false,
+        storage: ':memory:',
+        logging: false
+      });
+    } else if (process.env.DATABASE_DIALECT === 'sqlite') {
+      sequelize = new Sequelize({
+        dialect: 'sqlite',
+        storage: './database/mubhir.sqlite',
+        logging: false
       });
     } else {
-      console.log(`🔌 Connecting to MySQL (${dbName})...`);
       sequelize = new Sequelize(dbName, dbUser, dbPass, {
         host: dbHost,
+        port: dbPort,
         dialect: 'mysql',
         logging: false,
+        dialectOptions: {
+          charset: 'utf8mb4'
+        },
+        define: {
+          charset: 'utf8mb4',
+          collate: 'utf8mb4_unicode_ci'
+        }
       });
     }
 
@@ -69,6 +72,7 @@ module.exports = {
       WebhookEvent,
       TenantLoginToken,
       EmailOutbox,
+      AiUsageLog,
     ];
 
     // 1. Init all models
