@@ -174,6 +174,7 @@ class AIService {
 
             // 6. Increment Usage Counter
             await this.incrementAIUsage(tenantId);
+            await this.recordAiUsage(tenantId, completion, 'bot_reply');
 
             return aiReply;
 
@@ -220,6 +221,10 @@ class AIService {
                 max_tokens: 100,
                 temperature: 0.7,
             });
+
+            // Increment AI Usage
+            await this.incrementAIUsage(tenantId);
+            await this.recordAiUsage(tenantId, completion, 'order_notification');
 
             return completion.choices[0].message.content;
         } catch (e) {
@@ -280,6 +285,7 @@ class AIService {
 
             // Increment AI Usage
             await this.incrementAIUsage(tenantId);
+            await this.recordAiUsage(tenantId, completion, 'cart_recovery');
 
             return completion.choices[0].message.content;
 
@@ -333,6 +339,7 @@ class AIService {
 
             // Increment AI Usage
             await this.incrementAIUsage(tenantId);
+            await this.recordAiUsage(tenantId, completion, 'review_request');
 
             return completion.choices[0].message.content;
 
@@ -366,6 +373,96 @@ class AIService {
     mockResponse(msg, storeName) {
         if (msg.includes('طلب')) return "أهلاً بك في " + storeName + ". يرجى تزويدنا برقم الطلب للمساعدة 📦";
         return "أهلاً بك في " + storeName + "! كيف يمكننا خدمتك اليوم؟ ✨";
+    }
+
+    /**
+     * Record detailed AI usage securely in database
+     */
+    async recordAiUsage(tenantId, completion, featureSource) {
+        try {
+            const db = SallaDatabase.connection;
+            if (!db || !db.models?.AiUsageLog) {
+                console.warn("[AIService] Database or AiUsageLog model is not available for recording usage.");
+                return;
+            }
+
+            if (!completion) return;
+
+            const providerRequestId = completion.id || `idemp_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
+
+            // Deduplicate Check: check if provider_request_id already exists
+            const existing = await db.models.AiUsageLog.findOne({ where: { provider_request_id: providerRequestId } });
+            if (existing) {
+                console.warn(`[AIService] Duplicate request id ${providerRequestId} detected, skipping save.`);
+                return;
+            }
+
+            // Extract prompt, completion and total tokens from standard or alternate formats
+            const usage = completion.usage || {};
+            const promptTokens = usage.prompt_tokens !== undefined ? usage.prompt_tokens : (usage.input_tokens || 0);
+            const completionTokens = usage.completion_tokens !== undefined ? usage.completion_tokens : (usage.output_tokens || 0);
+            const totalTokens = usage.total_tokens !== undefined ? usage.total_tokens : (promptTokens + completionTokens);
+
+            // Extract cached input tokens from prompt_tokens_details or input_tokens_details or direct properties
+            let cachedTokens = 0;
+            if (usage.prompt_tokens_details && usage.prompt_tokens_details.cached_tokens !== undefined) {
+                cachedTokens = usage.prompt_tokens_details.cached_tokens;
+            } else if (usage.input_tokens_details && usage.input_tokens_details.cached_tokens !== undefined) {
+                cachedTokens = usage.input_tokens_details.cached_tokens;
+            } else if (usage.cached_tokens !== undefined) {
+                cachedTokens = usage.cached_tokens;
+            }
+
+            const modelUsed = completion.model || 'gpt-4o-mini';
+
+            // Versioned pricing structure as required
+            const AI_PRICING = {
+                version: "gpt-4o-mini-2026-07",
+                models: {
+                    "gpt-4o-mini": {
+                        input_per_million: 0.15,
+                        cached_input_per_million: 0.075,
+                        output_per_million: 0.60
+                    }
+                }
+            };
+
+            const modelPricing = AI_PRICING.models[modelUsed];
+            let estimatedCost = 0.0;
+            let pricingStatus = "priced";
+
+            if (!modelPricing) {
+                pricingStatus = "unknown_model";
+                estimatedCost = 0.0;
+                console.warn(`[AIService] Alert: Unknown AI model returned: ${modelUsed}. Cost set to 0, pricing_status marked as unknown_model.`);
+            } else {
+                const nonCached = Math.max(0, promptTokens - cachedTokens);
+                const inputCost = (nonCached / 1000000) * modelPricing.input_per_million;
+                const cachedCost = (cachedTokens / 1000000) * modelPricing.cached_input_per_million;
+                const outputCost = (completionTokens / 1000000) * modelPricing.output_per_million;
+                estimatedCost = inputCost + cachedCost + outputCost;
+            }
+
+            await db.models.AiUsageLog.create({
+                tenant_id: tenantId,
+                provider_request_id: providerRequestId,
+                prompt_tokens: promptTokens,
+                completion_tokens: completionTokens,
+                cached_tokens: cachedTokens,
+                total_tokens: totalTokens,
+                model: modelUsed,
+                estimated_cost: estimatedCost,
+                currency: "USD",
+                pricing_version: AI_PRICING.version,
+                pricing_status: pricingStatus,
+                request_status: "success",
+                feature_source: featureSource
+            });
+
+        } catch (error) {
+            // Cleaned error log, avoiding leakage of prompts or customer info
+            console.error("❌ Failed to log AI usage:", error.message);
+        }
     }
 }
 
