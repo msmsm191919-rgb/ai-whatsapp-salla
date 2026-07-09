@@ -14,19 +14,21 @@
         <div class="flex gap-3 flex-wrap">
             <div class="relative">
                 <i class="fa-solid fa-search absolute right-3 top-1/2 -translate-y-1/2 text-xs" style="color:#cbd5e1;"></i>
-                <input type="text" placeholder="بحث باسم المتجر أو ID..."
+                <input type="text" id="tenantSearch" onkeyup="filterTenants()" placeholder="بحث باسم المتجر أو ID..."
                     style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:8px 34px 8px 14px; font-size:13px; width:220px; outline:none;"
                     onfocus="this.style.borderColor='#0d9488'" onblur="this.style.borderColor='#e2e8f0'">
             </div>
-            <select style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:8px 12px; font-size:12px; font-weight:700; color:#64748b; outline:none;">
-                <option>كل الحالات</option>
-                <option>نشط</option>
-                <option>معلق</option>
-                <option>موقوف</option>
+            <select id="statusFilter" onchange="filterTenants()" style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:8px 12px; font-size:12px; font-weight:700; color:#64748b; outline:none;">
+                <option value="كل الحالات">كل الحالات</option>
+                <option value="active">نشط</option>
+                <option value="trial">تجريبي</option>
+                <option value="expired">منتهي</option>
+                <option value="suspended">موقوف</option>
+                <option value="inactive">بدون اشتراك</option>
             </select>
-            <button style="background:linear-gradient(135deg,#0d9488,#0ea5e9); color:#fff; border:none; border-radius:10px; padding:8px 18px; font-size:12px; font-weight:700; cursor:pointer; display:flex; align-items:center; gap:6px;">
+            <a href="/admin/tenants/export" style="background:linear-gradient(135deg,#0d9488,#0ea5e9); color:#fff; border:none; border-radius:10px; padding:8px 18px; font-size:12px; font-weight:700; cursor:pointer; display:flex; align-items:center; gap:6px; text-decoration:none;">
                 <i class="fa-solid fa-file-csv"></i> تصدير
-            </button>
+            </a>
         </div>
     </div>
 
@@ -42,8 +44,8 @@
         <div class="kpi-card">
             <div class="kpi-icon" style="background:#f0fdf4; color:#16a34a;"><i class="fa-solid fa-check-circle"></i></div>
             <div>
-                <p class="text-xs font-bold uppercase tracking-wider" style="color:#94a3b8;">متاجر نشطة</p>
-                <p class="text-2xl font-black" style="color:#16a34a; font-family:Inter,sans-serif; margin-top:2px;">95%</p>
+                <p class="text-xs font-bold uppercase tracking-wider" style="color:#94a3b8;">نسبة النشاط</p>
+                <p class="text-2xl font-black" style="color:#16a34a; font-family:Inter,sans-serif; margin-top:2px;">{{ activePct }}%</p>
             </div>
         </div>
         <div class="kpi-card">
@@ -56,8 +58,8 @@
         <div class="kpi-card">
             <div class="kpi-icon" style="background:#f5f3ff; color:#7c3aed;"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
             <div>
-                <p class="text-xs font-bold uppercase tracking-wider" style="color:#94a3b8;">يستخدمون AI</p>
-                <p class="text-2xl font-black text-slate-800 mt-0.5" style="font-family:Inter,sans-serif;">76</p>
+                <p class="text-xs font-bold uppercase tracking-wider" style="color:#94a3b8;">باقة ذكاء اصطناعي</p>
+                <p class="text-2xl font-black text-slate-800 mt-0.5" style="font-family:Inter,sans-serif;">{{ aiUsersCount }}</p>
             </div>
         </div>
     </div>
@@ -79,7 +81,7 @@
                 <tbody>
                     {% if tenants and tenants.length > 0 %}
                     {% for t in tenants %}
-                    <tr class="group">
+                    <tr class="group tenant-row" data-status="{{ t.overall_status }}">
                         <td>
                             <div class="flex items-center gap-3">
                                 <div class="w-10 h-10 rounded-xl text-white flex items-center justify-center font-bold text-sm flex-shrink-0"
@@ -103,9 +105,27 @@
                                 <span class="inline-flex w-fit items-center px-2.5 py-0.5 rounded-lg text-[10px] font-bold" style="background:#eff6ff; color:#1d4ed8;">
                                     {{ t.Subscription.Plan.name if t.Subscription and t.Subscription.Plan else 'الأساسية' }}
                                 </span>
+                                {% if t.overall_status == 'active' %}
                                 <span class="inline-flex w-fit items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold" style="background:#f0fdf4; color:#16a34a;">
                                     <span class="w-1.5 h-1.5 rounded-full inline-block" style="background:#16a34a; animation:pulse 2s infinite;"></span> نشط
                                 </span>
+                                {% elif t.overall_status == 'trial' %}
+                                <span class="inline-flex w-fit items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold" style="background:#eff6ff; color:#1d4ed8;">
+                                    <span class="w-1.5 h-1.5 rounded-full inline-block" style="background:#1d4ed8;"></span> تجريبي
+                                </span>
+                                {% elif t.overall_status == 'expired' %}
+                                <span class="inline-flex w-fit items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold" style="background:#fef2f2; color:#ef4444;">
+                                    <span class="w-1.5 h-1.5 rounded-full inline-block" style="background:#ef4444;"></span> منتهي
+                                </span>
+                                {% elif t.overall_status == 'suspended' %}
+                                <span class="inline-flex w-fit items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold" style="background:#fffbeb; color:#d97706;">
+                                    <span class="w-1.5 h-1.5 rounded-full inline-block" style="background:#d97706;"></span> موقوف
+                                </span>
+                                {% else %}
+                                <span class="inline-flex w-fit items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold" style="background:#f1f5f9; color:#64748b;">
+                                    <span class="w-1.5 h-1.5 rounded-full inline-block" style="background:#64748b;"></span> بدون اشتراك
+                                </span>
+                                {% endif %}
                             </div>
                         </td>
                         <td>
@@ -144,13 +164,19 @@
                             {% endif %}
                         </td>
                         <td>
+                            {% if t.is_unlimited %}
                             <div class="flex items-center justify-between mb-1.5" style="max-width:140px;">
-                                <span class="text-xs font-bold text-slate-700" style="font-family:Inter,sans-serif;">450 <span style="color:#94a3b8; font-weight:400;">/ 1000</span></span>
-                                <span class="text-[10px] font-bold" style="color:#0d9488; font-family:Inter,sans-serif;">45%</span>
+                                <span class="text-xs font-bold text-slate-700" style="font-family:Inter,sans-serif;">{{ t.msg_sent }} <span style="color:#94a3b8; font-weight:400;">/ غير محدود</span></span>
+                            </div>
+                            {% else %}
+                            <div class="flex items-center justify-between mb-1.5" style="max-width:140px;">
+                                <span class="text-xs font-bold text-slate-700" style="font-family:Inter,sans-serif;">{{ t.msg_sent }} <span style="color:#94a3b8; font-weight:400;">/ {{ t.msg_limit }}</span></span>
+                                <span class="text-[10px] font-bold" style="color:#0d9488; font-family:Inter,sans-serif;">{{ t.msg_pct }}%</span>
                             </div>
                             <div style="width:120px; background:#f1f5f9; border-radius:6px; height:6px; overflow:hidden;">
-                                <div style="width:45%; background:linear-gradient(90deg,#0d9488,#0ea5e9); height:100%; border-radius:6px;"></div>
+                                <div style="width:{{ t.msg_pct }}%; background:linear-gradient(90deg,#0d9488,#0ea5e9); height:100%; border-radius:6px;"></div>
                             </div>
+                            {% endif %}
                         </td>
                         <td>
                             <div class="flex items-center gap-1.5 text-xs" style="color:#94a3b8;">
@@ -214,6 +240,18 @@
             if (d.ok) { setTimeout(() => location.reload(), action === 'restart' ? 6000 : 1500); }
             else { alert('❌ ' + (d.error || 'فشل')); btn.innerHTML = orig; btn.disabled = false; }
         } catch (e) { alert('❌ ' + e.message); btn.innerHTML = orig; btn.disabled = false; }
+    }
+
+    function filterTenants() {
+        const q = document.getElementById('tenantSearch').value.toLowerCase();
+        const status = document.getElementById('statusFilter').value;
+        document.querySelectorAll('.tenant-row').forEach(row => {
+            const text = row.textContent.toLowerCase();
+            const rowStatus = row.dataset.status;
+            const matchesText = text.includes(q) || row.querySelector('td p.font-mono')?.textContent.toLowerCase().includes(q);
+            const matchesStatus = (status === 'كل الحالات' || rowStatus === status);
+            row.style.display = (matchesText && matchesStatus) ? '' : 'none';
+        });
     }
 </script>
 {% endblock %}
