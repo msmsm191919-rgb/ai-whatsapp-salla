@@ -1,6 +1,7 @@
 const OpenAI = require('openai');
 const SallaDatabase = require('../database/db_instance');
 const PromptManager = require('./PromptManager');
+const crypto = require('crypto');
 
 // OpenAI Instance (Global)
 // OpenAI Instance (Lazy Init)
@@ -24,7 +25,8 @@ const BASE_SYSTEM_PROMPT = `
 
 class AIService {
 
-    async generateReply(tenantId, userMessage, customerName = 'عميلنا', previousMessages = []) {
+    async generateReply(tenantId, userMessage, customerName = 'عميلنا', previousMessages = [], aiRequestId = null) {
+        const actualRequestId = aiRequestId || crypto.randomUUID();
         try {
             const planGate = require('./planGate');
             const access = await planGate.checkTenantAccess(tenantId);
@@ -174,7 +176,7 @@ class AIService {
 
             // 6. Increment Usage Counter
             await this.incrementAIUsage(tenantId);
-            await this.recordAiUsage(tenantId, completion, 'bot_reply');
+            await this.recordAiUsage(tenantId, completion, 'bot_reply', actualRequestId);
 
             return aiReply;
 
@@ -185,7 +187,8 @@ class AIService {
         }
     }
 
-    async generateOrderNotification(tenantId, customerName, orderId, orderTotal) {
+    async generateOrderNotification(tenantId, customerName, orderId, orderTotal, aiRequestId = null) {
+        const actualRequestId = aiRequestId || crypto.randomUUID();
         try {
             const planGate = require('./planGate');
             const access = await planGate.checkTenantAccess(tenantId);
@@ -224,7 +227,7 @@ class AIService {
 
             // Increment AI Usage
             await this.incrementAIUsage(tenantId);
-            await this.recordAiUsage(tenantId, completion, 'order_notification');
+            await this.recordAiUsage(tenantId, completion, 'order_notification', actualRequestId);
 
             return completion.choices[0].message.content;
         } catch (e) {
@@ -234,7 +237,8 @@ class AIService {
         }
     }
 
-    async generateCartRecovery(tenantId, customerName, cartTotal, cartItems = []) {
+    async generateCartRecovery(tenantId, customerName, cartTotal, cartItems = [], aiRequestId = null) {
+        const actualRequestId = aiRequestId || crypto.randomUUID();
         try {
             const planGate = require('./planGate');
             const access = await planGate.checkTenantAccess(tenantId);
@@ -285,7 +289,7 @@ class AIService {
 
             // Increment AI Usage
             await this.incrementAIUsage(tenantId);
-            await this.recordAiUsage(tenantId, completion, 'cart_recovery');
+            await this.recordAiUsage(tenantId, completion, 'cart_recovery', actualRequestId);
 
             return completion.choices[0].message.content;
 
@@ -296,7 +300,8 @@ class AIService {
         }
     }
 
-    async generateReviewRequest(tenantId, customerName, orderId, orderTotal) {
+    async generateReviewRequest(tenantId, customerName, orderId, orderTotal, aiRequestId = null) {
+        const actualRequestId = aiRequestId || crypto.randomUUID();
         try {
             const planGate = require('./planGate');
             const access = await planGate.checkTenantAccess(tenantId);
@@ -339,7 +344,7 @@ class AIService {
 
             // Increment AI Usage
             await this.incrementAIUsage(tenantId);
-            await this.recordAiUsage(tenantId, completion, 'review_request');
+            await this.recordAiUsage(tenantId, completion, 'review_request', actualRequestId);
 
             return completion.choices[0].message.content;
 
@@ -378,7 +383,7 @@ class AIService {
     /**
      * Record detailed AI usage securely in database
      */
-    async recordAiUsage(tenantId, completion, featureSource) {
+    async recordAiUsage(tenantId, completion, featureSource, aiRequestId = null) {
         try {
             const db = SallaDatabase.connection;
             if (!db || !db.models?.AiUsageLog) {
@@ -388,7 +393,18 @@ class AIService {
 
             if (!completion) return;
 
-            const providerRequestId = completion.id || `idemp_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
+            // Generate providerRequestId exactly per specs:
+            // openai:<completion.id> if completion.id exists
+            // internal:<aiRequestId> if completion.id is missing and aiRequestId is provided
+            let providerRequestId;
+            if (completion.id) {
+                providerRequestId = 'openai:' + completion.id;
+            } else if (aiRequestId) {
+                providerRequestId = 'internal:' + aiRequestId;
+            } else {
+                const fallbackId = `fallback_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
+                providerRequestId = 'internal:' + fallbackId;
+            }
 
             // Deduplicate Check: check if provider_request_id already exists
             const existing = await db.models.AiUsageLog.findOne({ where: { provider_request_id: providerRequestId } });
@@ -427,7 +443,12 @@ class AIService {
                 }
             };
 
-            const modelPricing = AI_PRICING.models[modelUsed];
+            // Normalize models starting with gpt-4o-mini
+            let pricingKey = null;
+            if (modelUsed.startsWith("gpt-4o-mini")) {
+                pricingKey = "gpt-4o-mini";
+            }
+            const modelPricing = pricingKey ? AI_PRICING.models[pricingKey] : AI_PRICING.models[modelUsed];
             let estimatedCost = 0.0;
             let pricingStatus = "priced";
 
