@@ -568,6 +568,51 @@ const devOnly = (req, res, next) => {
   next();
 };
 
+// 🔐 Admin Login Routes — MUST be defined BEFORE ensureAuthenticated/requireAdmin middleware
+app.get('/admin/login', (req, res) => {
+  // If already has admin session, redirect to admin dashboard
+  if (req.session && req.session.isAdmin) {
+    return res.redirect('/admin');
+  }
+  const errorParam = req.query.error;
+  const error = errorParam === '1' ? 'بيانات الدخول غير صحيحة' : null;
+  res.render('admin/login.html', { error });
+});
+
+app.post('/admin/login', (req, res) => {
+  const { email, password } = req.body;
+  const adminEmails = process.env.ADMIN_EMAILS
+    ? process.env.ADMIN_EMAILS.split(',').map(e => e.trim().toLowerCase())
+    : [];
+  const adminPassword = process.env.ADMIN_PASSWORD;
+
+  if (
+    email &&
+    password &&
+    adminPassword &&
+    adminEmails.includes(email.toLowerCase().trim()) &&
+    password === adminPassword
+  ) {
+    // Create admin session
+    const userSession = {
+      merchant: { id: 'admin', name: 'مدير النظام', email: email.toLowerCase().trim() },
+      email: email.toLowerCase().trim(),
+      platform: 'admin'
+    };
+    req.login(userSession, (err) => {
+      if (err) {
+        console.error('[Admin Login] Session error:', err);
+        return res.redirect('/admin/login?error=1');
+      }
+      req.session.isAdmin = true;
+      res.redirect('/admin');
+    });
+  } else {
+    console.warn(`[SECURITY] Failed admin login attempt for email: ${email || 'empty'}`);
+    res.redirect('/admin/login?error=1');
+  }
+});
+
 // 🔒 حماية المسارات الخاصة بالـ SaaS ومنع أي وصول غير مصرح به أو Fallback للمتجر الافتراضي
 app.use([
   '/dashboard', '/settings', '/logs', '/api/whatsapp-numbers', 
@@ -1734,14 +1779,18 @@ app.get("/logout", function (req, res) {
 app.get("/admin/logout", function (req, res) {
   if (req.session) {
     req.session.destroy(function (err) {
-      res.redirect("/login");
+      res.redirect("/admin/login");
     });
   } else {
-    res.redirect("/login");
+    res.redirect("/admin/login");
   }
 });
 
 function ensureAuthenticated(req, res, next) {
+  // Skip auth for admin login/logout routes (handled separately)
+  if (req.originalUrl.startsWith('/admin/login') || req.originalUrl.startsWith('/admin/logout')) {
+    return next();
+  }
   console.log(`\n=================== [RUNTIME AUTH DEBUG] ===================`);
   console.log(`- Source Route: ${req.originalUrl}`);
   console.log(`- Session Tenant (req.user):`, req.user);
@@ -1814,11 +1863,21 @@ async function ensureSubscriptionActive(req, res, next) {
 }
 
 async function requireAdmin(req, res, next) {
+  // Skip for admin login/logout routes (handled by dedicated handlers above)
+  if (req.originalUrl.startsWith('/admin/login') || req.originalUrl.startsWith('/admin/logout')) {
+    return next();
+  }
+
+  // Check if user has admin session (from standalone admin login)
+  if (req.session && req.session.isAdmin && req.user && req.user.platform === 'admin') {
+    return next();
+  }
+
   if (!req.isAuthenticated() && !(req.user && req.user.merchant && req.user.merchant.id)) {
     if (req.xhr || req.headers.accept?.includes('json') || req.originalUrl.startsWith('/api') || req.method === 'POST') {
       return res.status(403).json({ ok: false, error: 'Unauthorized: Admin privileges required' });
     }
-    return res.redirect('/login');
+    return res.redirect('/admin/login');
   }
 
   try {
