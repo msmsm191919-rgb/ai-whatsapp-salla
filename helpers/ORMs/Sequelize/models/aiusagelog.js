@@ -45,8 +45,8 @@ module.exports = (sequelize, DataTypes) => {
                 allowNull: false
             },
             estimated_cost: {
-                type: DataTypes.DECIMAL(10, 6),
-                defaultValue: 0.0,
+                type: DataTypes.DECIMAL(15, 8),
+                defaultValue: 0.00000000,
                 allowNull: false
             },
             currency: {

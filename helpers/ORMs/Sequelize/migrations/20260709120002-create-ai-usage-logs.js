@@ -51,8 +51,8 @@ module.exports = {
           allowNull: false
         },
         estimated_cost: {
-          type: Sequelize.DECIMAL(10, 6),
-          defaultValue: 0.0,
+          type: Sequelize.DECIMAL(15, 8),
+          defaultValue: 0.00000000,
           allowNull: false
         },
         currency: {
