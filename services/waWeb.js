@@ -176,6 +176,15 @@ function isRevokedSession(errOrReason) {
     return norm.includes('LOGOUT') || norm.includes('UNPAIRED') || norm.includes('AUTH_FAILURE') || norm.includes('REVOKED');
 }
 
+// دالة للتحقق مما إذا كان اتصال متصفح puppeteer لا يزال نشطاً
+function isBrowserConnected(client) {
+    try {
+        return !!(client && client.pupBrowser && client.pupBrowser.isConnected());
+    } catch (e) {
+        return false;
+    }
+}
+
 // دالة تحليل آمنة لمهلة الربط للتأكد من قيمتها وحدودها
 function getAuthTimeoutMs() {
     const rawVal = process.env.STAGING_AUTH_TIMEOUT_MS || process.env.AUTH_TIMEOUT_MS;
@@ -328,7 +337,12 @@ async function handleTechnicalFailure(tenantId, reason) {
     console.warn(`⚠️ [waWeb:${k}] Technical failure triggered: ${reason}`);
 
     // Check if this is an official logout / disconnect from phone
-    const isLogout = isLogoutReason(reason) || isRevokedSession(reason);
+    // We only treat it as a real logout/revocation if:
+    // 1. The session was successfully connected at least once (s.lastVerifiedAt > 0).
+    // 2. The browser is still active and connected (meaning the page itself received the logout event, rather than the browser crashing or closing).
+    const isLogout = (isLogoutReason(reason) || isRevokedSession(reason)) && 
+                     (s.lastVerifiedAt > 0) && 
+                     isBrowserConnected(s.client);
 
     if (isLogout) {
         console.log(`[waWeb:${k}] Official logout/disconnect/revocation detected. Stopping session and cleaning auth.`);
@@ -480,6 +494,7 @@ function start(tenantId) {
                 webVersionCache: { type: 'remote', remotePath: WEB_VERSION },
                 puppeteer: {
                     headless: true,
+                    executablePath: '/usr/bin/google-chrome',
                     args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu', '--no-zygote', '--no-first-run']
                 }
             });
@@ -536,6 +551,10 @@ function start(tenantId) {
 
             client.on('disconnected', async (r) => {
                 if (s.client !== client) return;
+                if (s.status === 'syncing' || s.status === 'authenticated') {
+                    console.log(`⚠️ [waWeb:${k}] Ignored transient disconnected event during loading/syncing phase (Reason: ${r}) to allow stabilization.`);
+                    return;
+                }
                 await handleTechnicalFailure(k, `disconnected: ${r}`);
             });
 

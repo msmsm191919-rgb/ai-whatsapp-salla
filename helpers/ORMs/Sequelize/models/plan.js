@@ -23,7 +23,20 @@ module.exports = (sequelize, DataTypes) => {
                 type: DataTypes.INTEGER,
                 defaultValue: 0
             },
-            features: DataTypes.JSON, // Stores: { whatsapp_count: 1, scenarios: 'basic', etc }
+            features: {
+                type: DataTypes.JSON,
+                get() {
+                    const rawValue = this.getDataValue('features');
+                    if (typeof rawValue === 'string') {
+                        try {
+                            return JSON.parse(rawValue);
+                        } catch (e) {
+                            return {};
+                        }
+                    }
+                    return rawValue || {};
+                }
+            },
             is_active: {
                 type: DataTypes.BOOLEAN,
                 defaultValue: true

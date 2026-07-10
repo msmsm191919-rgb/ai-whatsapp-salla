@@ -145,7 +145,12 @@ async function getTenantPlan(tenantId) {
         include: [db.models.Plan]
     });
 
-    return sub?.Plan ? { name: sub.Plan.name, features: sub.Plan.features || {} } : null;
+    if (!sub || !sub.Plan) return null;
+    let features = sub.Plan.features || {};
+    if (typeof features === 'string') {
+        try { features = JSON.parse(features); } catch (e) { features = {}; }
+    }
+    return { name: sub.Plan.name, features };
 }
 
 /**

@@ -76,7 +76,7 @@
         cursor: pointer;
         transition: all 0.3s ease;
         border: none;
-        padding: 3px;
+        padding: 0;
     }
 
     .billing-toggle.active {
@@ -84,6 +84,9 @@
     }
 
     .billing-toggle .toggle-dot {
+        position: absolute;
+        top: 3px;
+        right: 3px;
         width: 24px;
         height: 24px;
         background: white;
@@ -93,7 +96,7 @@
     }
 
     .billing-toggle.active .toggle-dot {
-        transform: translateX(26px);
+        transform: translateX(-26px);
     }
 </style>
 {% endblock %}

@@ -81,19 +81,24 @@ router.get('/', async (req, res) => {
       limit: 5
     });
 
-    // Real chart data from last 7 days
+    // Real chart data from last 7 days (outgoing + incoming)
     const chartLabels = [];
-    const chartData = [];
+    const chartDataOut = [];
+    const chartDataIn = [];
     for (let i = 6; i >= 0; i--) {
       const d = new Date();
       d.setDate(d.getDate() - i);
       const dayStart = new Date(d); dayStart.setHours(0, 0, 0, 0);
       const dayEnd = new Date(d); dayEnd.setHours(23, 59, 59, 999);
       chartLabels.push(d.toLocaleDateString('ar-SA', { weekday: 'short' }));
-      const count = await db.models.MessageLog.count({
+      const outCount = await db.models.MessageLog.count({
         where: { tenant_id: tenant?.id, direction: 'out', created_at: { [Op.between]: [dayStart, dayEnd] } }
       });
-      chartData.push(count);
+      const inCount = await db.models.MessageLog.count({
+        where: { tenant_id: tenant?.id, direction: 'in', created_at: { [Op.between]: [dayStart, dayEnd] } }
+      });
+      chartDataOut.push(outCount);
+      chartDataIn.push(inCount);
     }
 
     const lastMonthKey = new Date(new Date().setMonth(new Date().getMonth() - 1)).toISOString().slice(0, 7);
@@ -108,6 +113,28 @@ router.get('/', async (req, res) => {
     const renewalDate = subEndDate
       ? new Date(subEndDate).toLocaleDateString('ar-SA', { year: 'numeric', month: 'long', day: 'numeric' })
       : 'غير محدد';
+
+    // V5 Dashboard: Abandoned carts stats
+    let totalCarts = 0, recoveredCarts = 0, recoveredValue = 0, recentCartsData = [];
+    try {
+      if (db.models.AbandonedCart) {
+        totalCarts = await db.models.AbandonedCart.count({ where: { tenant_id: tenant?.id } });
+        recoveredCarts = await db.models.AbandonedCart.count({ where: { tenant_id: tenant?.id, status: 'recovered' } });
+        // Get recovered value
+        const recoveredRows = await db.models.AbandonedCart.findAll({
+          where: { tenant_id: tenant?.id, status: 'recovered' },
+          attributes: ['cart_total']
+        });
+        recoveredValue = recoveredRows.reduce((sum, r) => sum + (parseFloat(r.cart_total) || 0), 0);
+        // Recent carts for table
+        recentCartsData = await db.models.AbandonedCart.findAll({
+          where: { tenant_id: tenant?.id },
+          order: [['created_at', 'DESC']],
+          limit: 4
+        });
+        recentCartsData = recentCartsData.map(c => c.get({ plain: true }));
+      }
+    } catch (e) { /* AbandonedCart model may not exist yet */ }
 
     const settings = tenant?.settings || {};
     const aiConfig = settings.ai_config || {};
@@ -134,6 +161,9 @@ router.get('/', async (req, res) => {
 
     const completionPercent = Math.round((completedSteps / 3) * 100);
 
+    // Store display name
+    const storeName = tenant?.store_name || req.user?.merchant?.name || 'متجرك';
+
     res.render('dashboard.html', {
       tenant, user: req.user, activePage: 'dashboard', isConnected,
       plan_name: planName, plan_price: isYearly ? priceYearly : priceMonthly,
@@ -146,11 +176,20 @@ router.get('/', async (req, res) => {
       messages_remaining: messagesRemaining, usage_percent: usagePercent,
       ai_replies: aiRequests, ai_growth: growthPercent.toFixed(1),
       campaigns_count: campaignsCount, contacts_count: contactsCount,
-      recentLogs, chartLabels: JSON.stringify(chartLabels), chartData: JSON.stringify(chartData),
+      recentLogs,
+      chartLabels: JSON.stringify(chartLabels),
+      chartData: JSON.stringify(chartDataOut),
+      chartDataIn: JSON.stringify(chartDataIn),
       is_persona_configured: isPersonaConfigured,
       is_scenarios_configured: isScenariosConfigured,
       completed_steps: completedSteps,
-      completion_percent: completionPercent
+      completion_percent: completionPercent,
+      // V5 new variables
+      store_name: storeName,
+      total_carts: totalCarts,
+      recovered_carts: recoveredCarts,
+      recovered_value: Math.round(recoveredValue),
+      recent_carts: recentCartsData
     });
   } catch (e) {
     console.error(e);
