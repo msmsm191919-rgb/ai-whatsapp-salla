@@ -1,0 +1,144 @@
+{
+  "source_metadata": {
+    "tenant_id": 99,
+    "proposal_status": "OWNER_REVIEW_REQUIRED",
+    "generated_for_review_only": true,
+    "database_write_authorized": false,
+    "timestamp": "2026-07-29T21:51:00Z"
+  },
+  "operational_settings": {
+    "bot_name": {
+      "proposed_value": "مبهر",
+      "source_type": "LEGACY_PROMPT_MANAGER",
+      "source_path": "scratch/tenant_99_backup_snapshot.json",
+      "confidence": "CANDIDATE_REQUIRES_OWNER_APPROVAL",
+      "owner_approval_required": true
+    },
+    "bot_tone": {
+      "proposed_value": "consultant",
+      "recommended_description": "سعودية بيضاء، ودودة واحترافية، تتعامل كمستشار مبيعات، تفهم احتياج المشروع قبل اقتراح الخدمة، وتشرح الفائدة التجارية دون ضغط أو مبالغة أو إفراط في الإيموجي.",
+      "legacy_value": "friendly",
+      "source_type": "LEGACY_PROMPT_MANAGER",
+      "confidence": "CANDIDATE_REQUIRES_OWNER_APPROVAL",
+      "owner_approval_required": true
+    },
+    "custom_instructions": {
+      "proposed_value": "تعليمات محتوى بلس المعزولة...",
+      "status": "PLACEHOLDER_NOT_APPROVED",
+      "source_type": "LEGACY_PROMPT_MANAGER",
+      "confidence": "PLACEHOLDER_NOT_APPROVED",
+      "owner_approval_required": true,
+      "note": "عبارة مؤقتة غير صالحة للإنتاج ولن تُكتب في قاعدة البيانات حتى اعتماد هيكل التعليمات الكامل."
+    }
+  },
+  "commercial_facts": {
+    "business_name": {
+      "proposed_value": "محتوى بلس",
+      "source_type": "LEGACY_PROMPT_MANAGER",
+      "source_path": "scratch/tenant_99_backup_snapshot.json",
+      "confidence": "CANDIDATE_REQUIRES_OWNER_APPROVAL",
+      "owner_approval_required": true
+    },
+    "business_description": {
+      "proposed_value": "مؤسسة متخصصة في خدمات المتاجر الإلكترونية والتسويق الرقمي وباقات المحتوى",
+      "source_type": "LEGACY_PROMPT_MANAGER",
+      "source_path": "scratch/tenant_99_backup_snapshot.json",
+      "confidence": "CANDIDATE_REQUIRES_OWNER_APPROVAL",
+      "owner_approval_required": true
+    },
+    "cr_number": {
+      "proposed_value": "2055157130",
+      "source_type": "LEGACY_PROMPT_MANAGER",
+      "source_path": "scratch/tenant_99_backup_snapshot.json",
+      "confidence": "CANDIDATE_REQUIRES_OWNER_APPROVAL",
+      "owner_approval_required": true,
+      "semantic_rule": "يُذكر كسجل تجاري فقط ولا يعتبر إثباتاً لـ توثيق الأعمال المعتمد"
+    },
+    "verification_number": {
+      "proposed_value": "0000210461",
+      "source_type": "LEGACY_PROMPT_MANAGER",
+      "source_path": "scratch/tenant_99_backup_snapshot.json",
+      "confidence": "CANDIDATE_REQUIRES_OWNER_APPROVAL",
+      "owner_approval_required": true,
+      "semantic_rule": "يُذكر كرقم توثيق الأعمال المعتمد بشكل صريح"
+    },
+    "website": {
+      "proposed_value": "mohtawaplus.com",
+      "source_type": "LEGACY_PROMPT_MANAGER",
+      "confidence": "CANDIDATE_REQUIRES_OWNER_APPROVAL",
+      "owner_approval_required": true
+    },
+    "services": [
+      {
+        "service_id": "SRV_01",
+        "service_name": "تصميم المتاجر الإلكترونية",
+        "service_description": "خدمة تصميم وتجهيز المتاجر الإلكترونية",
+        "status": "INCOMPLETE_SERVICE_INFORMATION",
+        "source_type": "LEGACY_PROMPT_MANAGER",
+        "confidence": "CANDIDATE_REQUIRES_OWNER_APPROVAL",
+        "what_is_included": "غير محدد بالتفصيل",
+        "what_is_not_included": "غير محدد",
+        "price_status": "MISSING",
+        "order_or_contact_link": "mohtawaplus.com",
+        "owner_approval_required": true
+      },
+      {
+        "service_id": "SRV_02",
+        "service_name": "باقات محتوى بلس",
+        "service_description": "باقات كتابة وإدارة المحتوى للمتاجر",
+        "status": "INCOMPLETE_SERVICE_INFORMATION",
+        "source_type": "LEGACY_PROMPT_MANAGER",
+        "confidence": "CANDIDATE_REQUIRES_OWNER_APPROVAL",
+        "what_is_included": "عبارة مجردة غير كافية لمعرفة البوت",
+        "what_is_not_included": "غير محدد",
+        "price_status": "MISSING",
+        "order_or_contact_link": "mohtawaplus.com",
+        "owner_approval_required": true
+      },
+      {
+        "service_id": "SRV_03",
+        "service_name": "تحسين محركات البحث (SEO)",
+        "service_description": "تهيئة المتاجر لمحركات البحث",
+        "status": "INCOMPLETE_SERVICE_INFORMATION",
+        "source_type": "LEGACY_PROMPT_MANAGER",
+        "confidence": "CANDIDATE_REQUIRES_OWNER_APPROVAL",
+        "what_is_included": "غير محدد بالتفصيل",
+        "what_is_not_included": "غير محدد",
+        "price_status": "MISSING",
+        "order_or_contact_link": "mohtawaplus.com",
+        "owner_approval_required": true
+      }
+    ],
+    "packages": [],
+    "prices": [],
+    "business_hours": {
+      "status": "MISSING",
+      "confidence": "MISSING",
+      "owner_approval_required": true
+    },
+    "policies": {
+      "status": "MISSING",
+      "confidence": "MISSING",
+      "owner_approval_required": true
+    }
+  },
+  "missing_information_behavior_rules": {
+    "missing_price_behavior": "عدم التخمين أو ذكر مبالغ تقريبية والاعتذار بلطف والعرض على الموظف",
+    "missing_package_behavior": "عدم اختراع تفاصيل أو مكونات باقات غير مدعومة بمصدر رسمى",
+    "missing_duration_behavior": "عدم إعطاء مواعيد تنفيذ جزافية",
+    "missing_policy_behavior": "التصريح بأن السياسة تحتاج تأكيداً من خدمة العملاء",
+    "missing_business_hours_behavior": "التصريح بأن ساعات العمل غير محددة بالنظام حالياً",
+    "handoff_when_information_missing": "تحويل العميل للموظف فوراً عند الطلب أو الإصرار على معلومات غائبة"
+  },
+  "schema_audit": {
+    "runtime_reads_structured_cr_number": false,
+    "runtime_reads_structured_verification_number": false,
+    "runtime_reads_structured_services": false,
+    "runtime_reads_structured_official_links": false,
+    "runtime_reads_custom_text": true,
+    "prompt_manager_receives_structured_fields": false,
+    "structured_business_fields_runtime_mapping": "NOT_IMPLEMENTED",
+    "duplicate_fact_source_risk": "HIGH",
+    "database_write_ready": false
+  }
+}

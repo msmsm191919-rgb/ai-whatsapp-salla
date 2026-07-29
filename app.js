@@ -1012,7 +1012,7 @@ if (process.env.NODE_ENV === 'development') {
     }
 
     const merchantId = req.query.merchant_id || "682209569";
-    const storeName = req.query.store_name || "متجر محتوى بلس";
+    const storeName = req.query.store_name || "المتجر التجريبي";
 
     try {
       const db = SallaDatabase.connection;
@@ -2901,7 +2901,11 @@ app.post("/settings/ai", async (req, res) => {
         bot_tone: req.body.bot_tone,
         custom_instructions: req.body.custom_instructions,
         policy_return: req.body.policy_return,
-        shipping_time: req.body.shipping_time
+        shipping_time: req.body.shipping_time,
+        allow_discount: req.body.allow_discount === 'true' || req.body.allow_discount === 'on' || req.body.allow_discount === true,
+        discount_code: req.body.discount_code || '',
+        discount_value: req.body.discount_value ? Number(req.body.discount_value) : 0,
+        discount_type: req.body.discount_type || 'percentage'
       };
 
       if (!currentSettings.knowledge_base) {
@@ -2922,26 +2926,10 @@ app.post("/settings/ai", async (req, res) => {
   }
 });
 
-// Helper to build System Prompt from Config
-function buildSystemPrompt(config) {
-  if (!config || !config.custom_instructions) return null; // Use Default if no config
-
-  let toneDesc = "ودودة ومحترمة";
-  if (config.bot_tone === 'formal') toneDesc = "رسمية ومهنية جداً";
-  if (config.bot_tone === 'funny') toneDesc = "مرحة، خفيفة الظل، وتستخدم نكت بسيطة";
-
-  return `
-أنت مساعد ذكي للمتجر.
-- اسمك: "${config.bot_name || 'مبهر'}"
-- اللهجة/الأسلوب: ${toneDesc}
-- سياسة الاسترجاع: ${config.policy_return || 'حسب النظام'}
-- مدة التوصيل: ${config.shipping_time || 'غير محدد'}
-
-تعليمات خاصة ومهمة جداً من التاجر:
-${config.custom_instructions}
-
-وظيفتك مساعدة العملاء بناءً على هذه المعلومات.
-    `.trim();
+// Helper to build System Prompt from Config (Unified with PromptManager)
+function buildSystemPrompt(config, storeInfo = {}) {
+  const PromptManager = require('./services/PromptManager');
+  return PromptManager.buildSalesAgentPrompt(storeInfo, config);
 }
 
 

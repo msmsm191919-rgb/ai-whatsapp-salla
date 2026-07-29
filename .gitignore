@@ -5,6 +5,7 @@
 .env.local
 .env.production
 .env.staging
+.env.staging.test
 .env.development
 !.env.example
 !.env.staging.example
@@ -77,3 +78,5 @@ NOTES.md
 TODO.md
 SCRATCH.md
 *.local.md
+
+scratch/

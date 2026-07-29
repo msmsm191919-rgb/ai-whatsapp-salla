@@ -114,16 +114,23 @@ class AIService {
             const sallaStoreDesc = await SallaProductKnowledgeService.getStoreDescription(tenantId);
             let storeDescription = '';
             if (sallaStoreDesc) {
-                storeDescription = sallaStoreDesc.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim().slice(0, 500);
+                storeDescription = sallaStoreDesc.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim().slice(0, 2000);
             }
             if (!storeDescription && kbConfig.custom_text) {
-                storeDescription = kbConfig.custom_text.slice(0, 500);
+                storeDescription = kbConfig.custom_text.slice(0, 2000);
             }
 
             const storeInfo = {
-                name: tenant.store_name,
-                domain: tenant.store_domain,
+                name: kbConfig.business_name || tenant.store_name,
+                domain: kbConfig.website || kbConfig.official_links || tenant.store_domain,
                 description: storeDescription,
+                cr_number: kbConfig.cr_number || tenant.cr_number,
+                verification_number: kbConfig.verification_number || tenant.verification_number,
+                services: kbConfig.services,
+                packages: kbConfig.packages,
+                prices: kbConfig.prices,
+                business_hours: kbConfig.business_hours,
+                policies: kbConfig.policies,
                 shipping_policy: shippingPolicy,
                 return_policy: returnPolicy,
                 custom_text: kbConfig.custom_text
@@ -138,15 +145,26 @@ class AIService {
             const config = {
                 bot_name: aiConfig.bot_name || 'مبهر',
                 bot_tone: aiConfig.bot_tone || 'friendly',
-                custom_instructions: aiConfig.custom_instructions
+                custom_instructions: aiConfig.custom_instructions,
+                allow_discount: aiConfig.allow_discount === true,
+                discount_code: aiConfig.discount_code || '',
+                discount_value: aiConfig.discount_value || 0,
+                discount_type: aiConfig.discount_type || 'percentage',
+                discount_min_order: aiConfig.discount_min_order || 0,
+                discount_scope: aiConfig.discount_scope || 'all_products',
+                discount_valid_until: aiConfig.discount_valid_until || null
             };
 
-            const systemPrompt = PromptManager.buildSalesAgentPrompt(storeInfo, config);
+            // Detect complaint or anger keywords for tone safety override
+            const complaintKeywords = ['شكوى', 'غاضب', 'زعلان', 'استرجاع', 'احتيال', 'تاخير', 'تأخير', 'فلوسي', 'سرقة'];
+            const isComplaint = complaintKeywords.some(kw => String(userMessage).toLowerCase().includes(kw));
+
+            const systemPrompt = PromptManager.buildSalesAgentPrompt(storeInfo, config, { isComplaint });
             console.log(`[AIService] Injected system prompt length: ${systemPrompt.length} characters.`);
 
             // 4. Transform Previous Messages to OpenAI Format
             const history = previousMessages.map(msg => ({
-                role: msg.fromMe ? 'assistant' : 'user', // Adjust based on your message model (fromMe/author)
+                role: msg.fromMe ? 'assistant' : 'user',
                 content: msg.body
             }));
 
@@ -166,17 +184,24 @@ class AIService {
                 model: "gpt-4o-mini", // GPT-4o Mini for all plans without exception
                 messages: [
                     { role: "system", content: systemPrompt },
-                    ...history.slice(-5) // Keep last 5 turns for context (optimization)
+                    ...history.slice(-15) // Keep last 15 messages for deep conversational memory
                 ],
-                max_tokens: 200,
-                temperature: 0.7,
+                max_tokens: 450,
+                temperature: 0.5,
             });
 
             const aiReply = completion.choices[0].message.content;
 
-            // 6. Increment Usage Counter
-            await this.incrementAIUsage(tenantId);
-            await this.recordAiUsage(tenantId, completion, 'bot_reply', actualRequestId);
+            // 6. Increment Usage Counter and Record Log (Skipped in Simulator or explicit skip option)
+            const isSimulatorMode = options.isSimulator === true || options.skipUsage === true;
+            if (!isSimulatorMode) {
+                await this.incrementAIUsage(tenantId);
+                if (!options.skipAiUsageLog) {
+                    await this.recordAiUsage(tenantId, completion, 'bot_reply', actualRequestId);
+                }
+            } else {
+                console.log(`[AIService] Simulation mode active for tenant ${tenantId}: Usage counters & production logs skipped.`);
+            }
 
             return aiReply;
 
