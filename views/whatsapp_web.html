@@ -191,28 +191,30 @@
             el('logoutBtn').classList.add('hidden');
         }
 
-        if (['error', 'disconnected', 'ready', 'auth_required'].includes(status)) {
-            if (pollTimer) {
-                clearInterval(pollTimer);
-                pollTimer = null;
-            }
-        }
+        // Continuous polling prevents race conditions if state changes asynchronously
     }
+    let autoStarted = false;
     async function poll() {
-        try { setStatus(await (await fetch('/api/wa-web/status')).json()); } catch (e) {}
+        try { 
+            const data = await (await fetch('/api/wa-web/status')).json();
+            setStatus(data);
+            if ((!data.status || data.status === 'disconnected') && !autoStarted) {
+                autoStarted = true;
+                startWa();
+            }
+        } catch (e) {}
     }
     async function startWa() {
-        document.getElementById('startBtn').innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري الإقلاع...';
+        const btn = document.getElementById('startBtn');
+        if (btn) btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري الإقلاع...';
         await fetch('/api/wa-web/start', { method: 'POST' });
-        if (!pollTimer) pollTimer = setInterval(poll, 2500);
         poll();
     }
     async function logoutWa() {
         await fetch('/api/wa-web/logout', { method: 'POST' });
-        if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
         location.reload();
     }
     poll();
-    pollTimer = setInterval(poll, 3000);
+    setInterval(poll, 3000);
 </script>
 {% endblock %}
