@@ -397,9 +397,7 @@
             <div class="v5-kpi-body">
                 <div style="display:flex;align-items:baseline;gap:4px;">
                     <span class="v5-kpi-val">{{ messages_sent | default(0) }}</span>
-                    {% if plan_name == 'الأساسية' %}
-                    <span class="v5-kpi-unit">/ {{ msg_limit }}</span>
-                    {% endif %}
+                    <span class="v5-kpi-unit">رسالة</span>
                 </div>
             </div>
             <svg class="v5-sparkline" viewBox="0 0 100 30" preserveAspectRatio="none">

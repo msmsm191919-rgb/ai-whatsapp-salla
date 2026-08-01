@@ -1452,26 +1452,38 @@ async function ensureSubscriptionActive(req, res, next) {
   }
 }
 
+function isAdminSession(req) {
+    if (!req) return false;
+    if (req.session && (req.session.isAdmin || req.session.role === 'admin' || req.session.role === 'super_admin')) {
+        return true;
+    }
+    const role = req.session?.user?.role || req.session?.role || req.user?.role;
+    if (role === 'admin' || role === 'super_admin') return true;
+    if (req.user && req.user.platform === 'admin') return true;
+    return false;
+}
+
 async function requireAdmin(req, res, next) {
   // Skip for admin login/logout routes (handled by dedicated handlers above)
   if (req.originalUrl.startsWith('/admin/login') || req.originalUrl.startsWith('/admin/logout')) {
     return next();
   }
 
-  // Check if user has admin session (from standalone admin login)
-  if (req.session && req.session.isAdmin && req.user && req.user.platform === 'admin') {
+  // 1. Unified Admin Session Check (Super Admin / Admin)
+  if (isAdminSession(req)) {
     return next();
   }
 
+  // 2. Unauthenticated Check
   if (!req.isAuthenticated() && !(req.user && req.user.merchant && req.user.merchant.id)) {
     if (req.xhr || req.headers.accept?.includes('json') || req.originalUrl.startsWith('/api') || req.method === 'POST') {
-      return res.status(403).json({ ok: false, error: 'Unauthorized: Admin privileges required' });
+      return res.status(401).json({ ok: false, error: 'Unauthorized: Admin privileges required' });
     }
     return res.redirect('/admin/login');
   }
 
   try {
-    const merchantId = String(req.user.merchant.id);
+    const merchantId = req.user?.merchant?.id ? String(req.user.merchant.id) : null;
     const adminEmails = process.env.ADMIN_EMAILS
       ? process.env.ADMIN_EMAILS.split(',').map(e => e.trim().toLowerCase())
       : [];
@@ -1479,14 +1491,14 @@ async function requireAdmin(req, res, next) {
       ? process.env.ADMIN_MERCHANT_IDS.split(',').map(id => id.trim())
       : [];
 
-    // 1. Check Merchant ID
-    if (adminMerchantIds.includes(merchantId)) {
+    // 3. Check Merchant ID against adminMerchantIds
+    if (merchantId && adminMerchantIds.includes(merchantId)) {
       return next();
     }
 
-    // 2. Check Email (Session or DB)
-    let email = (req.user.merchant.email || req.user.email || '').toLowerCase().trim();
-    if (!email) {
+    // 4. Check Email against adminEmails
+    let email = (req.user?.merchant?.email || req.user?.email || '').toLowerCase().trim();
+    if (!email && merchantId) {
       const db = SallaDatabase.connection;
       if (db && db.models?.Tenant) {
         const tenant = await db.models.Tenant.findOne({
