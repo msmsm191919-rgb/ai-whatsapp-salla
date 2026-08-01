@@ -1287,6 +1287,15 @@ app.post('/connect/standalone', async (req, res) => {
 });
 
 app.get("/", async function (req, res) {
+  const host = (req.headers.host || '').toLowerCase();
+  if (host.startsWith('app.')) {
+    if (req.user) {
+      return res.redirect('/dashboard');
+    } else {
+      return res.redirect('/admin/login');
+    }
+  }
+
   let userDetails = {
     user: req.user,
     isLogin: req.user,
