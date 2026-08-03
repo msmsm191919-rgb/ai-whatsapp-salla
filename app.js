@@ -2498,13 +2498,19 @@ app.get("/whatsapp-web", ensureAuthenticated, async (req, res) => {
     const userToRender = {
       ...req.user,
       tenant_id: tenant.id,
+      store_name: tenant.store_name,
       merchant: {
         ...(req.user?.merchant || {}),
         name: tenant.store_name
       }
     };
 
-    res.render("whatsapp_web.html", { user: userToRender, activePage: 'wa_web' });
+    res.render("whatsapp_web.html", { 
+      user: userToRender, 
+      activePage: 'wa_web', 
+      store_name: tenant.store_name,
+      tenant_id: tenant.id 
+    });
   } catch (e) {
     console.error("Error rendering whatsapp-web:", e);
     res.redirect('/login');
