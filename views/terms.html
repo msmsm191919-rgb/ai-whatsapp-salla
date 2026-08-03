@@ -22,9 +22,15 @@
                 </div>
                 <span class="text-lg font-black text-slate-900">مبهر <span class="text-[#118ab2]">AI</span></span>
             </a>
+            {% if user %}
+            <a href="/dashboard" class="text-xs font-bold text-slate-500 hover:text-[#7b2ff7] flex items-center gap-1.5 transition-colors">
+                <i class="fa-solid fa-arrow-right"></i> العودة للوحة التحكم
+            </a>
+            {% else %}
             <a href="/" class="text-xs font-bold text-slate-500 hover:text-[#7b2ff7] flex items-center gap-1.5 transition-colors">
                 <i class="fa-solid fa-arrow-right"></i> العودة للرئيسية
             </a>
+            {% endif %}
         </div>
     </header>
 

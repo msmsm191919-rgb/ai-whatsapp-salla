@@ -1,6 +1,7 @@
 const OpenAI = require('openai');
 const SallaDatabase = require('../database/db_instance');
 const PromptManager = require('./PromptManager');
+const crypto = require('crypto');
 
 // OpenAI Instance (Global)
 // OpenAI Instance (Lazy Init)
@@ -24,7 +25,8 @@ const BASE_SYSTEM_PROMPT = `
 
 class AIService {
 
-    async generateReply(tenantId, userMessage, customerName = 'عميلنا', previousMessages = []) {
+    async generateReply(tenantId, userMessage, customerName = 'عميلنا', previousMessages = [], aiRequestId = null) {
+        const actualRequestId = aiRequestId || crypto.randomUUID();
         try {
             const planGate = require('./planGate');
             const access = await planGate.checkTenantAccess(tenantId);
@@ -112,16 +114,23 @@ class AIService {
             const sallaStoreDesc = await SallaProductKnowledgeService.getStoreDescription(tenantId);
             let storeDescription = '';
             if (sallaStoreDesc) {
-                storeDescription = sallaStoreDesc.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim().slice(0, 500);
+                storeDescription = sallaStoreDesc.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim().slice(0, 2000);
             }
             if (!storeDescription && kbConfig.custom_text) {
-                storeDescription = kbConfig.custom_text.slice(0, 500);
+                storeDescription = kbConfig.custom_text.slice(0, 2000);
             }
 
             const storeInfo = {
-                name: tenant.store_name,
-                domain: tenant.store_domain,
+                name: kbConfig.business_name || tenant.store_name,
+                domain: kbConfig.website || kbConfig.official_links || tenant.store_domain,
                 description: storeDescription,
+                cr_number: kbConfig.cr_number || tenant.cr_number,
+                verification_number: kbConfig.verification_number || tenant.verification_number,
+                services: kbConfig.services,
+                packages: kbConfig.packages,
+                prices: kbConfig.prices,
+                business_hours: kbConfig.business_hours,
+                policies: kbConfig.policies,
                 shipping_policy: shippingPolicy,
                 return_policy: returnPolicy,
                 custom_text: kbConfig.custom_text
@@ -136,15 +145,26 @@ class AIService {
             const config = {
                 bot_name: aiConfig.bot_name || 'مبهر',
                 bot_tone: aiConfig.bot_tone || 'friendly',
-                custom_instructions: aiConfig.custom_instructions
+                custom_instructions: aiConfig.custom_instructions,
+                allow_discount: aiConfig.allow_discount === true,
+                discount_code: aiConfig.discount_code || '',
+                discount_value: aiConfig.discount_value || 0,
+                discount_type: aiConfig.discount_type || 'percentage',
+                discount_min_order: aiConfig.discount_min_order || 0,
+                discount_scope: aiConfig.discount_scope || 'all_products',
+                discount_valid_until: aiConfig.discount_valid_until || null
             };
 
-            const systemPrompt = PromptManager.buildSalesAgentPrompt(storeInfo, config);
+            // Detect complaint or anger keywords for tone safety override
+            const complaintKeywords = ['شكوى', 'غاضب', 'زعلان', 'استرجاع', 'احتيال', 'تاخير', 'تأخير', 'فلوسي', 'سرقة'];
+            const isComplaint = complaintKeywords.some(kw => String(userMessage).toLowerCase().includes(kw));
+
+            const systemPrompt = PromptManager.buildSalesAgentPrompt(storeInfo, config, { isComplaint });
             console.log(`[AIService] Injected system prompt length: ${systemPrompt.length} characters.`);
 
             // 4. Transform Previous Messages to OpenAI Format
             const history = previousMessages.map(msg => ({
-                role: msg.fromMe ? 'assistant' : 'user', // Adjust based on your message model (fromMe/author)
+                role: msg.fromMe ? 'assistant' : 'user',
                 content: msg.body
             }));
 
@@ -164,16 +184,24 @@ class AIService {
                 model: "gpt-4o-mini", // GPT-4o Mini for all plans without exception
                 messages: [
                     { role: "system", content: systemPrompt },
-                    ...history.slice(-5) // Keep last 5 turns for context (optimization)
+                    ...history.slice(-15) // Keep last 15 messages for deep conversational memory
                 ],
-                max_tokens: 200,
-                temperature: 0.7,
+                max_tokens: 450,
+                temperature: 0.5,
             });
 
             const aiReply = completion.choices[0].message.content;
 
-            // 6. Increment Usage Counter
-            await this.incrementAIUsage(tenantId);
+            // 6. Increment Usage Counter and Record Log (Skipped in Simulator or explicit skip option)
+            const isSimulatorMode = options.isSimulator === true || options.skipUsage === true;
+            if (!isSimulatorMode) {
+                await this.incrementAIUsage(tenantId);
+                if (!options.skipAiUsageLog) {
+                    await this.recordAiUsage(tenantId, completion, 'bot_reply', actualRequestId);
+                }
+            } else {
+                console.log(`[AIService] Simulation mode active for tenant ${tenantId}: Usage counters & production logs skipped.`);
+            }
 
             return aiReply;
 
@@ -184,7 +212,8 @@ class AIService {
         }
     }
 
-    async generateOrderNotification(tenantId, customerName, orderId, orderTotal) {
+    async generateOrderNotification(tenantId, customerName, orderId, orderTotal, aiRequestId = null) {
+        const actualRequestId = aiRequestId || crypto.randomUUID();
         try {
             const planGate = require('./planGate');
             const access = await planGate.checkTenantAccess(tenantId);
@@ -221,6 +250,10 @@ class AIService {
                 temperature: 0.7,
             });
 
+            // Increment AI Usage
+            await this.incrementAIUsage(tenantId);
+            await this.recordAiUsage(tenantId, completion, 'order_notification', actualRequestId);
+
             return completion.choices[0].message.content;
         } catch (e) {
             if (e.message.includes("Plan Gate Blocked")) throw e;
@@ -229,7 +262,8 @@ class AIService {
         }
     }
 
-    async generateCartRecovery(tenantId, customerName, cartTotal, cartItems = []) {
+    async generateCartRecovery(tenantId, customerName, cartTotal, cartItems = [], aiRequestId = null) {
+        const actualRequestId = aiRequestId || crypto.randomUUID();
         try {
             const planGate = require('./planGate');
             const access = await planGate.checkTenantAccess(tenantId);
@@ -280,6 +314,7 @@ class AIService {
 
             // Increment AI Usage
             await this.incrementAIUsage(tenantId);
+            await this.recordAiUsage(tenantId, completion, 'cart_recovery', actualRequestId);
 
             return completion.choices[0].message.content;
 
@@ -290,7 +325,8 @@ class AIService {
         }
     }
 
-    async generateReviewRequest(tenantId, customerName, orderId, orderTotal) {
+    async generateReviewRequest(tenantId, customerName, orderId, orderTotal, aiRequestId = null) {
+        const actualRequestId = aiRequestId || crypto.randomUUID();
         try {
             const planGate = require('./planGate');
             const access = await planGate.checkTenantAccess(tenantId);
@@ -333,6 +369,7 @@ class AIService {
 
             // Increment AI Usage
             await this.incrementAIUsage(tenantId);
+            await this.recordAiUsage(tenantId, completion, 'review_request', actualRequestId);
 
             return completion.choices[0].message.content;
 
@@ -366,6 +403,112 @@ class AIService {
     mockResponse(msg, storeName) {
         if (msg.includes('طلب')) return "أهلاً بك في " + storeName + ". يرجى تزويدنا برقم الطلب للمساعدة 📦";
         return "أهلاً بك في " + storeName + "! كيف يمكننا خدمتك اليوم؟ ✨";
+    }
+
+    /**
+     * Record detailed AI usage securely in database
+     */
+    async recordAiUsage(tenantId, completion, featureSource, aiRequestId = null) {
+        try {
+            const db = SallaDatabase.connection;
+            if (!db || !db.models?.AiUsageLog) {
+                console.warn("[AIService] Database or AiUsageLog model is not available for recording usage.");
+                return;
+            }
+
+            if (!completion) return;
+
+            // Generate providerRequestId exactly per specs:
+            // openai:<completion.id> if completion.id exists
+            // internal:<aiRequestId> if completion.id is missing and aiRequestId is provided
+            let providerRequestId;
+            if (completion.id) {
+                providerRequestId = 'openai:' + completion.id;
+            } else if (aiRequestId) {
+                providerRequestId = 'internal:' + aiRequestId;
+            } else {
+                const fallbackId = `fallback_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
+                providerRequestId = 'internal:' + fallbackId;
+            }
+
+            // Deduplicate Check: check if provider_request_id already exists
+            const existing = await db.models.AiUsageLog.findOne({ where: { provider_request_id: providerRequestId } });
+            if (existing) {
+                console.warn(`[AIService] Duplicate request id ${providerRequestId} detected, skipping save.`);
+                return;
+            }
+
+            // Extract prompt, completion and total tokens from standard or alternate formats
+            const usage = completion.usage || {};
+            const promptTokens = usage.prompt_tokens !== undefined ? usage.prompt_tokens : (usage.input_tokens || 0);
+            const completionTokens = usage.completion_tokens !== undefined ? usage.completion_tokens : (usage.output_tokens || 0);
+            const totalTokens = usage.total_tokens !== undefined ? usage.total_tokens : (promptTokens + completionTokens);
+
+            // Extract cached input tokens from prompt_tokens_details or input_tokens_details or direct properties
+            let cachedTokens = 0;
+            if (usage.prompt_tokens_details && usage.prompt_tokens_details.cached_tokens !== undefined) {
+                cachedTokens = usage.prompt_tokens_details.cached_tokens;
+            } else if (usage.input_tokens_details && usage.input_tokens_details.cached_tokens !== undefined) {
+                cachedTokens = usage.input_tokens_details.cached_tokens;
+            } else if (usage.cached_tokens !== undefined) {
+                cachedTokens = usage.cached_tokens;
+            }
+
+            const modelUsed = completion.model || 'gpt-4o-mini';
+
+            // Versioned pricing structure as required
+            const AI_PRICING = {
+                version: "gpt-4o-mini-2026-07",
+                models: {
+                    "gpt-4o-mini": {
+                        input_per_million: 0.15,
+                        cached_input_per_million: 0.075,
+                        output_per_million: 0.60
+                    }
+                }
+            };
+
+            // Normalize models starting with gpt-4o-mini
+            let pricingKey = null;
+            if (modelUsed.startsWith("gpt-4o-mini")) {
+                pricingKey = "gpt-4o-mini";
+            }
+            const modelPricing = pricingKey ? AI_PRICING.models[pricingKey] : AI_PRICING.models[modelUsed];
+            let estimatedCost = 0.0;
+            let pricingStatus = "priced";
+
+            if (!modelPricing) {
+                pricingStatus = "unknown_model";
+                estimatedCost = 0.0;
+                console.warn(`[AIService] Alert: Unknown AI model returned: ${modelUsed}. Cost set to 0, pricing_status marked as unknown_model.`);
+            } else {
+                const nonCached = Math.max(0, promptTokens - cachedTokens);
+                const inputCost = (nonCached / 1000000) * modelPricing.input_per_million;
+                const cachedCost = (cachedTokens / 1000000) * modelPricing.cached_input_per_million;
+                const outputCost = (completionTokens / 1000000) * modelPricing.output_per_million;
+                estimatedCost = inputCost + cachedCost + outputCost;
+            }
+
+            await db.models.AiUsageLog.create({
+                tenant_id: tenantId,
+                provider_request_id: providerRequestId,
+                prompt_tokens: promptTokens,
+                completion_tokens: completionTokens,
+                cached_tokens: cachedTokens,
+                total_tokens: totalTokens,
+                model: modelUsed,
+                estimated_cost: estimatedCost,
+                currency: "USD",
+                pricing_version: AI_PRICING.version,
+                pricing_status: pricingStatus,
+                request_status: "success",
+                feature_source: featureSource
+            });
+
+        } catch (error) {
+            // Cleaned error log, avoiding leakage of prompts or customer info
+            console.error("❌ Failed to log AI usage:", error.message);
+        }
     }
 }
 

@@ -11,6 +11,22 @@ const qrcode = require('qrcode');
 
 const WEB_VERSION = 'https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.3000.1040093096-alpha.html';
 
+const createWorker = global.createWorker || function(fn) {
+    if (global.SAFE_MODE && global.SAFE_MODE.locked !== true) {
+        console.error("❌ FATAL: SAFE_MODE.locked is compromised!");
+        process.exit(1);
+    }
+    const isSafe = global.SAFE_MODE?.enabled || (
+        process.env.NODE_ENV === 'staging' &&
+        process.env.STAGING_SAFE_MODE === 'true' &&
+        process.env.FORCE_SAFE_BYPASS !== 'true'
+    );
+    if (isSafe) {
+        return function NOOP_WORKER() { return null; };
+    }
+    return fn;
+};
+
 // خريطة الجلسات: المفتاح = معرّف التاجر، القيمة = حالة جلسته
 const sessions = new Map();
 
@@ -37,7 +53,9 @@ function _session(tenantId) {
             lastVerifiedAt: 0,
             lastErrorCode: '',
             logoutIntent: false,
-            halfOpenTrial: false
+            halfOpenTrial: false,
+            cleaning: false,
+            syncPercent: 0
         });
     }
     return sessions.get(k);
@@ -69,7 +87,7 @@ function _startReadyPoller(tenantId) {
     const s = _session(tenantId);
     if (s.poller) return;
     let tries = 0;
-    s.poller = setInterval(async () => {
+    s.poller = setInterval(async function readyPollerWorker() {
         tries++;
         if (s.status === 'ready' || tries > 40 || !s.client) { clearInterval(s.poller); s.poller = null; return; }
         try {
@@ -89,7 +107,8 @@ function _cleanLocks(clientId) {
     try {
         const fs = require('fs');
         const path = require('path');
-        const sessDir = path.join(process.cwd(), '.wwebjs_auth', 'session-' + clientId);
+        const authDataPath = process.env.WWEBJS_AUTH_PATH || './.wwebjs_auth';
+        const sessDir = path.resolve(authDataPath, 'session-' + clientId);
         for (const f of ['SingletonLock', 'SingletonCookie', 'SingletonSocket']) {
             const p = path.join(sessDir, f);
             if (fs.existsSync(p)) { try { fs.rmSync(p, { force: true }); } catch (e) {} }
@@ -134,90 +153,180 @@ function _killProcessTree(pid) {
     }
 }
 
+// دالة تصنيف للتحقق من المهلة المؤقتة أثناء الربط
+function isTransientAuthTimeout(err) {
+    if (!err) return false;
+    const msg = typeof err === 'string' ? err : (err.message || String(err));
+    return msg.toLowerCase().includes('auth timeout');
+}
+
+// دالة تصنيف للتحقق من أسباب تسجيل الخروج أو إزالة الجهاز
+function isLogoutReason(reason) {
+    if (!reason) return false;
+    const r = typeof reason === 'string' ? reason : (reason.message || String(reason));
+    const norm = r.toUpperCase();
+    return norm.includes('LOGOUT') || norm.includes('UNPAIRED');
+}
+
+// دالة تصنيف للتحقق من إلغاء الترخيص أو فقدان الجلسة بشكل كامل
+function isRevokedSession(errOrReason) {
+    if (!errOrReason) return false;
+    const r = typeof errOrReason === 'string' ? errOrReason : (errOrReason.message || String(errOrReason));
+    const norm = r.toUpperCase();
+    return norm.includes('LOGOUT') || norm.includes('UNPAIRED') || norm.includes('AUTH_FAILURE') || norm.includes('REVOKED');
+}
+
+// دالة للتحقق مما إذا كان اتصال متصفح puppeteer لا يزال نشطاً
+function isBrowserConnected(client) {
+    try {
+        return !!(client && client.pupBrowser && client.pupBrowser.isConnected());
+    } catch (e) {
+        return false;
+    }
+}
+
+// دالة تحليل آمنة لمهلة الربط للتأكد من قيمتها وحدودها
+function getAuthTimeoutMs() {
+    const rawVal = process.env.STAGING_AUTH_TIMEOUT_MS || process.env.AUTH_TIMEOUT_MS;
+    let parsed = parseInt(rawVal, 10);
+    const defaultVal = 300000; // 5 دقائق كقيمة افتراضية
+    const minVal = 15000;      // حد أدنى 15 ثانية
+    const maxVal = 900000;     // حد أقصى 15 دقيقة
+    if (isNaN(parsed) || parsed <= 0) {
+        return defaultVal;
+    }
+    if (parsed < minVal) return minVal;
+    if (parsed > maxVal) return maxVal;
+    return parsed;
+}
+
+// الدالة الموحدة لتنظيف موارد الجلسة وعمليات المتصفح العالقة مع حماية المجلدات
+function _deleteSessionDirectory(clientId) {
+    const tenantIdStr = String(clientId);
+    // 1. تحقق من أن معرف التاجر هو رقم صالح فقط لمنع الهجمات
+    if (!/^\d+$/.test(tenantIdStr)) {
+        console.error(`❌ [waWeb:${tenantIdStr}] _deleteSessionDirectory: Invalid tenant ID format.`);
+        return;
+    }
+
+    try {
+        const fs = require('fs');
+        const path = require('path');
+        const authDataPath = process.env.WWEBJS_AUTH_PATH || './.wwebjs_auth';
+        
+        // 2. استخدام realpath/resolve
+        const resolvedAuthPath = path.resolve(authDataPath);
+        const targetDir = path.join(resolvedAuthPath, 'session-' + tenantIdStr);
+        const resolvedTargetDir = path.resolve(targetDir);
+
+        // 3. تأكد أن المسار النهائي يقع داخل مجلد الجلسات الرئيسي فقط (منع Path Traversal)
+        if (!resolvedTargetDir.startsWith(resolvedAuthPath + path.sep)) {
+            console.error(`❌ [waWeb:${tenantIdStr}] _deleteSessionDirectory: Path traversal attempt blocked! Path: ${resolvedTargetDir}`);
+            return;
+        }
+
+        if (fs.existsSync(resolvedTargetDir)) {
+            fs.rmSync(resolvedTargetDir, { recursive: true, force: true });
+            console.log(`🧹 [waWeb:${tenantIdStr}] Deleted session directory: ${resolvedTargetDir}`);
+        }
+    } catch (e) {
+        console.error(`❌ [waWeb:${tenantIdStr}] Failed to delete session directory:`, e.message);
+    }
+}
+
 // الدالة الموحدة لتنظيف موارد الجلسة وعمليات المتصفح العالقة
 async function cleanupSessionResources(tenantId, reason) {
     const k = String(tenantId);
     const s = sessions.get(k);
     if (!s) return;
-
-    console.log(`🧹 [waWeb:${k}] Cleaning up resources (Reason: ${reason})...`);
-
-    // Capture PID fallback if not already captured
-    if (!s.browserPid && s.client && s.client.pupBrowser && s.client.pupBrowser.process()) {
-        s.browserPid = s.client.pupBrowser.process().pid;
-        console.log(`[waWeb:${k}] Captured browser process PID on cleanup fallback: ${s.browserPid}`);
+    if (s.cleaning) {
+        console.log(`[waWeb:${k}] cleanupSessionResources: cleanup already in progress (ignored)`);
+        return;
     }
+    s.cleaning = true;
 
-    // 1. إيقاف الـ Timers والـ Pollers الخاصة بالجلسة
-    if (s.poller) { clearInterval(s.poller); s.poller = null; }
-    if (s.reconnectTimer) { clearTimeout(s.reconnectTimer); s.reconnectTimer = null; }
+    try {
+        console.log(`🧹 [waWeb:${k}] Cleaning up resources (Reason: ${reason})...`);
 
-    // 2. إزالة مستمعي الأحداث الذين تمت إضافتهم بواسطة مبهر
-    if (s.client) {
-        try {
-            s.client.removeAllListeners('qr');
-            s.client.removeAllListeners('loading_screen');
-            s.client.removeAllListeners('authenticated');
-            s.client.removeAllListeners('ready');
-            s.client.removeAllListeners('auth_failure');
-            s.client.removeAllListeners('disconnected');
-            s.client.removeAllListeners('message_create');
-        } catch (e) {
-            console.error(`[waWeb:${k}] Error removing listeners:`, e.message);
+        // Capture PID fallback if not already captured
+        if (!s.browserPid && s.client && s.client.pupBrowser && s.client.pupBrowser.process()) {
+            s.browserPid = s.client.pupBrowser.process().pid;
+            console.log(`[waWeb:${k}] Captured browser process PID on cleanup fallback: ${s.browserPid}`);
         }
-    }
 
-    // 3. تدمير العميل بأمان مع مهلة أمان قصوى 8 ثوانٍ
-    let destroyedGracefully = false;
-    const originalClient = s.client;
-    if (originalClient) {
-        try {
-            const destroyPromise = originalClient.destroy().then(() => { destroyedGracefully = true; });
-            const timeoutPromise = new Promise(r => setTimeout(r, 8000));
-            await Promise.race([destroyPromise, timeoutPromise]);
-        } catch (e) {
-            console.error(`[waWeb:${k}] Error destroying client:`, e.message);
-        }
-    }
+        // 1. إيقاف الـ Timers والـ Pollers الخاصة بالجلسة
+        if (s.poller) { clearInterval(s.poller); s.poller = null; }
+        if (s.reconnectTimer) { clearTimeout(s.reconnectTimer); s.reconnectTimer = null; }
 
-    // 4. محاولة إغلاق المتصفح طبيعياً
-    if (originalClient && originalClient.pupBrowser && !destroyedGracefully) {
-        try {
-            await originalClient.pupBrowser.close();
-        } catch (e) {
-            // تجاهل
-        }
-    }
-
-    // 5. قتل العمليات المستهدفة يدوياً كخيار أخير إذا بقيت العملية حية
-    const pid = s.browserPid;
-    if (pid) {
-        try {
-            let exists = false;
+        // 2. إزالة مستمعي الأحداث الذين تمت إضافتهم بواسطة مبهر
+        if (s.client) {
             try {
-                process.kill(pid, 0);
-                exists = true;
+                s.client.removeAllListeners('qr');
+                s.client.removeAllListeners('loading_screen');
+                s.client.removeAllListeners('authenticated');
+                s.client.removeAllListeners('ready');
+                s.client.removeAllListeners('auth_failure');
+                s.client.removeAllListeners('disconnected');
+                s.client.removeAllListeners('message_create');
             } catch (e) {
-                exists = false;
+                console.error(`[waWeb:${k}] Error removing listeners:`, e.message);
             }
-            if (exists) {
-                _killProcessTree(pid);
-            }
-        } catch (e) {
-            // تجاهل
         }
-        s.browserPid = null;
-    }
 
-    s.client = null;
+        // 3. تدمير العميل بأمان مع مهلة أمان قصوى 8 ثوانٍ
+        let destroyedGracefully = false;
+        const originalClient = s.client;
+        if (originalClient) {
+            try {
+                const destroyPromise = originalClient.destroy().then(() => { destroyedGracefully = true; });
+                const timeoutPromise = new Promise(r => setTimeout(r, 8000));
+                await Promise.race([destroyPromise, timeoutPromise]);
+            } catch (e) {
+                console.error(`[waWeb:${k}] Error destroying client:`, e.message);
+            }
+        }
 
-    // 6. تحديث الحالة
-    if (reason === 'logout' || reason === 'auth_failure') {
-        s.status = (reason === 'auth_failure') ? 'auth_required' : 'disconnected';
-        s.qr = '';
-    } else if (reason === 'expired') {
-        s.status = 'subscription_expired';
-        s.qr = '';
+        // 4. محاولة إغلاق المتصفح طبيعياً
+        if (originalClient && originalClient.pupBrowser && !destroyedGracefully) {
+            try {
+                await originalClient.pupBrowser.close();
+            } catch (e) {
+                // تجاهل
+            }
+        }
+
+        // 5. قتل العمليات المستهدفة يدوياً كخيار أخير إذا بقيت العملية حية
+        const pid = s.browserPid;
+        if (pid) {
+            try {
+                let exists = false;
+                try {
+                    process.kill(pid, 0);
+                    exists = true;
+                } catch (e) {
+                    exists = false;
+                }
+                if (exists) {
+                    _killProcessTree(pid);
+                }
+            } catch (e) {
+                // تجاهل
+            }
+            s.browserPid = null;
+        }
+
+        s.client = null;
+
+        // 6. تحديث الحالة
+        if (reason === 'logout' || reason === 'auth_failure') {
+            s.status = (reason === 'auth_failure') ? 'auth_required' : 'disconnected';
+            s.qr = '';
+        } else if (reason === 'expired') {
+            s.status = 'subscription_expired';
+            s.qr = '';
+        }
+    } finally {
+        s.cleaning = false;
     }
 }
 
@@ -226,6 +335,21 @@ async function handleTechnicalFailure(tenantId, reason) {
     const s = _session(k);
     _starting.delete(k);
     console.warn(`⚠️ [waWeb:${k}] Technical failure triggered: ${reason}`);
+
+    // Check if this is an official logout / disconnect from phone
+    // We only treat it as a real logout/revocation if:
+    // 1. The session was successfully connected at least once (s.lastVerifiedAt > 0).
+    // 2. The browser is still active and connected (meaning the page itself received the logout event, rather than the browser crashing or closing).
+    const isLogout = (isLogoutReason(reason) || isRevokedSession(reason)) && 
+                     (s.lastVerifiedAt > 0) && 
+                     isBrowserConnected(s.client);
+
+    if (isLogout) {
+        console.log(`[waWeb:${k}] Official logout/disconnect/revocation detected. Stopping session and cleaning auth.`);
+        await cleanupSessionResources(k, 'auth_failure'); // Sets status to auth_required
+        _deleteSessionDirectory(k); // Clean session directory
+        return;
+    }
 
     // تنظيف الموارد فوراً
     await cleanupSessionResources(k, 'disconnected');
@@ -274,7 +398,7 @@ async function handleTechnicalFailure(tenantId, reason) {
 
     console.log(`⏳ [waWeb:${k}] Scheduling recovery attempt #${s.reconnectAttempt} in ${finalDelay}ms`);
 
-    s.reconnectTimer = setTimeout(async () => {
+    s.reconnectTimer = setTimeout(async function reconnectWorker() {
         const checkAcc = await pGate.checkTenantAccess(k);
         if (!checkAcc.allowed || s.logoutIntent) {
             console.log(`[waWeb:${k}] Recovery attempt aborted: status is ${checkAcc.reason}`);
@@ -297,8 +421,14 @@ function start(tenantId) {
         return getState(k);
     }
 
+    // 🔒 Block: إذا كانت الجلسة قيد التنظيف
+    if (s.cleaning) {
+        console.log(`[waWeb:${k}] start() مستدعى بينما الجلسة قيد التنظيف — تم التجاهل`);
+        return getState(k);
+    }
+
     // 🔒 Guard: جلسة شغّالة فعلاً
-    if (s.client && ['starting', 'qr', 'authenticated', 'ready'].includes(s.status)) {
+    if (s.client && ['starting', 'qr', 'authenticated', 'ready', 'syncing'].includes(s.status)) {
         console.log(`[waWeb:${k}] start() مستدعى والجلسة جاهزة (${s.status}) — تم التجاهل`);
         return getState(k);
     }
@@ -318,7 +448,9 @@ function start(tenantId) {
 
     // إقلاع غير متزامن
     _starting.add(k);
-    s.status = 'starting';
+    if (s.status !== 'syncing' && s.status !== 'starting') {
+        s.status = 'starting';
+    }
     s.qr = '';
     s.error = '';
     s.autoReplyActivatedTime = 0;
@@ -338,11 +470,31 @@ function start(tenantId) {
 
             _cleanLocks(k);
 
+            const fs = require('fs');
+            const path = require('path');
+            const authDataPath = process.env.WWEBJS_AUTH_PATH || './.wwebjs_auth';
+            const resolvedPath = path.resolve(authDataPath);
+            if (!fs.existsSync(resolvedPath)) {
+                fs.mkdirSync(resolvedPath, { recursive: true, mode: 0o700 });
+                if (process.env.NODE_ENV === 'staging') {
+                    console.log(`🛡️ [STAGING] Created staging session directory: ${resolvedPath}`);
+                }
+            }
+
+            const authTimeout = getAuthTimeoutMs();
+            console.log(`🚀 [waWeb:${k}] Initializing client with authTimeoutMs: ${authTimeout}`);
+
             const client = new Client({
-                authStrategy: new LocalAuth({ clientId: k }),
+                authStrategy: new LocalAuth({
+                    clientId: k,
+                    dataPath: resolvedPath
+                }),
+                authTimeoutMs: authTimeout,
+                qrMaxRetries: 5,
                 webVersionCache: { type: 'remote', remotePath: WEB_VERSION },
                 puppeteer: {
                     headless: true,
+                    executablePath: '/usr/bin/google-chrome',
                     args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu', '--no-zygote', '--no-first-run']
                 }
             });
@@ -359,13 +511,15 @@ function start(tenantId) {
             client.on('loading_screen', (pct, msg) => {
                 if (s.client !== client) return;
                 _capturePid(s);
+                s.status = 'syncing';
+                s.syncPercent = pct;
                 console.log(`⏳ [waWeb:${k}] تحميل ${pct}% ${msg || ''}`);
             });
 
             client.on('authenticated', () => {
                 if (s.client !== client) return;
                 _capturePid(s);
-                s.status = 'authenticated';
+                s.status = 'syncing';
                 s.qr = '';
                 console.log(`🔑 [waWeb:${k}] تمت المصادقة`);
                 _startReadyPoller(k);
@@ -377,6 +531,7 @@ function start(tenantId) {
                 _starting.delete(k);
                 s.status = 'ready';
                 s.qr = '';
+                s.initTries = 0;
                 s.lastVerifiedAt = Date.now();
                 s.reconnectAttempt = 0; // تصفير العداد بعد النجاح الفعلي
                 s.circuitOpen = false;  // Ensure circuit is closed
@@ -390,15 +545,20 @@ function start(tenantId) {
                 _starting.delete(k);
                 console.error(`❌ [waWeb:${k}] فشل المصادقة`, m);
                 await cleanupSessionResources(k, 'auth_failure');
+                _deleteSessionDirectory(k);
                 s.error = String(m);
             });
 
             client.on('disconnected', async (r) => {
                 if (s.client !== client) return;
+                if (s.status === 'syncing' || s.status === 'authenticated') {
+                    console.log(`⚠️ [waWeb:${k}] Ignored transient disconnected event during loading/syncing phase (Reason: ${r}) to allow stabilization.`);
+                    return;
+                }
                 await handleTechnicalFailure(k, `disconnected: ${r}`);
             });
 
-            // 💬 رد تلقائي ذكي
+            // 📩 الاستماع للرسائل الواردة
             client.on('message_create', async (msg) => {
                 if (s.client !== client) return;
                 try {
@@ -414,9 +574,9 @@ function start(tenantId) {
                         const cleanChatKey = HandoffService.getChatKey(chatKey);
 
                         const botCache = s.aiSentMsgs;
-                        const msgBodyTrimmed = (msg.body || '').trim();
-                        if (botCache && botCache.has(msgBodyTrimmed)) {
-                            botCache.delete(msgBodyTrimmed);
+                        const msgBodyTrimred = (msg.body || '').trim();
+                        if (botCache && botCache.has(msgBodyTrimred)) {
+                            botCache.delete(msgBodyTrimred);
                             return;
                         }
 
@@ -522,8 +682,24 @@ function start(tenantId) {
             await client.initialize();
         } catch (e) {
             _starting.delete(k);
-            console.error(`❌ [waWeb:${k}] Initialization error:`, e.message);
-            await handleTechnicalFailure(k, `init_failed: ${e.message}`);
+            const isTimeout = isTransientAuthTimeout(e);
+            const attempt = s.initTries + 1;
+            console.error(`❌ [waWeb:${k}] Initialization failed on attempt ${attempt}/2. Error: ${e.message || e}`);
+            
+            if (isTimeout && s.initTries < 2) {
+                s.initTries++;
+                console.log(`⚠️ [waWeb:${k}] Temporary timeout (Attempt ${s.initTries}/2). Re-initializing client without destroying auth files...`);
+                s.status = s.status === 'qr' ? 'starting' : 'syncing';
+                await cleanupSessionResources(k, 'timeout_retry');
+                setTimeout(() => {
+                    start(k);
+                }, 3000);
+            } else {
+                s.initTries = 0;
+                await handleTechnicalFailure(k, `init_failed: ${e.message || e}`);
+                s.status = 'auth_required';
+                s.error = String(e.message || e);
+            }
         }
     })();
 
@@ -556,6 +732,7 @@ async function logout(tenantId) {
     s.logoutIntent = true;
     _starting.delete(k);
     await cleanupSessionResources(k, 'logout');
+    _deleteSessionDirectory(k);
     s.logoutIntent = false;
 }
 
@@ -566,11 +743,12 @@ async function restart(tenantId) {
     return start(k);
 }
 
-function restoreAll() {
+const restoreAll = createWorker(function restoreAllSessionsWorker() {
     try {
         const fs = require('fs');
         const path = require('path');
-        const authDir = path.join(process.cwd(), '.wwebjs_auth');
+        const authDataPath = process.env.WWEBJS_AUTH_PATH || './.wwebjs_auth';
+        const authDir = path.resolve(authDataPath);
         if (!fs.existsSync(authDir)) return [];
         const ids = fs.readdirSync(authDir)
             .filter(d => d.startsWith('session-'))
@@ -586,7 +764,7 @@ function restoreAll() {
         console.error('[waWeb] restoreAll error:', e.message);
         return [];
     }
-}
+});
 
 async function destroyAll() {
     console.log(`🧹 [waWeb] Destroying all active WhatsApp clients gracefully...`);
@@ -604,7 +782,7 @@ async function destroyAll() {
 }
 
 // Health check poller (runs background check every 30 seconds)
-setInterval(async () => {
+setInterval(async function healthCheckPollerWorker() {
     for (const [k, s] of sessions.entries()) {
         if (s.client && s.status === 'ready') {
             try {

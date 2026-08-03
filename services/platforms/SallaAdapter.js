@@ -26,7 +26,7 @@ class SallaAdapter extends BaseAdapter {
 
     static getAuthorizationUrl(state, redirectUri) {
         const clientId = process.env.SALLA_OAUTH_CLIENT_ID || 'mock';
-        return `https://accounts.salla.sa/oauth2/auth?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=offline_access&state=${state}`;
+        return `https://accounts.salla.sa/oauth2/auth?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=offline_access%20products.read%20orders.read%20customers.read&state=${state}`;
     }
 
     static async exchangeCodeForToken(code, redirectUri) {

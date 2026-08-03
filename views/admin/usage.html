@@ -48,14 +48,23 @@
                             </div>
                         </td>
                         <td><span style="background:#eff6ff;color:#1d4ed8;padding:3px 10px;border-radius:8px;font-size:10px;font-weight:700;">{{ r.plan }}</span></td>
-                        <td style="font-family:Inter,sans-serif;font-weight:700;color:#374151;">{{ r.sent }}{% if r.limit > 0 %} <span style="color:#cbd5e1;font-weight:400;">/ {{ r.limit }}</span>{% endif %}</td>
+                        <td style="font-family:Inter,sans-serif;font-weight:700;color:#374151;">
+                            {{ r.sent }}
+                            {% if r.is_unlimited %}
+                            <span style="color:#cbd5e1;font-weight:400;">/ غير محدود</span>
+                            {% elif r.limit > 0 %}
+                            <span style="color:#cbd5e1;font-weight:400;">/ {{ r.limit }}</span>
+                            {% endif %}
+                        </td>
                         <td style="font-family:Inter,sans-serif;color:#64748b;">{{ r.ai }}</td>
                         <td style="min-width:120px;">
-                            {% if r.limit > 0 %}
-                            <div style="width:100px;background:#f1f5f9;border-radius:6px;height:6px;overflow:hidden;">
+                            {% if r.is_unlimited %}
+                            <span style="font-size:11px;color:#0d9488;font-weight:700;">غير محدود</span>
+                            {% elif r.limit > 0 %}
+                            <div style="width:100px;background:#f1f5f9;border-radius:6px;height:6px;overflow:hidden;display:inline-block;vertical-align:middle;margin-left:4px;">
                                 <div style="width:{{ r.pct }}%;background:{{ '#dc2626' if r.over else ('#f59e0b' if r.pct > 80 else '#0d9488') }};height:100%;border-radius:6px;"></div>
                             </div>
-                            <span style="font-size:10px;color:#94a3b8;">{{ r.pct }}%</span>
+                            <span style="font-size:10px;color:#94a3b8;font-family:Inter,sans-serif;">{{ r.pct }}%</span>
                             {% else %}<span style="font-size:11px;color:#cbd5e1;">—</span>{% endif %}
                         </td>
                         <td>
@@ -75,5 +84,175 @@
         </div>
     </div>
 
+    <!-- AI Detailed Usage Table -->
+    <div style="background:#fff;border:1px solid #e2e8f0;border-radius:16px;overflow:hidden;margin-top:20px;">
+        <div style="padding:16px 20px;border-bottom:1px solid #f1f5f9;background:#f8fafc;" class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <h3 class="font-bold text-slate-800" style="font-size:14px; font-family:Cairo,sans-serif;">تفاصيل استهلاك الذكاء الاصطناعي (AI)</h3>
+            <div class="flex gap-2 flex-wrap">
+                <!-- Merchant Filter -->
+                <select id="aiFilterTenant" onchange="filterAIStats()" style="background:#fff; border:1px solid #e2e8f0; border-radius:8px; padding:6px 10px; font-size:11px; font-weight:700; color:#64748b; outline:none; font-family:Cairo,sans-serif;">
+                    <option value="">كل المتاجر</option>
+                </select>
+                <!-- Month Filter -->
+                <select id="aiFilterMonth" onchange="filterAIStats()" style="background:#fff; border:1px solid #e2e8f0; border-radius:8px; padding:6px 10px; font-size:11px; font-weight:700; color:#64748b; outline:none; font-family:Cairo,sans-serif;">
+                    <option value="">كل الأشهر</option>
+                </select>
+                <!-- Model Filter -->
+                <select id="aiFilterModel" onchange="filterAIStats()" style="background:#fff; border:1px solid #e2e8f0; border-radius:8px; padding:6px 10px; font-size:11px; font-weight:700; color:#64748b; outline:none; font-family:Cairo,sans-serif;">
+                    <option value="">كل النماذج</option>
+                </select>
+                <!-- Source Filter -->
+                <select id="aiFilterSource" onchange="filterAIStats()" style="background:#fff; border:1px solid #e2e8f0; border-radius:8px; padding:6px 10px; font-size:11px; font-weight:700; color:#64748b; outline:none; font-family:Cairo,sans-serif;">
+                    <option value="">كل المصادر</option>
+                    <option value="bot_reply">رد تلقائي (bot_reply)</option>
+                    <option value="order_notification">حالة الطلب (order_notification)</option>
+                    <option value="cart_recovery">سلة متروكة (cart_recovery)</option>
+                    <option value="review_request">طلب تقييم (review_request)</option>
+                </select>
+            </div>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-right admin-table" id="aiStatsTable">
+                <thead>
+                    <tr>
+                        <th>المتجر</th>
+                        <th>الشهر</th>
+                        <th>النموذج</th>
+                        <th>المصدر</th>
+                        <th>الطلبات</th>
+                        <th>Prompt (Cached)</th>
+                        <th>Completion</th>
+                        <th>إجمالي التوكنز</th>
+                        <th>التكلفة التقديرية</th>
+                        <th>الحد / المتبقي</th>
+                        <th>النسبة</th>
+                        <th>حالة التسعير</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if aiStatsRows and aiStatsRows.length > 0 %}
+                    {% for row in aiStatsRows %}
+                    <tr class="ai-usage-row" 
+                        data-tenant="{{ row.store_name }}"
+                        data-month="{{ row.month }}"
+                        data-model="{{ row.model }}"
+                        data-source="{{ row.feature_source }}">
+                        <td>
+                            <span class="font-bold text-slate-800">{{ row.store_name }}</span>
+                            <span class="block text-[9px] font-mono" style="color:#94a3b8;">ID: {{ row.tenant_id }}</span>
+                        </td>
+                        <td style="font-family:Inter,sans-serif;color:#64748b;font-size:11px;">{{ row.month }}</td>
+                        <td>
+                            <span class="font-mono text-xs px-2 py-0.5 rounded" style="background:#f1f5f9; color:#475569;">
+                                {{ row.model }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="text-xs font-semibold px-2 py-0.5 rounded-lg" style="background:#f5f3ff; color:#7c3aed;">
+                                {{ row.feature_source }}
+                            </span>
+                        </td>
+                        <td style="font-family:Inter,sans-serif;font-weight:700;">{{ row.requests_count }}</td>
+                        <td style="font-family:Inter,sans-serif;color:#64748b;font-size:11px;">
+                            {{ row.prompt_tokens }}
+                            <span style="color:#94a3b8;font-weight:400;">({{ row.cached_tokens }})</span>
+                        </td>
+                        <td style="font-family:Inter,sans-serif;color:#64748b;font-size:11px;">{{ row.completion_tokens }}</td>
+                        <td style="font-family:Inter,sans-serif;font-weight:700;color:#374151;">{{ row.total_tokens }}</td>
+                        <td style="font-family:Inter,sans-serif;font-weight:700;color:#0d9488;">
+                            ${{ row.estimated_cost_formatted }}
+                        </td>
+                        <td style="font-family:Inter,sans-serif;font-size:11px;color:#64748b;">
+                            {% if row.is_unlimited %}
+                            غير محدود
+                            {% else %}
+                            {{ row.limit }} <span style="color:#cbd5e1;">/ {{ row.remaining }} متبقي</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if row.is_unlimited %}
+                            <span style="color:#0d9488;font-weight:700;font-size:11px;">—</span>
+                            {% else %}
+                            <div style="width:70px;background:#f1f5f9;border-radius:4px;height:4px;overflow:hidden;display:inline-block;vertical-align:middle;margin-left:4px;">
+                                <div style="width:{{ row.pct }}%;background:#8b5cf6;height:100%;"></div>
+                            </div>
+                            <span style="font-size:10px;color:#94a3b8;font-family:Inter,sans-serif;">{{ row.pct }}%</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if row.pricing_status == 'priced' %}
+                            <span style="background:#f0fdf4;color:#16a34a;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;">priced</span>
+                            {% elif row.pricing_status == 'unknown_model' %}
+                            <span style="background:#fffbeb;color:#d97706;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;border:1px solid #fde68a;">unknown_model ⚠️</span>
+                            {% else %}
+                            <span style="background:#fef2f2;color:#dc2626;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;">{{ row.pricing_status }}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    {% else %}
+                    <tr><td colspan="12" class="text-center py-12" style="color:#94a3b8;">لا توجد سجلات ذكاء اصطناعي تفصيلية حتى الآن</td></tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
 </div>
+
+<script>
+    // Populating dropdown filters dynamically
+    document.addEventListener("DOMContentLoaded", () => {
+        const tenants = new Set();
+        const months = new Set();
+        const models = new Set();
+        
+        document.querySelectorAll(".ai-usage-row").forEach(row => {
+            tenants.add(row.dataset.tenant);
+            months.add(row.dataset.month);
+            models.add(row.dataset.model);
+        });
+
+        const tenantSelect = document.getElementById("aiFilterTenant");
+        tenants.forEach(t => {
+            const opt = document.createElement("option");
+            opt.value = t; opt.textContent = t;
+            tenantSelect.appendChild(opt);
+        });
+
+        const monthSelect = document.getElementById("aiFilterMonth");
+        months.forEach(m => {
+            const opt = document.createElement("option");
+            opt.value = m; opt.textContent = m;
+            monthSelect.appendChild(opt);
+        });
+
+        const modelSelect = document.getElementById("aiFilterModel");
+        models.forEach(m => {
+            const opt = document.createElement("option");
+            opt.value = m; opt.textContent = m;
+            modelSelect.appendChild(opt);
+        });
+    });
+
+    function filterAIStats() {
+        const tenant = document.getElementById("aiFilterTenant").value;
+        const month = document.getElementById("aiFilterMonth").value;
+        const model = document.getElementById("aiFilterModel").value;
+        const source = document.getElementById("aiFilterSource").value;
+
+        document.querySelectorAll(".ai-usage-row").forEach(row => {
+            const mTenant = !tenant || row.dataset.tenant === tenant;
+            const mMonth = !month || row.dataset.month === month;
+            const mModel = !model || row.dataset.model === model;
+            const mSource = !source || row.dataset.source === source;
+
+            if (mTenant && mMonth && mModel && mSource) {
+                row.style.display = "";
+            } else {
+                row.style.display = "none";
+            }
+        });
+    }
+</script>
 {% endblock %}

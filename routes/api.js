@@ -5,20 +5,41 @@ const SallaDatabase = require('../database/db_instance');
 // Helper to get DB models safely
 const getModels = () => SallaDatabase.connection.models;
 
+const BillingService = require('../services/BillingService');
+
+// GET /api/billing/simulate-success (DEV ONLY)
+// ⛔ Route is ONLY registered in development — returns true 404 in staging/production
+// MUST be registered BEFORE the billing auth middleware to avoid 401 interception
+if (process.env.NODE_ENV === 'development') {
+  router.get('/billing/simulate-success', async (req, res) => {
+    try {
+      const { ref } = req.query;
+      if (!ref) return res.status(400).send("Missing ref");
+
+      const result = await BillingService.processPaymentSuccess(ref);
+      res.send(`<h1>Payment Success!</h1><pre>${JSON.stringify(result, null, 2)}</pre><a href="/dashboard">Return to Dashboard</a>`);
+    } catch (e) {
+      res.status(500).send("Error: " + e.message);
+    }
+  });
+}
+
 // 🔒 حماية مسارات الفواتير البرمجية للعملاء ومنع الدخول العشوائي
-router.use('/billing', (req, res, next) => {
+// Uses path-specific routes instead of blanket prefix middleware
+// to avoid intercepting unregistered routes (e.g., simulate-success in non-dev)
+const billingAuth = (req, res, next) => {
     if (req.user && req.user.merchant && req.user.merchant.id) {
         return next();
     }
     return res.status(401).json({ status: 'error', message: 'Authentication required' });
-});
+};
 
 // ------------------------------------------------------------------
 // 1. BILLING ROUTES (Client)
 // ------------------------------------------------------------------
 
 // GET /api/billing/summary
-router.get('/billing/summary', async (req, res) => {
+router.get('/billing/summary', billingAuth, async (req, res) => {
     try {
         const { Tenant, Subscription, Plan, UsageCounter } = getModels();
         const tenantId = req.user.merchant.id; // Correct lookup needed based on actual Auth
@@ -39,10 +60,8 @@ router.get('/billing/summary', async (req, res) => {
     }
 });
 
-const BillingService = require('../services/BillingService');
-
 // POST /api/billing/checkout
-router.post('/billing/checkout', async (req, res) => {
+router.post('/billing/checkout', billingAuth, async (req, res) => {
     try {
         const { plan_id, billing_period } = req.body;
 
@@ -54,23 +73,6 @@ router.post('/billing/checkout', async (req, res) => {
         res.json({ status: 'success', data: result });
     } catch (e) {
         res.status(500).json({ status: 'error', message: e.message });
-    }
-});
-
-// GET /api/billing/simulate-success (DEV ONLY)
-// ⛔ محمي: يمنع تزوير نجاح الدفع في الإنتاج
-router.get('/billing/simulate-success', async (req, res) => {
-    if (process.env.NODE_ENV === 'production') {
-        return res.status(404).send("Not found");
-    }
-    try {
-        const { ref } = req.query;
-        if (!ref) return res.status(400).send("Missing ref");
-
-        const result = await BillingService.processPaymentSuccess(ref);
-        res.send(`<h1>Payment Success!</h1><pre>${JSON.stringify(result, null, 2)}</pre><a href="/dashboard">Return to Dashboard</a>`);
-    } catch (e) {
-        res.status(500).send("Error: " + e.message);
     }
 });
 

@@ -6,15 +6,15 @@
     <title>{% block title %}مبهر AI{% endblock %}</title>
 
     <!-- Fonts: Cairo (Arabic) + Inter (Latin/Numbers) -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    
+    <link href="/css/fonts.css" rel="stylesheet">
 
     <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="/js/tailwind.js"></script>
 
     <!-- Font Awesome -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+    <link href="/css/all.min.css" rel="stylesheet">
 
     <script>
         tailwind.config = {
@@ -566,7 +566,7 @@
         <p style="font-size:11px; color:#94a3b8; margin-bottom:10px;">انقل بين الباقات لتختبر المميزات:</p>
 
         {% set plans_list = [
-            { name:'الأساسية', color:'#94a3b8', icon:'fa-paper-plane', desc:'49 ر.س | 3,000 رسالة | سيناريوهات أساسية' },
+            { name:'الأساسية', color:'#94a3b8', icon:'fa-paper-plane', desc:'49 ر.س | الرد الذكي وتكامل سلة | سيناريوهات أساسية' },
             { name:'النمو',    color:'#0d9488', icon:'fa-rocket',      desc:'149 ر.س | رسائل غير محدودة | حملات + أتمتة' },
             { name:'الشركات', color:'#7c3aed', icon:'fa-building',    desc:'299 ر.س | كل المميزات + API + White-label' }
         ] %}

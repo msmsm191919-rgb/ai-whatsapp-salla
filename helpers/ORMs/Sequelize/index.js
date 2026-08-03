@@ -11,6 +11,8 @@ const Campaign = require("./models/campaign");
 const Customer = require("./models/customer");
 const Cart = require("./models/cart");
 const Payment = require("./models/payment");
+const WebhookEvent = require("./models/webhookevent");
+const AiUsageLog = require("./models/aiusagelog");
 // const User = require("./models/user"); // Deprecated
 // const OauthTokens = require("./models/oauthtokens"); // Deprecated
 
@@ -22,21 +24,37 @@ module.exports = {
     const dbHost = process.env.DATABASE_SERVER || 'localhost';
     const dbUser = process.env.DATABASE_USERNAME || 'root';
     const dbPass = process.env.DATABASE_PASSWORD || '';
-    const dbName = process.env.DATABASE_NAME || 'salla_whatsapp_saas';
-    const dbDialect = process.env.SALLA_DATABASE_DIALECT || 'mysql';
+    const dbName = process.env.DATABASE_NAME || 'mubhir';
+    const dbPort = process.env.DATABASE_PORT || 3306;
 
-    if (dbDialect === 'sqlite') {
+    const dialect = process.env.SALLA_DATABASE_DIALECT || process.env.DATABASE_DIALECT || 'mysql';
+    const storage = process.env.SALLA_DATABASE_STORAGE || process.env.DATABASE_STORAGE || './database/salla_saas_v4.sqlite';
+
+    if (process.env.NODE_ENV === 'test') {
       sequelize = new Sequelize({
         dialect: 'sqlite',
-        storage: './database/salla_saas_v4.sqlite',
-        logging: false,
+        storage: ':memory:',
+        logging: false
+      });
+    } else if (dialect === 'sqlite') {
+      sequelize = new Sequelize({
+        dialect: 'sqlite',
+        storage: storage,
+        logging: false
       });
     } else {
-      console.log(`🔌 Connecting to MySQL (${dbName})...`);
       sequelize = new Sequelize(dbName, dbUser, dbPass, {
         host: dbHost,
+        port: dbPort,
         dialect: 'mysql',
         logging: false,
+        dialectOptions: {
+          charset: 'utf8mb4'
+        },
+        define: {
+          charset: 'utf8mb4',
+          collate: 'utf8mb4_unicode_ci'
+        }
       });
     }
 
@@ -52,6 +70,8 @@ module.exports = {
       Customer,
       Cart,
       Payment,
+      WebhookEvent,
+      AiUsageLog,
     ];
 
     // 1. Init all models

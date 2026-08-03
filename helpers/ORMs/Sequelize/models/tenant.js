@@ -52,11 +52,28 @@ module.exports = (sequelize, DataTypes) => {
             contact_email: DataTypes.STRING,
             contact_phone: DataTypes.STRING,
             status: {
-                type: DataTypes.ENUM('active', 'blocked_over_limit', 'blocked_payment', 'suspended_manual', 'degraded_webhook'),
+                type: DataTypes.ENUM('active', 'blocked_over_limit', 'blocked_payment', 'suspended_manual', 'degraded_webhook', 'inactive'),
                 defaultValue: 'active'
             },
             // Metadata configuration (Flexible JSON for future settings)
-            settings: DataTypes.JSON
+            settings: {
+                type: DataTypes.JSON,
+                get() {
+                    const rawValue = this.getDataValue('settings');
+                    if (!rawValue) return {};
+                    if (typeof rawValue === 'string') {
+                        try {
+                            return JSON.parse(rawValue);
+                        } catch (e) {
+                            return {};
+                        }
+                    }
+                    return rawValue;
+                },
+                set(value) {
+                    this.setDataValue('settings', value);
+                }
+            }
         },
         {
             sequelize,

@@ -1,12 +1,103 @@
-// Import Deps & Configure Environment Files (Loads production or development separately)
+// Import Deps & Configure Environment Files (Loads single-source env resolution)
 const path = require("path");
-const envFile = process.env.NODE_ENV === "production" ? ".env.production" : ".env.development";
-require("dotenv").config({ path: path.join(__dirname, envFile) });
-require("dotenv").config({ path: path.join(__dirname, ".env") }); // Fallback to default .env
+const dotenv = require("dotenv");
+const fs = require("fs");
+
+const nodeEnv = process.env.NODE_ENV || 'development';
+
+const envFileByEnvironment = {
+  production: '.env.production',
+  staging: '.env.staging',
+  development: '.env.development',
+  test: '.env.test'
+};
+
+const envFile = envFileByEnvironment[nodeEnv] || '.env.development';
+const resolvedEnvPath = path.join(__dirname, envFile);
+
+if (fs.existsSync(resolvedEnvPath)) {
+  dotenv.config({ path: resolvedEnvPath, override: false });
+} else {
+  if (nodeEnv === "production" || nodeEnv === "staging") {
+    console.error(`❌ FATAL: Environment config file ${envFile} is missing in ${nodeEnv} mode!`);
+    process.exit(1);
+  }
+}
+
+// Fail-Fast: Verify admin credentials are set in production/staging environments
+if (nodeEnv === "production" || nodeEnv === "staging") {
+  if (!process.env.ADMIN_EMAILS || !process.env.ADMIN_PASSWORD) {
+    console.error("❌ FATAL: ADMIN_EMAILS and ADMIN_PASSWORD must be configured in environment variables!");
+    process.exit(1);
+  }
+}
+
+// Initialize Global Runtime Guard
+const isStaging = nodeEnv === 'staging';
+const isSafeModeFlag = process.env.STAGING_SAFE_MODE === 'true';
+
+global.RUNTIME_GUARD = Object.freeze({
+  environment: nodeEnv,
+  staging: isStaging,
+  safeModeEnabled: isStaging && isSafeModeFlag,
+  locked: true
+});
+
+// Assert Runtime Guard Helper Function
+function assertRuntimeGuard() {
+  const guard = global.RUNTIME_GUARD;
+
+  if (!guard || guard.locked !== true) {
+    throw new Error('RUNTIME_GUARD_NOT_INITIALIZED');
+  }
+
+  if (process.env.NODE_ENV !== guard.environment) {
+    throw new Error('ENV_MISMATCH_DETECTED');
+  }
+
+  if (guard.staging && guard.safeModeEnabled !== true) {
+    throw new Error('STAGING_SAFE_MODE_REQUIRED');
+  }
+}
+
+// Run Initial Boot Validation
+assertRuntimeGuard();
+
+// Initialize Global Safe Mode Immutable Guard (Backward Compatibility Layer)
+global.SAFE_MODE = Object.freeze({
+  enabled: global.RUNTIME_GUARD.safeModeEnabled,
+  locked: true
+});
+
+if (global.SAFE_MODE.enabled) {
+  console.log("🛡️ [SAFE MODE] Immutable Safe Mode guard activated.");
+}
+
+// Initialize Global Deterministic Worker Factory
+global.createWorker = function createWorker(workerFn) {
+  if (global.SAFE_MODE?.enabled === true) {
+    const fnName = workerFn.name || 'anonymous';
+    return function NOOP_WORKER() {
+      console.log(`🛡️ [SAFE MODE] Deterministic worker execution bypassed: ${fnName}`);
+      return null;
+    };
+  }
+  return workerFn;
+};
 
 const express = require("express");
 const app = express();
 app.set('trust proxy', true);
+
+// Runtime validation middleware (Graceful Shutdown instead of process.exit)
+app.use((req, res, next) => {
+  if (process.env.NODE_ENV !== global.RUNTIME_GUARD.environment) {
+    console.error("❌ CRITICAL: NODE_ENV changed at runtime! Triggering central graceful shutdown...");
+    gracefulShutdown('ENV_MISMATCH_DETECTED', new Error('NODE_ENV changed from ' + global.RUNTIME_GUARD.environment + ' to ' + process.env.NODE_ENV));
+    return res.status(500).send("500 Internal Server Error");
+  }
+  next();
+});
 const session = require("express-session");
 const passport = require("passport");
 const nunjucks = require("nunjucks");
@@ -41,9 +132,58 @@ SallaWebhook.on("app.installed", (eventBody, userArgs) => {
   console.log("App Installed Event:", eventBody);
 });
 
-SallaWebhook.on("app.store.authorize", (eventBody, userArgs) => {
-  console.log("App Store Authorize Event:", eventBody);
-});
+SallaWebhook.on("app.store.authorize", createWorker(async (data, next) => {
+  try {
+    const merchantId = data.merchant;
+    const tokenData = data.data; // contains access_token, refresh_token, expires
+    
+    console.log(`🔑 [Webhook] Easy Mode app.store.authorize received for merchant: ${merchantId}`);
+    
+    if (!tokenData || !tokenData.access_token) {
+      throw new Error("Missing access_token in authorize payload");
+    }
+
+    const db = SallaDatabase.connection;
+    if (!db) return;
+
+    // 1. Fetch store info from Salla API using the new access token
+    const SallaAdapter = require('./services/platforms/SallaAdapter');
+    const storeInfo = await SallaAdapter.fetchStoreInfo(tokenData.access_token);
+
+    const ConnectService = require('./services/ConnectService');
+    
+    // 2. Create or update Tenant + Subscription + SallaOAuth (all handled by ConnectService.upsertTenantFromOAuth)
+    const expiresTimestamp = Number(tokenData.expires || 0);
+    const nowSecs = Math.floor(Date.now() / 1000);
+    const expires_in = expiresTimestamp > nowSecs ? (expiresTimestamp - nowSecs) : 86400;
+
+    const { tenant } = await ConnectService.upsertTenantFromOAuth({
+      platform: 'salla',
+      tokenData: {
+        access_token: tokenData.access_token,
+        refresh_token: tokenData.refresh_token,
+        expires_in: expires_in,
+        store_id: String(merchantId),
+        store_name: storeInfo.store_name,
+        store_domain: storeInfo.store_domain,
+        email: storeInfo.email,
+        owner_name: storeInfo.owner_name,
+        contact_phone: storeInfo.contact_phone
+      }
+    });
+
+    // Mark billing source as salla and integration status as active
+    const settings = tenant.settings || {};
+    await tenant.update({
+      status: 'active',
+      settings: { ...settings, billing_source: 'salla', salla_integration_status: 'active' }
+    });
+
+    console.log(`✅ [Webhook] Easy Mode tenant ${tenant.id} (${tenant.store_name}) authorized/updated successfully.`);
+  } catch (e) {
+    console.error("❌ Error processing app.store.authorize webhook:", e.message);
+  }
+}));
 
 SallaWebhook.on("all", (eventBody, userArgs) => {
   // Handle all events (Optional logging)
@@ -57,7 +197,7 @@ const ScenarioService = require('./services/ScenarioService');
 
 
 // Event Listeners for Scenarios
-SallaWebhook.on('basket.abandoned', async (data, next) => {
+SallaWebhook.on('basket.abandoned', createWorker(async (data, next) => {
   try {
     console.log('🛒 Basket Abandoned Event Received');
     const ScenarioService = require('./services/ScenarioService');
@@ -65,14 +205,14 @@ SallaWebhook.on('basket.abandoned', async (data, next) => {
   } catch (e) {
     console.error("Webhook Delegate Error:", e);
   }
-});
+}));
 
-SallaWebhook.on('order.created', async (data, next) => {
+SallaWebhook.on('order.created', createWorker(async (data, next) => {
   console.log('📦 New Order Created:', data.data.id);
   // Optional: Send Order Confirmation here
-});
+}));
 
-SallaWebhook.on('order.shipping.delivered', async (data, next) => {
+SallaWebhook.on('order.shipping.delivered', createWorker(async (data, next) => {
   try {
     console.log('🚚 Order Delivered Event (Triggering Review Request)');
     const ScenarioService = require('./services/ScenarioService');
@@ -80,24 +220,53 @@ SallaWebhook.on('order.shipping.delivered', async (data, next) => {
   } catch (e) {
     console.error("Order Delivered Error:", e);
   }
-});
+}));
 
-SallaWebhook.on('application/store', async (data, next) => {
+SallaWebhook.on('application/store', createWorker(async (data, next) => {
   console.log('🔔 Salla Store Updated:', data.merchant);
-});
+}));
+
+SallaWebhook.on('app.uninstalled', createWorker(async (data, next) => {
+  try {
+    const merchantId = data.merchant;
+    console.log(`🔌 [Webhook] App uninstalled event received for merchant: ${merchantId}`);
+    
+    const db = SallaDatabase.connection;
+    if (!db) return;
+    
+    const tenant = await db.models.Tenant.findOne({
+      where: { salla_merchant_id: merchantId }
+    });
+    
+    if (tenant) {
+      console.log(`🔌 [Webhook] Revoking Salla integration for Tenant ${tenant.id} (${tenant.store_name})`);
+      
+      // Update Salla integration status in settings
+      const settings = tenant.settings || {};
+      await tenant.update({ settings: { ...settings, salla_integration_status: 'revoked' } });
+      
+      // Clear Salla OAuth credentials
+      await db.models.SallaOAuth.destroy({ where: { tenant_id: tenant.id } });
+      
+      console.log(`✅ [Webhook] Tenant ${tenant.id} Salla integration revoked. WhatsApp session remains active.`);
+    }
+  } catch (e) {
+    console.error('❌ Error handling app.uninstalled webhook:', e);
+  }
+}));
 
 // ── سيناريو "تحديث حالة الطلب" ── يستجيب لـ Salla webhook
 const orderStatusScenario = require('./services/scenarios/orderStatus.scenario');
-SallaWebhook.on('order.status.updated', async (data, next) => {
+SallaWebhook.on('order.status.updated', createWorker(async (data, next) => {
   try {
     await orderStatusScenario.handle(data);
   } catch (e) {
     console.error('order.status.updated handler error:', e);
   }
-});
+}));
 
 // ── اشتراكات التطبيق الرسمية من سلة (Salla App Plans Subscriptions) ──
-SallaWebhook.on('app.subscription.started', async (data, next) => {
+SallaWebhook.on('app.subscription.started', createWorker(async (data, next) => {
   try {
     const merchantId = data.merchant;
     const planId = data.data?.plan?.id;
@@ -116,9 +285,9 @@ SallaWebhook.on('app.subscription.started', async (data, next) => {
   } catch (e) {
     console.error('Error in app.subscription.started listener:', e);
   }
-});
+}));
 
-SallaWebhook.on('app.subscription.renewed', async (data, next) => {
+SallaWebhook.on('app.subscription.renewed', createWorker(async (data, next) => {
   try {
     const merchantId = data.merchant;
     const planId = data.data?.plan?.id;
@@ -136,9 +305,9 @@ SallaWebhook.on('app.subscription.renewed', async (data, next) => {
   } catch (e) {
     console.error('Error in app.subscription.renewed listener:', e);
   }
-});
+}));
 
-SallaWebhook.on('app.subscription.expired', async (data, next) => {
+SallaWebhook.on('app.subscription.expired', createWorker(async (data, next) => {
   try {
     const merchantId = data.merchant;
     const subscriptionId = data.data?.id;
@@ -148,7 +317,7 @@ SallaWebhook.on('app.subscription.expired', async (data, next) => {
   } catch (e) {
     console.error('Error in app.subscription.expired listener:', e);
   }
-});
+}));
 
 
 const SallaAPI = new SallaAPIFactory({
@@ -291,36 +460,38 @@ nunjucksEnv.addGlobal('range', function (start, end, step) {
 app.use(express.static(__dirname + "/public"));
 
 // Body Parsers - MUST be before any verify middleware
-app.use(express.json({ limit: '12mb' }));            // 12mb لاستقبال صور الحملات (base64)
+app.use(express.json({
+  limit: '12mb',
+  verify: (req, res, buf) => {
+    if (req.originalUrl && req.originalUrl.startsWith('/webhook')) {
+      req.rawBody = buf;
+    }
+  }
+}));
 app.use(express.urlencoded({ extended: true, limit: '12mb' }));
 
 // Session & Passport configuration (MUST BE BEFORE ANY ROUTER OR ROUTE GUARD)
+if (process.env.NODE_ENV === 'staging' || process.env.NODE_ENV === 'production') {
+  const secret = process.env.SESSION_SECRET;
+  if (!secret) {
+    console.error("❌ FATAL: SESSION_SECRET is not defined in environment variables!");
+    process.exit(1);
+  }
+  if (secret.length < 32 || secret === "keyboard cat" || secret.includes("secret") || secret.includes("12345")) {
+    console.error("❌ FATAL: SESSION_SECRET is too weak or uses insecure default values (must be at least 32 characters long)!");
+    process.exit(1);
+  }
+}
+
+const sessionCookieName = process.env.SESSION_COOKIE_NAME || "connect.sid";
 app.use(
   session({
+    name: sessionCookieName,
     secret: process.env.SESSION_SECRET || "keyboard cat",
     resave: true,
-    saveUninitialized: true,
-    cookie: {
-      secure: 'auto',
-      sameSite: 'lax'
-    }
+    saveUninitialized: true
   })
 );
-
-// Dynamic session cookie attributes middleware for proxy (Nginx) & Salla iframe compatibility
-app.use((req, res, next) => {
-  if (req.session && req.session.cookie) {
-    const isSecure = req.secure || req.headers['x-forwarded-proto'] === 'https';
-    if (isSecure) {
-      req.session.cookie.secure = true;
-      req.session.cookie.sameSite = 'none';
-    } else {
-      req.session.cookie.secure = false;
-      req.session.cookie.sameSite = 'lax';
-    }
-  }
-  next();
-});
 app.use(passport.initialize());
 app.use(passport.session());
 
@@ -338,7 +509,6 @@ app.use(require('./services/planGate').injectPlanContext());
 // 🧪 حقن isDev للقوالب — يخفي أدوات التطوير (Dev Switcher) في الإنتاج
 app.use((req, res, next) => {
   res.locals.isDev = process.env.NODE_ENV !== 'production';
-  res.locals.APP_URL = process.env.APP_URL || '';
   next();
 });
 
@@ -346,7 +516,7 @@ app.use((req, res, next) => {
 // 'qr' = ربط QR متصل | 'api' = WhatsApp API مفعّل | 'none' = ما ربط شي بعد
 app.use(async (req, res, next) => {
   try {
-    const merchantId = req.user?.merchant?.id || 123456789;
+    const merchantId = req.user?.merchant?.id || (process.env.NODE_ENV === 'development' ? 123456789 : null);
     const db = SallaDatabase.connection;
     if (!db || !db.models?.Tenant) { res.locals.activeChannel = 'none'; return next(); }
     const tenant = await db.models.Tenant.findOne({ where: { salla_merchant_id: merchantId } });
@@ -365,11 +535,56 @@ app.use(async (req, res, next) => {
 
 // ⛔ حارس endpoints التطوير — يرجّع 404 في الإنتاج (يمنع تزوير الترقية/الدفع)
 const devOnly = (req, res, next) => {
-  if (process.env.NODE_ENV === 'production') {
+  if (process.env.NODE_ENV !== 'development') {
     return res.status(404).json({ ok: false, error: 'Not found' });
   }
   next();
 };
+
+// 🔐 Admin Login Routes — MUST be defined BEFORE ensureAuthenticated/requireAdmin middleware
+app.get('/admin/login', (req, res) => {
+  // If already has admin session, redirect to admin dashboard
+  if (req.session && req.session.isAdmin) {
+    return res.redirect('/admin');
+  }
+  const errorParam = req.query.error;
+  const error = errorParam === '1' ? 'بيانات الدخول غير صحيحة' : null;
+  res.render('admin/login.html', { error });
+});
+
+app.post('/admin/login', (req, res) => {
+  const { email, password } = req.body;
+  const adminEmails = process.env.ADMIN_EMAILS
+    ? process.env.ADMIN_EMAILS.split(',').map(e => e.trim().toLowerCase())
+    : [];
+  const adminPassword = process.env.ADMIN_PASSWORD;
+
+  if (
+    email &&
+    password &&
+    adminPassword &&
+    adminEmails.includes(email.toLowerCase().trim()) &&
+    password === adminPassword
+  ) {
+    // Create admin session
+    const userSession = {
+      merchant: { id: 'admin', name: 'مدير النظام', email: email.toLowerCase().trim() },
+      email: email.toLowerCase().trim(),
+      platform: 'admin'
+    };
+    req.login(userSession, (err) => {
+      if (err) {
+        console.error('[Admin Login] Session error:', err);
+        return res.redirect('/admin/login?error=1');
+      }
+      req.session.isAdmin = true;
+      res.redirect('/admin');
+    });
+  } else {
+    console.warn(`[SECURITY] Failed admin login attempt for email: ${email || 'empty'}`);
+    res.redirect('/admin/login?error=1');
+  }
+});
 
 // 🔒 حماية المسارات الخاصة بالـ SaaS ومنع أي وصول غير مصرح به أو Fallback للمتجر الافتراضي
 app.use([
@@ -408,7 +623,7 @@ app.get('/support', (req, res) => {
   res.render('support.html', {
     user: req.user,
     isLogin: req.user,
-    support_email: 'mubhirbot@gmail.com',
+    support_email: 'support@mubhirbot.com',
     support_whatsapp: process.env.SUPPORT_WHATSAPP_NUMBER || ''
   });
 });
@@ -416,7 +631,7 @@ app.get('/support', (req, res) => {
 // 🎨 Interactive Widget Demo & Preview Page
 app.get('/widget-demo', async (req, res) => {
   try {
-    const merchantId = req.user?.merchant?.id || 123456789;
+    const merchantId = req.user?.merchant?.id || (process.env.NODE_ENV === 'development' ? 123456789 : null);
     const db = SallaDatabase.connection;
     let planName = 'الأساسية';
     if (db && db.models?.Tenant) {
@@ -482,61 +697,64 @@ app.get('/simulate/abandoned-cart', devOnly, async (req, res) => {
 // (moved injectPlanContext to before routes — see line ~247)
 
 // Webhook Route
-app.post("/webhook", (req, res) => {
-  // 1. Log Information
-  console.log("------------------------------------------");
-  console.log("✅ تم استقبال Webhook");
-  console.log("Headers:", JSON.stringify(req.headers, null, 2));
-  console.log("Body:", JSON.stringify(req.body, null, 2));
-
-  // 2. Respond Immediately to Salla with JSON
-  res.status(200).json({ "ok": true });
-
-  // 3. Process Logic Safely in Background
+app.post("/webhook", async (req, res) => {
   try {
     const signature = req.headers['x-salla-signature'];
-    const token = req.headers.authorization;
+    if (!signature) {
+      console.error("❌ Webhook Reject: Missing x-salla-signature header");
+      return res.status(401).json({ ok: false, error: 'Missing x-salla-signature header' });
+    }
+
+    if (!req.rawBody) {
+      console.error("❌ Webhook Reject: Missing raw body buffer");
+      return res.status(400).json({ ok: false, error: 'Missing raw body buffer' });
+    }
+
+    if (!SALLA_WEBHOOK_SECRET) {
+      console.error("❌ FATAL: SALLA_WEBHOOK_SECRET is not configured!");
+      return res.status(500).json({ ok: false, error: 'Webhook secret not configured' });
+    }
+
+    // Timing-safe HMAC-SHA256 signature verification
+    const crypto = require('crypto');
+    const calculated = crypto
+      .createHmac('sha256', SALLA_WEBHOOK_SECRET)
+      .update(req.rawBody)
+      .digest('hex');
+
     let isValid = false;
-
-    if (signature && SALLA_WEBHOOK_SECRET) {
-      // 1. Verify via Signature Strategy (Real Salla Webhooks)
-      const crypto = require('crypto');
-      const calculated = crypto
-        .createHmac('sha256', SALLA_WEBHOOK_SECRET)
-        .update(JSON.stringify(req.body))
-        .digest('hex');
-      try {
-        isValid = crypto.timingSafeEqual(
-          Buffer.from(calculated, 'utf8'),
-          Buffer.from(signature, 'utf8')
-        );
-      } catch (e) {
-        isValid = false;
-      }
-      if (!isValid) {
-        console.error("❌ Webhook Signature Verification Failed.");
-      }
-    } else if (token && SALLA_WEBHOOK_SECRET) {
-      // 2. Verify via Token Strategy (Fallback for Local Simulation)
-      isValid = (token === SALLA_WEBHOOK_SECRET);
-      if (!isValid) {
-        console.error("❌ Webhook Authorization Token Mismatch.");
-      }
-    } else if (!SALLA_WEBHOOK_SECRET) {
-      // 3. Dev Mode (No secret set)
-      console.warn("⚠️ Webhook Warning: SALLA_WEBHOOK_SECRET is not set. Skipping verification.");
-      isValid = true;
+    try {
+      isValid = crypto.timingSafeEqual(
+        Buffer.from(calculated, 'utf8'),
+        Buffer.from(signature, 'utf8')
+      );
+    } catch (e) {
+      isValid = false;
     }
 
-    if (isValid) {
-      SallaWebhook.checkActions(req.body, SALLA_WEBHOOK_SECRET || token, {
-        /* userArgs */
-      });
-    } else {
-      console.error("❌ Webhook Verification Failed: Skipping event execution.");
+    if (!isValid) {
+      console.error("❌ Webhook Reject: Signature verification failed");
+      return res.status(401).json({ ok: false, error: 'Signature verification failed' });
     }
+
+    // Compute unique event fingerprint from rawBody
+    const fingerprint = crypto.createHash('sha256').update(req.rawBody).digest('hex');
+    const eventId = req.body.id || fingerprint;
+    const eventType = req.body.event;
+    const storeId = req.body.merchant;
+
+    // Enqueue event in Transactional Inbox
+    const WebhookInboxWorker = require('./services/WebhookInboxWorker');
+    const enqueueResult = await WebhookInboxWorker.enqueue('salla', eventId, eventType, storeId, req.rawBody.toString('utf8'));
+
+    if (enqueueResult.duplicate) {
+      return res.status(200).json({ ok: true, message: 'Duplicate event ignored' });
+    }
+
+    return res.status(200).json({ ok: true });
   } catch (error) {
-    console.error("❌ Exception inside Webhook logic:", error.message);
+    console.error("❌ Exception inside Webhook route:", error.message);
+    res.status(500).json({ ok: false, error: 'Internal Server Error' });
   }
 });
 
@@ -564,6 +782,11 @@ app.get("/webhook/meta", (req, res) => {
 // 2. Incoming Messages
 app.post("/webhook/meta", async (req, res) => {
   res.sendStatus(200); // Ack immediately
+
+  if (global.SAFE_MODE?.enabled === true && process.env.ALLOW_INSECURE_STAGING !== 'true') {
+    console.log('🛡️ [SAFE MODE] Blocked Meta webhook side effects (validation only allowed).');
+    return;
+  }
 
   const body = req.body;
   if (!body || !body.object) return;
@@ -727,83 +950,122 @@ app.get("/health", (req, res) => {
 // OTHER ROUTES
 // ---------------------------------------------------------
 
-app.get("/login/bypass", async (req, res) => {
+// Secure CLI-based login token exchange route (STAGING & DEVELOPMENT ONLY)
+app.get("/login/token", async (req, res) => {
   if (process.env.NODE_ENV === 'production') {
-    return res.status(404).json({ ok: false, error: 'Not found' });
+    return res.status(404).send("Not Found");
   }
+  const token = req.query.token;
+  if (!token) return res.status(400).send("Missing token");
 
-  const secret = req.query.secret;
-  if (secret !== 'mubhir1919') {
-    return res.status(403).send("🔒 Access Denied: Invalid Secret Code.");
-  }
+  const tokenPath = process.env.NODE_ENV === 'staging'
+    ? '/opt/mubhir-staging/data/login_tokens.json'
+    : path.resolve(__dirname, 'tests/security/login_tokens.json');
 
-  const merchantId = req.query.merchant_id || "682209569";
-  const storeName = req.query.store_name || "متجر محتوى بلس";
+  if (!fs.existsSync(tokenPath)) return res.status(403).send("Invalid or expired token");
 
+  let tokens = [];
   try {
-    const db = SallaDatabase.connection;
-    if (!db || !db.models?.Tenant) {
-      return res.status(500).send("Database not ready yet.");
-    }
-
-    // 1. Create or Find Tenant in DB
-    let tenant = await db.models.Tenant.findOne({ where: { salla_merchant_id: merchantId } });
-    if (!tenant) {
-      tenant = await db.models.Tenant.create({
-        salla_merchant_id: merchantId,
-        store_name: storeName,
-        email: "bypass@mubhirbot.com",
-        store_domain: "bypass-store.salla.sa",
-        platform: "salla"
-      });
-      // Ensure Trial Subscription
-      await SallaDatabase.ensureTrialSubscription(tenant.id);
-    }
-
-    // 2. Persist local test session through Passport
-    const userSession = {
-      merchant: {
-        id: merchantId,
-        name: storeName
-      },
-      tenant_id: tenant.id,
-      platform: "salla"
-    };
-
-    req.login(userSession, (err) => {
-      if (err) {
-        return res.status(500).send("Login session error: " + err.message);
-      }
-
-      req.session.save((saveErr) => {
-        if (saveErr) return res.status(500).send("Session save error: " + saveErr.message);
-        res.redirect("/dashboard?welcome=1");
-      });
-    });
+    tokens = JSON.parse(fs.readFileSync(tokenPath, 'utf8'));
   } catch (e) {
-    console.error("Bypass login error:", e);
-    res.status(500).send("Error: " + e.message);
+    return res.status(500).send("Error reading tokens");
   }
+
+  const tokenRecordIndex = tokens.findIndex(t => t.token === token && t.expiresAt > Date.now());
+  if (tokenRecordIndex === -1) {
+    return res.status(403).send("Invalid or expired token");
+  }
+
+  const tokenRecord = tokens[tokenRecordIndex];
+
+  // Remove token (single-use)
+  tokens.splice(tokenRecordIndex, 1);
+  try {
+    fs.writeFileSync(tokenPath, JSON.stringify(tokens), 'utf8');
+  } catch (e) {
+    return res.status(500).send("Error updating tokens store");
+  }
+
+  const userSession = {
+    merchant: {
+      id: tokenRecord.merchantId,
+      name: tokenRecord.storeName
+    },
+    tenant_id: tokenRecord.tenantId,
+    platform: "salla"
+  };
+
+  req.login(userSession, (err) => {
+    if (err) return res.status(500).send("Login session error: " + err.message);
+    req.session.save((saveErr) => {
+      if (saveErr) return res.status(500).send("Session save error: " + saveErr.message);
+      res.redirect("/dashboard?welcome=1");
+    });
+  });
 });
 
-app.get(["/oauth/redirect", "/login"], (req, res, next) => {
-  if (req.isAuthenticated() || (req.user && req.user.merchant && req.user.merchant.id)) {
-    const redirectTo = req.query.next || '/dashboard';
-    return res.redirect(redirectTo);
+// 🔒 Security Hardening: /login/bypass is completely disabled
+app.all("/login/bypass", (req, res) => {
+  return res.status(403).send("🔒 Access Denied: /login/bypass is permanently disabled.");
+});
+
+function validateOAuthState(req, res, next) {
+  const { state } = req.query;
+  const platform = req.params.platform || 'salla';
+
+  if (!state) {
+    console.error("❌ OAuth State Reject: Missing state parameter in callback.");
+    return res.status(400).send("Missing state parameter (CSRF Protection)");
   }
-  if (req.query.next) {
-    req.session.redirectTo = req.query.next;
+
+  const statesMap = req.session?.oauth_states || {};
+  const savedState = statesMap[state];
+
+  if (!savedState) {
+    if (platform === 'salla') {
+      console.warn("⚠️ [validateOAuthState] State not found in session (direct install from Salla App Store). Proceeding to let Salla passport exchange the code.");
+      return next();
+    }
+    console.error("❌ OAuth State Reject: State not found in session.");
+    return res.status(400).send("Invalid or expired state parameter (CSRF Protection)");
   }
+
+  const now = Date.now();
+  if (now - savedState.createdAt > 5 * 60 * 1000) {
+    delete req.session.oauth_states[state];
+    console.error("❌ OAuth State Reject: State has expired.");
+    return res.status(400).send("State parameter expired (CSRF Protection)");
+  }
+
+  // Single-use claim
+  delete req.session.oauth_states[state];
+
+  // Timing-safe check using timingSafeEqual
+  const crypto = require('crypto');
+  let match = false;
+  try {
+    const stateBuf = Buffer.from(state, 'utf8');
+    match = crypto.timingSafeEqual(stateBuf, Buffer.from(state, 'utf8'));
+  } catch (e) {
+    match = false;
+  }
+
+  if (!match) {
+    console.error("❌ OAuth State Reject: Timing-safe match failed.");
+    return res.status(400).send("State validation failed");
+  }
+
   next();
-}, passport.authenticate("salla"));
+}
+
+app.get(["/oauth/redirect", "/login"], passport.authenticate("salla"));
 
 app.get(
   "/oauth/callback",
+  validateOAuthState,
   passport.authenticate("salla", { failureRedirect: "/login" }),
   function (req, res) {
-    const redirectTo = req.session.redirectTo || "/dashboard?welcome=1";
-    delete req.session.redirectTo;
-    res.redirect(redirectTo);
+    res.redirect("/dashboard?welcome=1");
   }
 );
 
@@ -848,10 +1110,14 @@ app.get('/connect/:platform', (req, res) => {
       return res.render('standalone_signup.html', { activePage: 'connect' });
     }
 
-    const state = require('crypto').randomBytes(16).toString('hex');
+    const crypto = require('crypto');
+    const state = crypto.randomBytes(16).toString('hex');
     req.session = req.session || {};
-    req.session.oauth_state = state;
-    req.session.oauth_platform = platform;
+    req.session.oauth_states = req.session.oauth_states || {};
+    req.session.oauth_states[state] = {
+      platform,
+      createdAt: Date.now()
+    };
 
     // استخدام المتغير السحابي لسلة إن وجد لضمان مطابقة الـ pre-registered redirect urls
     const isLocal = req.get('host').includes('localhost') || req.get('host').includes('127.0.0.1');
@@ -879,7 +1145,7 @@ app.get('/connect/:platform', (req, res) => {
 });
 
 // GET /oauth/:platform/callback — يستقبل code من المنصة
-app.get('/oauth/:platform/callback', async (req, res) => {
+app.get('/oauth/:platform/callback', validateOAuthState, async (req, res) => {
   try {
     const { platform } = req.params;
     const { code, state, shop } = req.query;
@@ -923,9 +1189,7 @@ app.get('/oauth/:platform/callback', async (req, res) => {
         return res.status(500).send('Login session initialization failed');
       }
       req.session.save(() => {
-        const redirectTo = req.session.redirectTo || `/dashboard?welcome=${created ? '1' : '0'}&platform=${platform}`;
-        delete req.session.redirectTo;
-        res.redirect(redirectTo);
+        res.redirect(`/dashboard?welcome=${created ? '1' : '0'}&platform=${platform}`);
       });
     });
   } catch (e) {
@@ -971,6 +1235,15 @@ app.post('/connect/standalone', async (req, res) => {
 });
 
 app.get("/", async function (req, res) {
+  const host = (req.headers.host || '').toLowerCase();
+  if (host.startsWith('app.')) {
+    if (req.user) {
+      return res.redirect('/dashboard');
+    } else {
+      return res.redirect('/admin/login');
+    }
+  }
+
   let userDetails = {
     user: req.user,
     isLogin: req.user,
@@ -1041,7 +1314,21 @@ app.get("/logout", function (req, res) {
   });
 });
 
+app.get("/admin/logout", function (req, res) {
+  if (req.session) {
+    req.session.destroy(function (err) {
+      res.redirect("/admin/login");
+    });
+  } else {
+    res.redirect("/admin/login");
+  }
+});
+
 function ensureAuthenticated(req, res, next) {
+  // Skip auth for admin login/logout routes (handled separately)
+  if (req.originalUrl.startsWith('/admin/login') || req.originalUrl.startsWith('/admin/logout')) {
+    return next();
+  }
   console.log(`\n=================== [RUNTIME AUTH DEBUG] ===================`);
   console.log(`- Source Route: ${req.originalUrl}`);
   console.log(`- Session Tenant (req.user):`, req.user);
@@ -1054,9 +1341,14 @@ function ensureAuthenticated(req, res, next) {
   }
   console.log(`- Access Result: DENIED`);
   console.log(`- Fallback Reason: No authenticated session found (req.user is undefined or missing merchant ID)`);
-  console.log(`- Action: Redirecting to /login?next=/dashboard`);
+  if (req.originalUrl.startsWith('/api/')) {
+    console.log(`- Action: Returning 401 Unauthorized for API route`);
+    console.log(`============================================================\n`);
+    return res.status(401).json({ ok: false, error: 'Authentication required' });
+  }
+  console.log(`- Action: Redirecting to /login`);
   console.log(`============================================================\n`);
-  res.redirect('/login?next=/dashboard');
+  res.redirect('/login');
 }
 
 async function ensureSubscriptionActive(req, res, next) {
@@ -1108,16 +1400,38 @@ async function ensureSubscriptionActive(req, res, next) {
   }
 }
 
+function isAdminSession(req) {
+    if (!req) return false;
+    if (req.session && (req.session.isAdmin || req.session.role === 'admin' || req.session.role === 'super_admin')) {
+        return true;
+    }
+    const role = req.session?.user?.role || req.session?.role || req.user?.role;
+    if (role === 'admin' || role === 'super_admin') return true;
+    if (req.user && req.user.platform === 'admin') return true;
+    return false;
+}
+
 async function requireAdmin(req, res, next) {
+  // Skip for admin login/logout routes (handled by dedicated handlers above)
+  if (req.originalUrl.startsWith('/admin/login') || req.originalUrl.startsWith('/admin/logout')) {
+    return next();
+  }
+
+  // 1. Unified Admin Session Check (Super Admin / Admin)
+  if (isAdminSession(req)) {
+    return next();
+  }
+
+  // 2. Unauthenticated Check
   if (!req.isAuthenticated() && !(req.user && req.user.merchant && req.user.merchant.id)) {
     if (req.xhr || req.headers.accept?.includes('json') || req.originalUrl.startsWith('/api') || req.method === 'POST') {
-      return res.status(403).json({ ok: false, error: 'Unauthorized: Admin privileges required' });
+      return res.status(401).json({ ok: false, error: 'Unauthorized: Admin privileges required' });
     }
-    return res.redirect('/login');
+    return res.redirect('/admin/login');
   }
 
   try {
-    const merchantId = String(req.user.merchant.id);
+    const merchantId = req.user?.merchant?.id ? String(req.user.merchant.id) : null;
     const adminEmails = process.env.ADMIN_EMAILS
       ? process.env.ADMIN_EMAILS.split(',').map(e => e.trim().toLowerCase())
       : [];
@@ -1125,14 +1439,14 @@ async function requireAdmin(req, res, next) {
       ? process.env.ADMIN_MERCHANT_IDS.split(',').map(id => id.trim())
       : [];
 
-    // 1. Check Merchant ID
-    if (adminMerchantIds.includes(merchantId)) {
+    // 3. Check Merchant ID against adminMerchantIds
+    if (merchantId && adminMerchantIds.includes(merchantId)) {
       return next();
     }
 
-    // 2. Check Email (Session or DB)
-    let email = (req.user.merchant.email || req.user.email || '').toLowerCase().trim();
-    if (!email) {
+    // 4. Check Email against adminEmails
+    let email = (req.user?.merchant?.email || req.user?.email || '').toLowerCase().trim();
+    if (!email && merchantId) {
       const db = SallaDatabase.connection;
       if (db && db.models?.Tenant) {
         const tenant = await db.models.Tenant.findOne({
@@ -1608,8 +1922,8 @@ app.post("/api/scenarios/save", async (req, res) => {
 // 🛠️ DEV ONLY — تبديل الباقة الحالية للتطوير
 // GET /dev/switch-plan/:plan  → الأساسية | النمو | التاجر المحترف | الشركات
 // ⛔ محمي: يعمل فقط في بيئة التطوير. في الإنتاج يرجّع 404.
-app.get("/dev/switch-plan/:plan", async (req, res) => {
-  if (process.env.NODE_ENV === 'production') {
+app.get("/dev/switch-plan/:plan", devOnly, async (req, res) => {
+  if (process.env.NODE_ENV !== 'development') {
     return res.status(404).json({ ok: false, error: 'Not found' });
   }
   try {
@@ -2140,20 +2454,61 @@ app.get("/customers", async (req, res) => {
 // ═══════════════════════════════════════════════════════════════════
 // waWeb imported at top of file
 
-// يحلّ معرّف التاجر الحالي (للجلسة المنفصلة)
+// يحلّ معرّف التاجر الحالي بناءً على الجلسة المصادق عليها حصراً
 async function _waTenantId(req) {
-  if (!req.user) {
-    if (process.env.NODE_ENV === 'production') return null;
-    req.user = { merchant: { id: 123456789, name: 'Demo Merchant' } };
+  if (!req.user && !req.session?.tenantId) {
+    return null;
   }
   const db = SallaDatabase.connection;
-  const tenant = await db.models.Tenant.findOne({ where: { salla_merchant_id: req.user.merchant.id } });
-  return tenant ? tenant.id : null;
+  if (!db || !db.models?.Tenant) return null;
+
+  // 1. Deducing directly from session tenantId / user tenant_id
+  const tenantId = req.user?.tenant_id || req.session?.tenantId;
+  if (tenantId) {
+    const tenant = await db.models.Tenant.findByPk(tenantId);
+    return tenant ? tenant.id : null;
+  }
+
+  // 2. Deducing from authenticated merchant ID
+  if (req.user?.merchant?.id) {
+    const tenant = await db.models.Tenant.findOne({ where: { salla_merchant_id: req.user.merchant.id } });
+    return tenant ? tenant.id : null;
+  }
+
+  return null;
 }
 
-// صفحة الربط (QR)
-app.get("/whatsapp-web", (req, res) => {
-  res.render("whatsapp_web.html", { user: req.user, activePage: 'wa_web' });
+// صفحة الربط (QR) — مصادق عليها حصراً
+app.get("/whatsapp-web", ensureAuthenticated, async (req, res) => {
+  try {
+    const db = SallaDatabase.connection;
+    const tenantId = req.user?.tenant_id || req.session?.tenantId;
+    let tenant = null;
+
+    if (tenantId) {
+      tenant = await db.models.Tenant.findByPk(tenantId);
+    } else if (req.user?.merchant?.id) {
+      tenant = await db.models.Tenant.findOne({ where: { salla_merchant_id: req.user.merchant.id } });
+    }
+
+    if (!tenant) {
+      return res.redirect('/login');
+    }
+
+    const userToRender = {
+      ...req.user,
+      tenant_id: tenant.id,
+      merchant: {
+        ...(req.user?.merchant || {}),
+        name: tenant.store_name
+      }
+    };
+
+    res.render("whatsapp_web.html", { user: userToRender, activePage: 'wa_web' });
+  } catch (e) {
+    console.error("Error rendering whatsapp-web:", e);
+    res.redirect('/login');
+  }
 });
 
 // صفحة محاكي واتساب (Simulator)
@@ -2200,7 +2555,7 @@ function _normalizePhone(p) {
 
 async function _getCustomerTenant(req) {
   if (!req.user) {
-    if (process.env.NODE_ENV === 'production') return { db: SallaDatabase.connection, tenant: null };
+    if (process.env.NODE_ENV !== 'development') return { db: SallaDatabase.connection, tenant: null };
     req.user = { merchant: { id: 123456789, name: 'Demo Merchant' } };
   }
   const db = SallaDatabase.connection;
@@ -2397,8 +2752,7 @@ async function dispatchCampaign(campaignId, campaignImage = null) {
   console.log(`[Campaign] ✅ #${campaign.id} done. Sent: ${totalSent}, Failed: ${totalFailed}`);
 }
 
-// ⏰ معالج الحملات المجدولة — يفحص كل دقيقة
-setInterval(async () => {
+setInterval(createWorker(async function campaignPollerWorker() {
   try {
     const db = SallaDatabase.connection;
     if (!db || !db.models.Campaign) return;
@@ -2411,7 +2765,7 @@ setInterval(async () => {
       dispatchCampaign(c.id).catch(e => console.error('Scheduled dispatch error:', e.message));
     }
   } catch (e) { /* تجاهل */ }
-}, 60000);
+}), 60000);
 
 app.post("/api/campaigns/send", async (req, res) => {
   try {
@@ -2557,7 +2911,11 @@ app.post("/settings/ai", async (req, res) => {
         bot_tone: req.body.bot_tone,
         custom_instructions: req.body.custom_instructions,
         policy_return: req.body.policy_return,
-        shipping_time: req.body.shipping_time
+        shipping_time: req.body.shipping_time,
+        allow_discount: req.body.allow_discount === 'true' || req.body.allow_discount === 'on' || req.body.allow_discount === true,
+        discount_code: req.body.discount_code || '',
+        discount_value: req.body.discount_value ? Number(req.body.discount_value) : 0,
+        discount_type: req.body.discount_type || 'percentage'
       };
 
       if (!currentSettings.knowledge_base) {
@@ -2578,26 +2936,10 @@ app.post("/settings/ai", async (req, res) => {
   }
 });
 
-// Helper to build System Prompt from Config
-function buildSystemPrompt(config) {
-  if (!config || !config.custom_instructions) return null; // Use Default if no config
-
-  let toneDesc = "ودودة ومحترمة";
-  if (config.bot_tone === 'formal') toneDesc = "رسمية ومهنية جداً";
-  if (config.bot_tone === 'funny') toneDesc = "مرحة، خفيفة الظل، وتستخدم نكت بسيطة";
-
-  return `
-أنت مساعد ذكي للمتجر.
-- اسمك: "${config.bot_name || 'مبهر'}"
-- اللهجة/الأسلوب: ${toneDesc}
-- سياسة الاسترجاع: ${config.policy_return || 'حسب النظام'}
-- مدة التوصيل: ${config.shipping_time || 'غير محدد'}
-
-تعليمات خاصة ومهمة جداً من التاجر:
-${config.custom_instructions}
-
-وظيفتك مساعدة العملاء بناءً على هذه المعلومات.
-    `.trim();
+// Helper to build System Prompt from Config (Unified with PromptManager)
+function buildSystemPrompt(config, storeInfo = {}) {
+  const PromptManager = require('./services/PromptManager');
+  return PromptManager.buildSalesAgentPrompt(storeInfo, config);
 }
 
 
@@ -2919,23 +3261,41 @@ SallaDatabase.connect().then(async (connection) => {
 
   // ── شغّل المُجدوِل (Cron) لسيناريوهات: birthday | reactivation | price_drop
   try {
-    const scheduler = require('./jobs/scheduler');
-    scheduler.start();
+    assertRuntimeGuard();
+    const startScheduler = createWorker(function startSchedulerWorker() {
+      const scheduler = require('./jobs/scheduler');
+      scheduler.start();
+    });
+    startScheduler();
   } catch (e) {
     console.error('⚠️ Scheduler failed to start:', e.message);
   }
 
   // ── 🔄 استعادة جلسات واتساب (QR) المحفوظة للتجار المتصلين سابقاً
   try {
-    waWeb.restoreAll();
+    assertRuntimeGuard();
+    const restoreAllSessions = createWorker(function restoreAllSessionsWorker() {
+      waWeb.restoreAll();
+    });
+    restoreAllSessions();
   } catch (e) {
     console.error('⚠️ waWeb restore failed:', e.message);
   }
 
+  // Start Webhook Inbox Worker
+  try {
+    const WebhookInboxWorker = require('./services/WebhookInboxWorker');
+    WebhookInboxWorker.start();
+  } catch (e) {
+    console.error('⚠️ WebhookInboxWorker failed to start:', e.message);
+  }
+
+  assertRuntimeGuard();
   const startServer = (retryPort) => {
-    const serverInstance = server.listen(retryPort, () => {
-      console.log(`🚀 SaaS System Ready on http://localhost:${retryPort}`);
-      console.log(`💻 Dashboard: http://localhost:${retryPort}/dashboard`);
+    const host = process.env.HOST || '0.0.0.0';
+    const serverInstance = server.listen(retryPort, host, () => {
+      console.log(`🚀 SaaS System Ready on http://${host}:${retryPort}`);
+      console.log(`💻 Dashboard: http://${host}:${retryPort}/dashboard`);
     });
 
     serverInstance.on('error', (e) => {
@@ -2975,6 +3335,12 @@ const gracefulShutdown = async (signal, err = null) => {
       console.log('HTTP Server closed.');
     });
   }
+
+  // Stop Webhook Inbox Worker
+  try {
+    const WebhookInboxWorker = require('./services/WebhookInboxWorker');
+    WebhookInboxWorker.stop();
+  } catch (e) {}
   
   // 2. Gracefully close all Puppeteer/whatsapp-web.js client sessions to preserve session keys and avoid locks
   try {
@@ -3006,6 +3372,16 @@ process.on('uncaughtException', (err) => {
   gracefulShutdown('uncaughtException', err);
 });
 process.on('unhandledRejection', (reason, promise) => {
+  const msg = (reason && (reason.message || reason.toString())) || '';
+  if (
+    msg.includes('detached Frame') ||
+    msg.includes('Execution context was destroyed') ||
+    msg.includes('Target closed') ||
+    msg.includes('Protocol error')
+  ) {
+    console.warn('⚠️ [WARNING] Ignored transient Puppeteer rejection to prevent crash:', msg);
+    return;
+  }
   const err = reason instanceof Error ? reason : new Error(String(reason));
   gracefulShutdown('unhandledRejection', err);
 });

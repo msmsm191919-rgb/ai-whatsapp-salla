@@ -7,512 +7,647 @@
 {% block styles %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
-    /* ─── Global ─── */
+    /* ═══════════════════════════════════════════
+       DASHBOARD V5 — Premium SaaS Aesthetic
+     ═══════════════════════════════════════════ */
+    :root {
+        --v-primary:        #0D9488;
+        --v-primary-light:  #CCFBF1;
+        --v-primary-glow:   rgba(13, 148, 136, 0.12);
+        --v-secondary:      #7C3AED;
+        --v-secondary-light:#F3E8FF;
+        --v-secondary-glow: rgba(124, 58, 237, 0.08);
+        --v-amber:          #F59E0B;
+        --v-amber-bg:       #FEF3C7;
+        --v-green:          #10B981;
+        --v-green-bg:       #D1FAE5;
+        --v-blue:           #3B82F6;
+        --v-blue-bg:        #DBEAFE;
+        --v-rose:           #F43F5E;
+        --v-rose-bg:        #FFE4E6;
+        --v-text-title:     #0F172A;
+        --v-text-main:      #334155;
+        --v-text-sec:       #64748B;
+        --v-text-light:     #94A3B8;
+        --v-bg-card:        #FFFFFF;
+        --v-bg-hover:       #F8FAFC;
+        --v-border:         rgba(15, 23, 42, 0.06);
+        --v-shadow-sm:      0 1px 3px 0 rgba(0,0,0,0.03), 0 1px 2px -1px rgba(0,0,0,0.02);
+        --v-shadow-md:      0 4px 6px -1px rgba(15,23,42,0.04), 0 2px 4px -2px rgba(15,23,42,0.03);
+        --v-shadow-lg:      0 12px 20px -8px rgba(15,23,42,0.08), 0 4px 6px -2px rgba(15,23,42,0.03);
+        --v-r-sm: 8px; --v-r-md: 12px; --v-r-lg: 16px; --v-r-xl: 24px;
+        --v-transition:     all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
     #devPlanSwitcher { display: none !important; }
 
-    /* ─── Stat Pills ─── */
-    .stat-pill {
-        background: #ffffff;
-        border: 1px solid #f1f5f9;
-        border-radius: 16px;
-        box-shadow: 0 1px 8px -2px rgba(15,23,42,0.04);
-        transition: transform 0.15s, box-shadow 0.15s;
-    }
-    .stat-pill:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 20px -4px rgba(15,23,42,0.08);
-    }
+    /* ── Greeting ── */
+    .v5-greeting { margin-bottom: 4px; }
+    .v5-greeting h1 { font-size: 22px; font-weight: 800; color: var(--v-text-title); margin: 0; }
+    .v5-greeting p { font-size: 13px; color: var(--v-text-sec); margin: 4px 0 0; font-weight: 500; }
 
-    /* ─── Section Cards ─── */
-    .dash-card {
-        background: #ffffff;
-        border: 1px solid #f1f5f9;
-        border-radius: 20px;
-        box-shadow: 0 2px 12px -3px rgba(15,23,42,0.04);
+    /* ── KPI Grid ── */
+    .v5-kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
     }
-
-    /* ─── Chat feed card ─── */
-    .chat-card {
-        background: linear-gradient(160deg, #f0fdf4 0%, #ecfdf5 100%);
-        border: 1px solid #bbf7d0;
-        border-radius: 20px;
-    }
-
-    /* ─── Icon circles ─── */
-    .ic {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 12px;
-        flex-shrink: 0;
-    }
-    .ic-blue   { background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; }
-    .ic-green  { background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; }
-    .ic-purple { background: #f5f3ff; color: #7c3aed; border: 1px solid #ddd6fe; }
-    .ic-amber  { background: #fffbeb; color: #d97706; border: 1px solid #fde68a; }
-    .ic-indigo { background: #eef2ff; color: #4f46e5; border: 1px solid #c7d2fe; }
-
-    /* ─── Stepper ─── */
-    .stepper-wrap {
-        position: relative;
-        display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
-    }
-    .stepper-line-bg {
-        position: absolute;
-        top: 18px; /* center of the 36px circles */
-        right: 36px; /* half of first circle */
-        left: 36px;  /* half of last circle */
-        height: 3px;
-        background: #e2e8f0;
-        border-radius: 99px;
-        z-index: 0;
-    }
-    .stepper-line-fill {
-        height: 100%;
-        background: linear-gradient(90deg, #10b981 0%, #34d399 100%);
-        border-radius: 99px;
-        transition: width 0.6s cubic-bezier(0.4,0,0.2,1);
-    }
-    .stepper-step {
+    .v5-kpi-card {
+        background: var(--v-bg-card);
+        border: 1px solid var(--v-border);
+        border-radius: var(--v-r-lg);
+        padding: 18px 20px;
         display: flex;
         flex-direction: column;
-        align-items: center;
-        gap: 6px;
-        z-index: 1;
-        text-decoration: none;
-        transition: opacity 0.15s;
-        flex: 1;
-        min-width: 0;
+        justify-content: space-between;
+        position: relative;
+        transition: var(--v-transition);
+        height: 124px;
+        box-shadow: var(--v-shadow-sm);
+        overflow: hidden;
     }
-    .stepper-step:hover { opacity: 0.8; }
-    .stepper-circle {
-        width: 36px;
-        height: 36px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 14px;
-        transition: all 0.25s;
-        flex-shrink: 0;
+    .v5-kpi-card:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--v-shadow-lg);
+        border-color: rgba(13, 148, 136, 0.15);
     }
-    .stepper-circle.done {
-        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-        color: #ffffff;
-        box-shadow: 0 4px 12px -2px rgba(16,185,129,0.35);
-        border: 2px solid #6ee7b7;
+    .v5-kpi-header { display: flex; align-items: center; justify-content: space-between; z-index: 2; }
+    .v5-kpi-title { font-size: 12.5px; font-weight: 700; color: var(--v-text-sec); }
+    .v5-kpi-icon {
+        width: 38px; height: 38px; border-radius: 10px;
+        display: flex; align-items: center; justify-content: center;
+        color: #ffffff; transition: var(--v-transition);
+        box-shadow: 0 4px 10px rgba(0,0,0,0.04);
+        font-size: 15px;
     }
-    .stepper-circle.todo {
-        background: #ffffff;
-        color: #94a3b8;
-        border: 2px solid #e2e8f0;
-        box-shadow: 0 2px 6px -1px rgba(15,23,42,0.06);
+    .v5-kpi-card:hover .v5-kpi-icon { transform: scale(1.08) rotate(-5deg); }
+    .v5-kpi-icon.wa   { background: linear-gradient(135deg, #128C7E, #25D366); }
+    .v5-kpi-icon.sales { background: linear-gradient(135deg, #4F46E5, #818CF8); }
+    .v5-kpi-icon.recovered { background: linear-gradient(135deg, #0D9488, #2DD4BF); }
+    .v5-kpi-icon.msgs  { background: linear-gradient(135deg, #0284C7, #38BDF8); }
+    .v5-kpi-icon.custs { background: linear-gradient(135deg, #7C3AED, #A78BFA); }
+    .v5-kpi-icon.carts { background: linear-gradient(135deg, #EA580C, #F97316); }
+    .v5-kpi-body { display: flex; align-items: flex-end; justify-content: space-between; z-index: 2; margin-top: 10px; }
+    .v5-kpi-val { font-family: 'Inter','Plus Jakarta Sans','Cairo',sans-serif; font-size: 24px; font-weight: 800; color: var(--v-text-title); line-height: 1.1; letter-spacing: -0.5px; }
+    .v5-kpi-unit { font-size: 12px; font-weight: 700; color: var(--v-text-sec); margin-right: 4px; }
+    .v5-kpi-trend {
+        display: inline-flex; align-items: center; gap: 4px;
+        font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 6px; z-index: 2;
     }
-    .stepper-label {
-        font-size: 10px;
-        font-weight: 700;
-        text-align: center;
-        line-height: 1.3;
+    .v5-kpi-trend.pos { background: var(--v-green-bg); color: #065F46; }
+    .v5-kpi-trend.neg { background: var(--v-rose-bg); color: #9F1239; }
+    .v5-sparkline {
+        position: absolute; bottom: 0; left: 0; right: 0;
+        height: 40px; width: 100%; pointer-events: none; opacity: 0.25; z-index: 1;
+        transition: var(--v-transition);
     }
-    .stepper-label.done { color: #059669; }
-    .stepper-label.todo { color: #94a3b8; }
+    .v5-kpi-card:hover .v5-sparkline { opacity: 0.45; }
 
-    /* ─── Opportunity rows ─── */
-    .opp-row {
-        background: #ffffff;
-        border: 1px solid #f1f5f9;
-        border-radius: 14px;
-        transition: all 0.15s;
+    /* ── WA Status inside KPI ── */
+    .v5-wa-card { grid-column: span 1; }
+    .v5-wa-pulse {
+        width: 8px; height: 8px; background: var(--v-green); border-radius: 50%; position: relative;
     }
-    .opp-row:hover {
-        border-color: #e2e8f0;
-        box-shadow: 0 4px 16px -4px rgba(15,23,42,0.08);
-        transform: translateX(-2px);
+    .v5-wa-pulse::after {
+        content: ''; position: absolute; inset: -4px; background: var(--v-green);
+        border-radius: 50%; opacity: 0.4;
+        animation: v5pulse 2s cubic-bezier(0.215,0.61,0.355,1) infinite;
+    }
+    @keyframes v5pulse { 0%{transform:scale(0.5);opacity:0.8}80%,100%{transform:scale(2.2);opacity:0} }
+    .v5-wa-status { font-size: 14px; font-weight: 800; color: #065F46; }
+    .v5-wa-sub { font-size: 10px; color: var(--v-text-sec); font-weight: 500; }
+    .v5-wa-disc { font-size: 14px; font-weight: 800; color: #9F1239; }
+    .v5-wa-btn {
+        border: 1px solid var(--v-primary-light); background: var(--v-primary-glow);
+        color: var(--v-primary); border-radius: 8px; padding: 6px 14px;
+        font-family: 'Cairo',sans-serif; font-size: 11px; font-weight: 700;
+        cursor: pointer; transition: var(--v-transition);
+        display: inline-flex; align-items: center; gap: 6px; text-decoration: none;
+    }
+    .v5-wa-btn:hover { background: var(--v-primary); color: #fff; border-color: var(--v-primary); }
+
+    /* ── Suggestion Banner ── */
+    .v5-sug-banner {
+        background: linear-gradient(135deg, var(--v-primary) 0%, #0B7A70 50%, #065F46 100%);
+        border-radius: var(--v-r-xl); padding: 24px 28px;
+        display: flex; align-items: center; justify-content: space-between; gap: 20px;
+        position: relative; overflow: hidden; color: #fff;
+    }
+    .v5-sug-pill {
+        display: inline-flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.15);
+        padding: 5px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; margin-bottom: 8px;
+    }
+    .v5-sug-main { font-size: 16px; font-weight: 800; line-height: 1.5; margin: 0; }
+    .v5-sug-hl-amber { color: #FCD34D; }
+    .v5-sug-hl-green { color: #6EE7B7; }
+    .v5-sug-desc { font-size: 12px; font-weight: 500; opacity: 0.8; margin-top: 4px; }
+    .v5-sug-cta {
+        background: #fff; color: var(--v-primary); border: none; padding: 12px 24px;
+        border-radius: var(--v-r-md); font-family: 'Cairo',sans-serif; font-size: 13px;
+        font-weight: 800; cursor: pointer; transition: var(--v-transition);
+        display: inline-flex; align-items: center; gap: 8px; white-space: nowrap;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1); text-decoration: none;
+    }
+    .v5-sug-cta:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(0,0,0,0.15); }
+
+    /* ── Dashboard Cards ── */
+    .v5-card {
+        background: var(--v-bg-card); border: 1px solid var(--v-border);
+        border-radius: var(--v-r-lg); padding: 20px; box-shadow: var(--v-shadow-sm);
+    }
+    .v5-card-hdr { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+    .v5-card-title { font-size: 14.5px; font-weight: 800; color: var(--v-text-title); }
+    .v5-card-sub { font-size: 11px; color: var(--v-text-sec); font-weight: 500; margin-top: 2px; }
+    .v5-chart-wrap { height: 220px; width: 100%; position: relative; }
+
+    /* ── Chart Legends ── */
+    .v5-legends { display: flex; gap: 16px; align-items: center; }
+    .v5-legend { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; color: var(--v-text-sec); }
+    .v5-legend-dot { width: 8px; height: 8px; border-radius: 50%; }
+    .v5-legend-dot.sent { background: var(--v-secondary); }
+    .v5-legend-dot.recv { background: var(--v-primary); }
+
+    /* ── Performance Donut ── */
+    .v5-perf-layout { display: flex; align-items: center; justify-content: space-between; gap: 20px; flex: 1; }
+    .v5-donut-wrap { position: relative; width: 120px; height: 120px; flex-shrink: 0; }
+    .v5-donut-center {
+        position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+        display: flex; flex-direction: column; align-items: center; text-align: center;
+    }
+    .v5-donut-val { font-family: 'Inter',sans-serif; font-size: 24px; font-weight: 800; color: var(--v-primary); line-height: 1; }
+    .v5-donut-lbl { font-size: 9.5px; color: var(--v-text-sec); font-weight: 700; margin-top: 2px; }
+    .v5-perf-list { display: flex; flex-direction: column; gap: 10px; flex: 1; }
+    .v5-perf-row { display: flex; align-items: center; justify-content: space-between; border-bottom: 1px dashed var(--v-border); padding-bottom: 6px; }
+    .v5-perf-row:last-child { border-bottom: none; padding-bottom: 0; }
+    .v5-perf-label { display: flex; align-items: center; gap: 8px; }
+    .v5-perf-dot { width: 8px; height: 8px; border-radius: 50%; }
+    .v5-perf-dot.smart { background: var(--v-primary); }
+    .v5-perf-dot.human { background: var(--v-secondary); }
+    .v5-perf-dot.none { background: #E2E8F0; }
+    .v5-perf-name { font-size: 12px; font-weight: 700; color: var(--v-text-main); }
+    .v5-perf-num { font-family: 'Inter',sans-serif; font-size: 13.5px; font-weight: 700; color: var(--v-text-title); }
+    .v5-card-action {
+        width: 100%; background: var(--v-bg-hover); border: 1px solid var(--v-border);
+        padding: 8px; border-radius: var(--v-r-sm); font-family: 'Cairo',sans-serif;
+        font-size: 12px; font-weight: 700; color: var(--v-text-main); cursor: pointer;
+        transition: var(--v-transition); display: flex; align-items: center; justify-content: center;
+        gap: 6px; margin-top: 16px; text-decoration: none;
+    }
+    .v5-card-action:hover { border-color: rgba(13,148,136,0.2); background: var(--v-primary-glow); color: var(--v-primary); }
+
+    /* ── Bottom Grid ── */
+    .v5-bottom-grid { display: grid; grid-template-columns: 1fr 1.2fr 1fr; gap: 20px; }
+    .v5-section-btn {
+        font-size: 11px; font-weight: 700; color: var(--v-primary); background: var(--v-primary-glow);
+        border: none; padding: 4px 10px; border-radius: 6px; cursor: pointer;
+        font-family: 'Cairo',sans-serif; transition: var(--v-transition); text-decoration: none;
+    }
+    .v5-section-btn:hover { background: var(--v-primary); color: #fff; }
+
+    /* ── Activity Timeline ── */
+    .v5-timeline { display: flex; flex-direction: column; gap: 18px; position: relative; padding-right: 6px; }
+    .v5-timeline::before {
+        content: ''; position: absolute; right: 18px; top: 10px; bottom: 10px;
+        width: 2px; background: var(--v-border); z-index: 1;
+    }
+    .v5-tl-row { display: flex; align-items: flex-start; gap: 12px; position: relative; z-index: 2; }
+    .v5-tl-dot {
+        width: 26px; height: 26px; border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 10px; flex-shrink: 0; border: 2px solid #fff;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+    }
+    .v5-tl-dot.purple { background: var(--v-secondary-light); color: var(--v-secondary); }
+    .v5-tl-dot.green { background: var(--v-green-bg); color: #059669; }
+    .v5-tl-dot.amber { background: var(--v-amber-bg); color: #D97706; }
+    .v5-tl-dot.teal { background: var(--v-primary-light); color: var(--v-primary); }
+    .v5-tl-dot.blue { background: var(--v-blue-bg); color: var(--v-blue); }
+    .v5-tl-body { flex: 1; }
+    .v5-tl-top { display: flex; align-items: center; justify-content: space-between; }
+    .v5-tl-title { font-size: 12.5px; font-weight: 700; color: var(--v-text-title); }
+    .v5-tl-time { font-size: 10px; color: var(--v-text-light); font-weight: 600; }
+    .v5-tl-desc { font-size: 11px; color: var(--v-text-sec); font-weight: 500; margin-top: 2px; }
+
+    /* ── Abandoned Carts Table ── */
+    .v5-table { width: 100%; border-collapse: collapse; }
+    .v5-table th {
+        font-size: 11px; font-weight: 700; color: var(--v-text-light); text-align: right;
+        padding: 8px 10px; border-bottom: 1px solid var(--v-border);
+    }
+    .v5-table td { padding: 10px; font-size: 12px; color: var(--v-text-main); font-weight: 600; border-bottom: 1px solid var(--v-border); }
+    .v5-table tr:last-child td { border-bottom: none; }
+    .v5-table tr:hover td { background: var(--v-bg-hover); }
+    .v5-cust-cell { display: flex; align-items: center; gap: 8px; }
+    .v5-cust-avatar {
+        width: 28px; height: 28px; border-radius: 8px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 11px; font-weight: 800; color: #fff;
+    }
+    .v5-cust-avatar.c1 { background: linear-gradient(135deg, #EC4899, #F472B6); }
+    .v5-cust-avatar.c2 { background: linear-gradient(135deg, #3B82F6, #60A5FA); }
+    .v5-cust-avatar.c3 { background: linear-gradient(135deg, #F59E0B, #FBBF24); }
+    .v5-cust-avatar.c4 { background: linear-gradient(135deg, #8B5CF6, #A78BFA); }
+    .v5-wa-send-btn {
+        background: var(--v-green-bg); color: #065F46; border: none; padding: 5px 10px;
+        border-radius: 6px; font-family: 'Cairo',sans-serif; font-size: 10px; font-weight: 700;
+        cursor: pointer; transition: var(--v-transition); display: inline-flex; align-items: center; gap: 4px;
+    }
+    .v5-wa-send-btn:hover { background: var(--v-green); color: #fff; }
+
+    /* ── Opportunities ── */
+    .v5-opp-stack { display: flex; flex-direction: column; gap: 10px; }
+    .v5-opp-item {
+        display: flex; align-items: center; gap: 12px; padding: 10px 12px;
+        border: 1px solid var(--v-border); border-radius: var(--v-r-md);
+        transition: var(--v-transition);
+    }
+    .v5-opp-item:hover { border-color: rgba(13,148,136,0.2); background: var(--v-bg-hover); }
+    .v5-opp-icon {
+        width: 32px; height: 32px; border-radius: 8px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 13px; flex-shrink: 0;
+    }
+    .v5-opp-icon.cart { background: var(--v-amber-bg); color: var(--v-amber); }
+    .v5-opp-icon.pay { background: var(--v-green-bg); color: #059669; }
+    .v5-opp-icon.contact { background: var(--v-secondary-light); color: var(--v-secondary); }
+    .v5-opp-title { font-size: 12px; font-weight: 700; color: var(--v-text-main); flex: 1; }
+    .v5-opp-count {
+        font-family: 'Inter',sans-serif; font-size: 14px; font-weight: 800;
+        color: var(--v-text-title); background: var(--v-bg-hover);
+        padding: 4px 10px; border-radius: 6px;
     }
 
-    /* ─── Scrollbar hide ─── */
-    .no-scroll::-webkit-scrollbar { display: none; }
-    .no-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+    /* ── Animations ── */
+    @keyframes v5up { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+    .v5-anim { animation: v5up 0.5s cubic-bezier(0.16,1,0.3,1) forwards; }
+    .v5-d1 { animation-delay: 0.05s; opacity: 0; }
+    .v5-d2 { animation-delay: 0.1s; opacity: 0; }
+    .v5-d3 { animation-delay: 0.15s; opacity: 0; }
+    .v5-d4 { animation-delay: 0.2s; opacity: 0; }
 
-    /* ─── Mobile ─── */
-    @media (max-width: 639px) {
-        .stat-pill { border-radius: 12px; }
-        .dash-card, .chat-card { border-radius: 16px; }
-        .stepper-circle { width: 30px; height: 30px; font-size: 12px; }
-        .stepper-line-bg { top: 15px; right: 30px; left: 30px; }
-        .stepper-label { font-size: 9px; }
+    /* ── Responsive ── */
+    @media (max-width: 1200px) {
+        .v5-kpi-grid { grid-template-columns: repeat(2, 1fr); }
+        .v5-bottom-grid { grid-template-columns: 1fr 1fr; }
+        .v5-bottom-grid > div:last-child { grid-column: span 2; }
+    }
+    @media (max-width: 768px) {
+        .v5-kpi-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+        .v5-kpi-card { height: 114px; padding: 14px 16px; }
+        .v5-kpi-val { font-size: 20px; }
+        .v5-bottom-grid { grid-template-columns: 1fr; }
+        .v5-bottom-grid > div:last-child { grid-column: span 1; }
+        .v5-sug-banner { flex-direction: column; align-items: stretch; text-align: right; gap: 16px; }
+        .v5-perf-layout { flex-direction: column; align-items: center; gap: 16px; }
+        .v5-chart-perf { grid-template-columns: 1fr !important; }
+    }
+    @media (max-width: 480px) {
+        .v5-kpi-grid { grid-template-columns: 1fr; }
+        .v5-greeting h1 { font-size: 18px; }
     }
 </style>
 {% endblock %}
 
 {% block content %}
-{# Calculate stepper progress #}
-{% set step1 = isConnected %}
-{% set step2 = is_persona_configured %}
-{% set step3 = is_scenarios_configured %}
-{% set step4 = campaigns_count > 0 %}
-{% set done_count = 0 %}
-{% if step1 and step2 and step3 and step4 %}
-    {% set done_count = 4 %}
-{% elif (step1 and step2 and step3) or (step1 and step2 and step4) or (step1 and step3 and step4) or (step2 and step3 and step4) %}
-    {% set done_count = 3 %}
-{% elif (step1 and step2) or (step1 and step3) or (step1 and step4) or (step2 and step3) or (step2 and step4) or (step3 and step4) %}
-    {% set done_count = 2 %}
-{% elif step1 or step2 or step3 or step4 %}
-    {% set done_count = 1 %}
-{% endif %}
+<div style="display:flex;flex-direction:column;gap:20px;padding-bottom:40px;">
 
-{# Stepper progress line width #}
-{% set stepper_width = 0 %}
-{% if step1 and step2 and step3 %}
-    {% set stepper_width = 100 %}
-{% elif step1 and step2 %}
-    {% set stepper_width = 66 %}
-{% elif step1 %}
-    {% set stepper_width = 33 %}
-{% endif %}
+    {# ═══════════════════════════════════════
+       1. GREETING
+    ═══════════════════════════════════════ #}
+    <section class="v5-greeting v5-anim">
+        <h1>مرحباً بك، {{ store_name }} 👋</h1>
+        <p>إليك نظرة عامة على نشاط متجرك وأداء القناة اليوم.</p>
+    </section>
 
-{# Setup Completed if steps 2, 3, 4 are done #}
-{% set setup_completed = step2 and step3 and step4 %}
+    {# ═══════════════════════════════════════
+       2. KPI GRID (6 cards)
+    ═══════════════════════════════════════ #}
+    <section class="v5-kpi-grid v5-anim v5-d1">
 
-<div class="space-y-4 pb-16">
-
-    {# ─────────────────────────────────────────────
-       1.  Activation Stepper or Success Badge
-    ───────────────────────────────────────────── #}
-    {% if setup_completed %}
-    <div class="space-y-3">
-        <!-- Success Badge -->
-        <div class="dash-card px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm border border-slate-100 animate-in">
-            <div class="flex items-center gap-2">
-                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-bold border border-emerald-200/60 flex-shrink-0">
-                    <i class="fa-solid fa-circle-check text-[9px]"></i> تم إعداد مبهر بالكامل ✓
-                </span>
-                <span class="text-[10px] text-slate-500 font-bold">شخصية المساعد، سيناريوهات السلات المتروكة، والحملات جاهزة وتعمل بنجاح.</span>
+        {# KPI 1: WhatsApp Status #}
+        <div class="v5-kpi-card v5-wa-card">
+            <div class="v5-kpi-header">
+                <span class="v5-kpi-title">حالة واتساب</span>
+                <div class="v5-kpi-icon wa"><i class="fa-brands fa-whatsapp"></i></div>
             </div>
-            {% if not step1 %}
-            <div class="flex items-center gap-3 bg-amber-50 border border-amber-200/60 px-3 py-1.5 rounded-xl flex-shrink-0">
-                <span class="text-[10px] font-bold text-amber-700 flex items-center gap-1">
-                    <i class="fa-solid fa-triangle-exclamation"></i> واتساب غير متصل
-                </span>
-                <a href="/whatsapp-web" class="text-[9px] font-bold text-white bg-amber-600 hover:bg-amber-700 px-2.5 py-1 rounded-lg transition">
-                    ربط الآن
-                </a>
+            <div class="v5-kpi-body">
+                {% if isConnected %}
+                <div style="display:flex;flex-direction:column;gap:4px;">
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <div class="v5-wa-pulse"></div>
+                        <span class="v5-wa-status">متصل</span>
+                    </div>
+                    <span class="v5-wa-sub">تم الاتصال بنجاح</span>
+                </div>
+                <a href="/whatsapp-web" class="v5-wa-btn"><i class="fa-solid fa-sliders"></i> إدارة</a>
+                {% else %}
+                <div style="display:flex;flex-direction:column;gap:4px;">
+                    <span class="v5-wa-disc">غير متصل</span>
+                    <span class="v5-wa-sub">يرجى ربط واتساب</span>
+                </div>
+                <a href="/whatsapp-web" class="v5-wa-btn"><i class="fa-brands fa-whatsapp"></i> ربط الآن</a>
+                {% endif %}
+            </div>
+        </div>
+
+        {# KPI 2: Recovered Value #}
+        <div class="v5-kpi-card">
+            <div class="v5-kpi-header">
+                <span class="v5-kpi-title">المبيعات المستعادة</span>
+                <div class="v5-kpi-icon sales"><i class="fa-solid fa-chart-line"></i></div>
+            </div>
+            <div class="v5-kpi-body">
+                <div style="display:flex;align-items:baseline;gap:4px;">
+                    <span class="v5-kpi-val">{{ recovered_value | default(0) }}</span>
+                    <span class="v5-kpi-unit">ر.س</span>
+                </div>
+                {% if ai_growth and ai_growth != '0.0' %}
+                <div class="v5-kpi-trend {{ 'pos' if ai_growth > '0' else 'neg' }}">
+                    <i class="fa-solid fa-arrow-{{ 'up' if ai_growth > '0' else 'down' }}" style="font-size:8px;"></i>
+                    {{ ai_growth }}%
+                </div>
+                {% endif %}
+            </div>
+            <svg class="v5-sparkline" viewBox="0 0 100 30" preserveAspectRatio="none">
+                <path d="M0,25 Q15,10 30,20 T60,5 T90,15 T100,10 L100,30 L0,30 Z" fill="url(#sg1)" />
+                <defs><linearGradient id="sg1" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#4F46E5" stop-opacity="0.35"/><stop offset="100%" stop-color="#4F46E5" stop-opacity="0"/></linearGradient></defs>
+            </svg>
+        </div>
+
+        {# KPI 3: Recovered Carts #}
+        <div class="v5-kpi-card">
+            <div class="v5-kpi-header">
+                <span class="v5-kpi-title">السلات المستعادة</span>
+                <div class="v5-kpi-icon recovered"><i class="fa-solid fa-rotate-left"></i></div>
+            </div>
+            <div class="v5-kpi-body">
+                <span class="v5-kpi-val">{{ recovered_carts | default(0) }}</span>
+            </div>
+            <svg class="v5-sparkline" viewBox="0 0 100 30" preserveAspectRatio="none">
+                <path d="M0,20 Q20,5 45,22 T75,8 T100,12 L100,30 L0,30 Z" fill="url(#sg2)" />
+                <defs><linearGradient id="sg2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#0D9488" stop-opacity="0.35"/><stop offset="100%" stop-color="#0D9488" stop-opacity="0"/></linearGradient></defs>
+            </svg>
+        </div>
+
+        {# KPI 4: Messages Sent #}
+        <div class="v5-kpi-card">
+            <div class="v5-kpi-header">
+                <span class="v5-kpi-title">الرسائل المرسلة</span>
+                <div class="v5-kpi-icon msgs"><i class="fa-solid fa-paper-plane"></i></div>
+            </div>
+            <div class="v5-kpi-body">
+                <div style="display:flex;align-items:baseline;gap:4px;">
+                    <span class="v5-kpi-val">{{ messages_sent | default(0) }}</span>
+                    <span class="v5-kpi-unit">رسالة</span>
+                </div>
+            </div>
+            <svg class="v5-sparkline" viewBox="0 0 100 30" preserveAspectRatio="none">
+                <path d="M0,25 Q10,12 35,18 T70,4 T100,14 L100,30 L0,30 Z" fill="url(#sg3)" />
+                <defs><linearGradient id="sg3" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#0284C7" stop-opacity="0.35"/><stop offset="100%" stop-color="#0284C7" stop-opacity="0"/></linearGradient></defs>
+            </svg>
+        </div>
+
+        {# KPI 5: Customers #}
+        <div class="v5-kpi-card">
+            <div class="v5-kpi-header">
+                <span class="v5-kpi-title">العملاء</span>
+                <div class="v5-kpi-icon custs"><i class="fa-solid fa-users"></i></div>
+            </div>
+            <div class="v5-kpi-body">
+                <span class="v5-kpi-val">{{ contacts_count | default(0) }}</span>
+            </div>
+            <svg class="v5-sparkline" viewBox="0 0 100 30" preserveAspectRatio="none">
+                <path d="M0,15 Q30,22 50,5 T80,18 T100,8 L100,30 L0,30 Z" fill="url(#sg4)" />
+                <defs><linearGradient id="sg4" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#7C3AED" stop-opacity="0.35"/><stop offset="100%" stop-color="#7C3AED" stop-opacity="0"/></linearGradient></defs>
+            </svg>
+        </div>
+
+        {# KPI 6: Abandoned Carts #}
+        <div class="v5-kpi-card">
+            <div class="v5-kpi-header">
+                <span class="v5-kpi-title">السلات المتروكة</span>
+                <div class="v5-kpi-icon carts"><i class="fa-solid fa-cart-shopping"></i></div>
+            </div>
+            <div class="v5-kpi-body">
+                <span class="v5-kpi-val">{{ total_carts | default(0) }}</span>
+            </div>
+            <svg class="v5-sparkline" viewBox="0 0 100 30" preserveAspectRatio="none">
+                <path d="M0,5 Q20,25 40,8 T80,22 T100,10 L100,30 L0,30 Z" fill="url(#sg5)" />
+                <defs><linearGradient id="sg5" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#EA580C" stop-opacity="0.35"/><stop offset="100%" stop-color="#EA580C" stop-opacity="0"/></linearGradient></defs>
+            </svg>
+        </div>
+
+    </section>
+
+    {# ═══════════════════════════════════════
+       3. SUGGESTION BANNER
+    ═══════════════════════════════════════ #}
+    {% if total_carts > 0 %}
+    <section class="v5-sug-banner v5-anim v5-d2">
+        <div>
+            <div class="v5-sug-pill"><span>🎯</span><span>اقتراح اليوم من مبهر</span></div>
+            <h2 class="v5-sug-main">
+                لديك <span class="v5-sug-hl-amber">{{ total_carts }}</span> سلة متروكة
+                {% if recovered_value > 0 %}
+                بقيمة <span class="v5-sug-hl-green">{{ recovered_value }} ر.س</span>
+                {% endif %}
+            </h2>
+            <p class="v5-sug-desc">تشغيل حملة استرجاع الآن قد يساعدك في استعادة جزء من هذه المبيعات.</p>
+        </div>
+        <a href="/automation/carts" class="v5-sug-cta"><i class="fa-solid fa-bolt"></i> تشغيل حملة الاسترجاع</a>
+    </section>
+    {% elif plan_name == 'الأساسية' %}
+    <section class="v5-sug-banner v5-anim v5-d2" style="background: linear-gradient(135deg, var(--v-primary) 0%, #4f46e5 100%);">
+        <div>
+            <div class="v5-sug-pill"><span>🚀</span><span>ضاعف مبيعاتك</span></div>
+            <h2 class="v5-sug-main">ترقية إلى <span class="v5-sug-hl-green">باقة النمو</span> للحصول على رسائل غير محدودة وأتمتة كاملة</h2>
+            <p class="v5-sug-desc">أنت الآن على الباقة الأساسية. اكتشف المزيد من الإمكانيات.</p>
+        </div>
+        <a href="/pricing" class="v5-sug-cta"><i class="fa-solid fa-rocket"></i> ترقية الباقة</a>
+    </section>
+    {% endif %}
+
+    {# ═══════════════════════════════════════
+       4. CHART + PERFORMANCE DONUT
+    ═══════════════════════════════════════ #}
+    <section class="v5-chart-perf v5-anim v5-d3" style="display:grid;grid-template-columns:1.6fr 1fr;gap:20px;">
+
+        {# Line Chart #}
+        <div class="v5-card">
+            <div class="v5-card-hdr">
+                <div>
+                    <div class="v5-card-title">الرسائل خلال آخر 7 أيام</div>
+                    <div class="v5-card-sub">مقارنة الرسائل المرسلة والواردة لمتجرك خلال الأسبوع</div>
+                </div>
+                <div class="v5-legends">
+                    <div class="v5-legend"><span class="v5-legend-dot sent"></span> المرسلة</div>
+                    <div class="v5-legend"><span class="v5-legend-dot recv"></span> الواردة</div>
+                </div>
+            </div>
+            <div class="v5-chart-wrap">
+                <canvas id="v5MainChart"></canvas>
+            </div>
+        </div>
+
+        {# Performance Donut #}
+        <div class="v5-card">
+            <div class="v5-card-hdr">
+                <div>
+                    <div class="v5-card-title">أداء المساعد</div>
+                    <div class="v5-card-sub">معدل الاسترجاع • سرعة الرد</div>
+                </div>
+                <span style="font-size:10px;font-weight:700;color:var(--v-primary);background:var(--v-primary-glow);padding:4px 8px;border-radius:6px;white-space:nowrap;">● هذا الشهر</span>
+            </div>
+
+            <div class="v5-perf-layout">
+                <div class="v5-donut-wrap">
+                    <canvas id="v5DonutChart"></canvas>
+                    <div class="v5-donut-center">
+                        {% set total_replies = (ai_replies | int) + (messages_sent | int) %}
+                        {% set accuracy = 92 if total_replies == 0 else ((ai_replies | int) / total_replies * 100) | round %}
+                        <span class="v5-donut-val">{{ accuracy }}%</span>
+                        <span class="v5-donut-lbl">دقة الردود</span>
+                    </div>
+                </div>
+                <div class="v5-perf-list">
+                    <div class="v5-perf-row">
+                        <div class="v5-perf-label">
+                            <span class="v5-perf-dot smart"></span>
+                            <span class="v5-perf-name">الردود الذكية</span>
+                        </div>
+                        <span class="v5-perf-num">{{ ai_replies | default(0) }}</span>
+                    </div>
+                    <div class="v5-perf-row">
+                        <div class="v5-perf-label">
+                            <span class="v5-perf-dot human"></span>
+                            <span class="v5-perf-name">الرسائل المرسلة</span>
+                        </div>
+                        <span class="v5-perf-num">{{ messages_sent | default(0) }}</span>
+                    </div>
+                    <div class="v5-perf-row">
+                        <div class="v5-perf-label">
+                            <span class="v5-perf-dot none"></span>
+                            <span class="v5-perf-name">الحملات</span>
+                        </div>
+                        <span class="v5-perf-num">{{ campaigns_count | default(0) }}</span>
+                    </div>
+                </div>
+            </div>
+            <a href="/logs" class="v5-card-action">عرض التفاصيل والتحليلات <i class="fa-solid fa-arrow-left" style="font-size:10px;"></i></a>
+        </div>
+
+    </section>
+
+    {# ═══════════════════════════════════════
+       5. BOTTOM GRID: Timeline + Table + Opportunities
+    ═══════════════════════════════════════ #}
+    <section class="v5-bottom-grid v5-anim v5-d4">
+
+        {# Activities Timeline #}
+        <div class="v5-card">
+            <div class="v5-card-hdr">
+                <span class="v5-card-title">آخر النشاطات</span>
+                <a href="/logs" class="v5-section-btn">عرض الكل</a>
+            </div>
+            <div class="v5-timeline">
+                {% if recentLogs and recentLogs.length > 0 %}
+                    {% for log in recentLogs %}
+                    <div class="v5-tl-row">
+                        <div class="v5-tl-dot {{ 'green' if log.direction == 'out' else ('teal' if log.direction == 'in' else 'amber') }}">
+                            <i class="fa-{{ 'solid fa-paper-plane' if log.direction == 'out' else ('brands fa-whatsapp' if log.direction == 'in' else 'solid fa-bell') }}"></i>
+                        </div>
+                        <div class="v5-tl-body">
+                            <div class="v5-tl-top">
+                                <span class="v5-tl-title">{{ 'رسالة مرسلة' if log.direction == 'out' else ('رسالة واردة' if log.direction == 'in' else 'نشاط') }}</span>
+                                <span class="v5-tl-time">{{ log.created_at | date('HH:mm') if log.created_at else '' }}</span>
+                            </div>
+                            <span class="v5-tl-desc">{{ log.to_phone }} — {{ log.content | truncate(40) if log.content else '' }}</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;gap:8px;">
+                    <div style="width:40px;height:40px;border-radius:50%;background:var(--v-primary-light);display:flex;align-items:center;justify-content:center;">
+                        <i class="fa-brands fa-whatsapp" style="font-size:18px;color:var(--v-primary);"></i>
+                    </div>
+                    <span style="font-size:12px;font-weight:700;color:var(--v-text-main);">لم يبدأ النشاط بعد</span>
+                    <span style="font-size:10px;color:var(--v-text-sec);">اربط واتساب وفعّل السيناريوهات</span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        {# Abandoned Carts Table #}
+        <div class="v5-card">
+            <div class="v5-card-hdr">
+                <span class="v5-card-title">السلات الأخيرة</span>
+                <a href="/automation/carts" class="v5-section-btn">عرض الكل</a>
+            </div>
+            {% if recent_carts and recent_carts.length > 0 %}
+            <div style="overflow-x:auto;">
+                <table class="v5-table">
+                    <thead>
+                        <tr><th>العميل</th><th>القيمة</th><th>الحالة</th><th>الإجراء</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for cart in recent_carts %}
+                        <tr>
+                            <td>
+                                <div class="v5-cust-cell">
+                                    <div class="v5-cust-avatar c{{ loop.index0 % 4 + 1 }}">{{ (cart.customer_name or cart.customer_phone or '?')[0] }}</div>
+                                    <span>{{ cart.customer_name or cart.customer_phone or 'عميل' }}</span>
+                                </div>
+                            </td>
+                            <td>{{ cart.cart_total or 0 }} ر.س</td>
+                            <td>
+                                <span style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:6px;
+                                    {{ 'background:var(--v-green-bg);color:#065F46;' if cart.status == 'recovered' else 'background:var(--v-amber-bg);color:#92400E;' }}">
+                                    {{ 'تم الاسترجاع' if cart.status == 'recovered' else 'متروكة' }}
+                                </span>
+                            </td>
+                            <td><button class="v5-wa-send-btn"><i class="fa-brands fa-whatsapp"></i> إرسال</button></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;text-align:center;gap:8px;">
+                <div style="width:40px;height:40px;border-radius:50%;background:var(--v-amber-bg);display:flex;align-items:center;justify-content:center;">
+                    <i class="fa-solid fa-cart-shopping" style="font-size:16px;color:var(--v-amber);"></i>
+                </div>
+                <span style="font-size:12px;font-weight:700;color:var(--v-text-main);">لا توجد سلات بعد</span>
+                <span style="font-size:10px;color:var(--v-text-sec);">ستظهر السلات المتروكة هنا</span>
             </div>
             {% endif %}
         </div>
 
-        <!-- Upsell Banner for Basic Plan -->
-        {% if plan_name == 'الأساسية' %}
-        <div class="relative overflow-hidden bg-gradient-to-r from-teal-600 to-indigo-700 border-none rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-white shadow-md animate-in" style="background: linear-gradient(135deg, #0d9488 0%, #4f46e5 100%);">
-            <!-- Background decoration icon -->
-            <div class="absolute -left-4 -bottom-10 opacity-10 text-9xl pointer-events-none">
-                <i class="fa-solid fa-rocket"></i>
+        {# Opportunities #}
+        <div class="v5-card">
+            <div class="v5-card-hdr">
+                <span class="v5-card-title">فرص البيع</span>
+                <span style="font-size:10px;padding:4px 8px;background:var(--v-bg-hover);border-radius:6px;font-weight:700;color:var(--v-text-sec);">آخر 7 أيام</span>
             </div>
-            <div class="relative z-10 flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-white text-lg flex-shrink-0">
-                    <i class="fa-solid fa-rocket animate-bounce" style="animation-duration: 2s;"></i>
+            <div class="v5-opp-stack">
+                <div class="v5-opp-item">
+                    <div class="v5-opp-icon cart"><i class="fa-solid fa-cart-shopping"></i></div>
+                    <span class="v5-opp-title">سلات تحتاج متابعة</span>
+                    <span class="v5-opp-count">{{ total_carts | default(0) }}</span>
                 </div>
-                <div>
-                    <h4 class="text-xs font-black leading-snug">ضاعف مبيعاتك واستفد من كامل قوة مبهر! 🚀</h4>
-                    <p class="text-[10px] text-teal-100 leading-normal mt-0.5" style="max-width: 480px;">
-                        أنت الآن على الباقة الأساسية. قم بالترقية إلى **باقة النمو** للحصول على رسائل غير محدودة، حملات واتساب إعلانية نشطة، وأتمتة ذكية متكاملة للسلات المتروكة دون قيود.
-                    </p>
+                <div class="v5-opp-item">
+                    <div class="v5-opp-icon pay"><i class="fa-solid fa-circle-check"></i></div>
+                    <span class="v5-opp-title">سلات تم استرجاعها</span>
+                    <span class="v5-opp-count">{{ recovered_carts | default(0) }}</span>
+                </div>
+                <div class="v5-opp-item">
+                    <div class="v5-opp-icon contact"><i class="fa-solid fa-bullhorn"></i></div>
+                    <span class="v5-opp-title">حملات نشطة</span>
+                    <span class="v5-opp-count">{{ campaigns_count | default(0) }}</span>
                 </div>
             </div>
-            <a href="/pricing" class="relative z-10 text-[10px] font-black text-slate-900 bg-white hover:bg-teal-50 px-4 py-2.5 rounded-xl transition shadow-md flex-shrink-0 text-center">
-                ترقية الباقة الآن ←
-            </a>
-        </div>
-        {% endif %}
-    </div>
-    {% else %}
-    <div class="dash-card px-5 py-4 sm:px-6 sm:py-5 overflow-x-auto no-scroll">
-        <div class="flex items-center justify-between mb-4">
-            <div class="flex items-center gap-2">
-                <div class="ic ic-indigo w-7 h-7 rounded-lg text-[10px]"><i class="fa-solid fa-list-check"></i></div>
-                <span class="text-xs font-bold text-slate-700">خطوات التفعيل</span>
-            </div>
-            <span class="text-[10px] font-bold text-slate-400">{{ done_count }} / 4 مكتمل</span>
+            <a href="/campaigns/create" class="v5-card-action">تحليل جميع الفرص المتاحة <i class="fa-solid fa-arrow-left" style="font-size:10px;"></i></a>
         </div>
 
-        <div class="stepper-wrap" style="min-width: 300px;">
-            {# Background line #}
-            <div class="stepper-line-bg">
-                <div class="stepper-line-fill" style="width: {{ stepper_width }}%;"></div>
-            </div>
-
-            {# Step 1: WhatsApp #}
-            <a href="/whatsapp-web" class="stepper-step">
-                <div class="stepper-circle {{ 'done' if step1 else 'todo' }}">
-                    {% if step1 %}
-                    <i class="fa-solid fa-check"></i>
-                    {% else %}
-                    <i class="fa-brands fa-whatsapp"></i>
-                    {% endif %}
-                </div>
-                <span class="stepper-label {{ 'done' if step1 else 'todo' }}">واتساب</span>
-            </a>
-
-            {# Step 2: Assistant #}
-            <a href="/ai-settings" class="stepper-step">
-                <div class="stepper-circle {{ 'done' if step2 else 'todo' }}">
-                    {% if step2 %}
-                    <i class="fa-solid fa-check"></i>
-                    {% else %}
-                    <i class="fa-solid fa-robot"></i>
-                    {% endif %}
-                </div>
-                <span class="stepper-label {{ 'done' if step2 else 'todo' }}">المساعد</span>
-            </a>
-
-            {# Step 3: Carts/Scenarios #}
-            <a href="/scenarios" class="stepper-step">
-                <div class="stepper-circle {{ 'done' if step3 else 'todo' }}">
-                    {% if step3 %}
-                    <i class="fa-solid fa-check"></i>
-                    {% else %}
-                    <i class="fa-solid fa-cart-shopping"></i>
-                    {% endif %}
-                </div>
-                <span class="stepper-label {{ 'done' if step3 else 'todo' }}">السلات</span>
-            </a>
-
-            {# Step 4: Campaign #}
-            <a href="/campaigns/create" class="stepper-step">
-                <div class="stepper-circle {{ 'done' if step4 else 'todo' }}">
-                    {% if step4 %}
-                    <i class="fa-solid fa-check"></i>
-                    {% else %}
-                    <i class="fa-solid fa-bullhorn"></i>
-                    {% endif %}
-                </div>
-                <span class="stepper-label {{ 'done' if step4 else 'todo' }}">الحملة</span>
-            </a>
-        </div>
-    </div>
-    {% endif %}
-
-
-    {# ─────────────────────────────────────────────
-       2.  Stats Row  (5 pills – no WA status)
-    ───────────────────────────────────────────── #}
-    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-
-        {# Pill: Messages #}
-        <div class="stat-pill p-3 flex items-center gap-2.5">
-            <div class="ic ic-blue w-9 h-9 text-xs"><i class="fa-solid fa-paper-plane"></i></div>
-            <div class="text-right min-w-0">
-                <p class="text-xs font-black text-slate-800 font-sans leading-snug" dir="ltr">
-                    {% if plan_name == 'الأساسية' %}
-                    {{ messages_sent }}<span class="text-[9px] text-slate-400 font-normal"> / 3k</span>
-                    {% else %}
-                    {{ messages_sent }}
-                    {% endif %}
-                </p>
-                <p class="text-[9px] text-slate-400 font-bold leading-none mt-0.5">الرسائل</p>
-            </div>
-        </div>
-
-        {# Pill: Carts #}
-        <div class="stat-pill p-3 flex items-center gap-2.5">
-            <div class="ic ic-amber w-9 h-9 text-xs"><i class="fa-solid fa-cart-shopping"></i></div>
-            <div class="text-right min-w-0">
-                <p class="text-xs font-black text-slate-800 font-sans leading-snug">{{ total_carts or 0 }}</p>
-                <p class="text-[9px] text-slate-400 font-bold leading-none mt-0.5">السلات</p>
-            </div>
-        </div>
-
-        {# Pill: Recovered #}
-        <div class="stat-pill p-3 flex items-center gap-2.5">
-            <div class="ic ic-green w-9 h-9 text-xs"><i class="fa-solid fa-circle-check"></i></div>
-            <div class="text-right min-w-0">
-                <p class="text-xs font-black text-slate-800 font-sans leading-snug">{{ recovered_carts or 0 }}</p>
-                <p class="text-[9px] text-slate-400 font-bold leading-none mt-0.5">المستعادة</p>
-            </div>
-        </div>
-
-        {# Pill: Campaigns #}
-        <div class="stat-pill p-3 flex items-center gap-2.5">
-            <div class="ic ic-purple w-9 h-9 text-xs"><i class="fa-solid fa-bullhorn"></i></div>
-            <div class="text-right min-w-0">
-                <p class="text-xs font-black text-slate-800 font-sans leading-snug">{{ campaigns_count }}</p>
-                <p class="text-[9px] text-slate-400 font-bold leading-none mt-0.5">الحملات</p>
-            </div>
-        </div>
-
-        {# Pill: Contacts #}
-        <div class="stat-pill p-3 flex items-center gap-2.5 col-span-2 sm:col-span-1">
-            <div class="ic ic-indigo w-9 h-9 text-xs"><i class="fa-solid fa-users"></i></div>
-            <div class="text-right min-w-0">
-                <p class="text-xs font-black text-slate-800 font-sans leading-snug">{{ contacts_count }}</p>
-                <p class="text-[9px] text-slate-400 font-bold leading-none mt-0.5">العملاء</p>
-            </div>
-        </div>
-
-    </div>
-
-
-    {# ─────────────────────────────────────────────
-       3.  Chart  +  Activity Feed  (2 cols)
-    ───────────────────────────────────────────── #}
-    <div class="grid grid-cols-1 lg:grid-cols-5 gap-4">
-
-        {# Chart card (3 cols) #}
-        <div id="chartCard" class="dash-card p-4 lg:col-span-3 flex flex-col transition-all duration-300" style="min-height:240px;">
-            <div class="flex items-center gap-2 mb-3">
-                <div class="ic ic-indigo w-8 h-8 rounded-xl text-[11px]"><i class="fa-solid fa-chart-line"></i></div>
-                <div>
-                    <h3 class="text-xs font-bold text-slate-800">نشاط السلات آخر 7 أيام</h3>
-                    <p class="text-[9px] text-slate-400 mt-0.5">آخر 7 أيام</p>
-                </div>
-            </div>
-            <div id="chartWrap" class="flex-1 relative" style="min-height:148px;">
-                <canvas id="messagesChart"></canvas>
-            </div>
-        </div>
-
-        {# Activity Feed card (2 cols) – chat style #}
-        {% if recentLogs and recentLogs.length > 0 %}
-        <div id="activityCard" class="chat-card p-4 lg:col-span-2 flex flex-col transition-all duration-300" style="min-height:240px;">
-        {% else %}
-        <div id="activityCard" class="chat-card p-4 lg:col-span-2 flex flex-col transition-all duration-300" style="min-height:140px;">
-        {% endif %}
-            <div class="flex items-center justify-between mb-3">
-                <div class="flex items-center gap-2">
-                    <div class="w-8 h-8 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-600 text-[11px]">
-                        <i class="fa-brands fa-whatsapp"></i>
-                    </div>
-                    <h3 class="text-xs font-bold text-slate-800">آخر النشاطات</h3>
-                </div>
-                <a href="/logs" class="text-[9px] font-bold text-emerald-700 hover:underline">عرض الكل ←</a>
-            </div>
-
-            <div class="flex-1 flex flex-col overflow-hidden">
-                {% if recentLogs and recentLogs.length > 0 %}
-                <div class="space-y-1.5 flex-1 overflow-y-auto no-scroll">
-                    {% for log in recentLogs %}
-                    <div class="flex items-center justify-between px-2.5 py-2 rounded-xl bg-white/60 hover:bg-white transition duration-100">
-                        <div class="flex items-center gap-2 min-w-0">
-                            <div class="w-7 h-7 rounded-full bg-emerald-200 flex items-center justify-center flex-shrink-0">
-                                <i class="fa-brands fa-whatsapp text-emerald-700 text-[10px]"></i>
-                            </div>
-                            <div class="text-right min-w-0">
-                                <p class="text-[10px] font-bold text-slate-800 truncate font-sans">{{ log.to_phone }}</p>
-                                <p class="text-[9px] text-slate-500 truncate" style="max-width:130px;">{{ log.content }}</p>
-                            </div>
-                        </div>
-                        <span class="text-[8px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0
-                            {{ 'bg-emerald-100 text-emerald-700' if log.status == 'sent' else 'bg-slate-100 text-slate-500' }}">
-                            {{ log.status }}
-                        </span>
-                    </div>
-                    {% endfor %}
-                </div>
-                {% else %}
-                {# Empty state #}
-                <div class="flex-1 flex flex-col items-center justify-center text-center gap-2.5 py-4">
-                    <div class="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center">
-                        <i class="fa-brands fa-whatsapp text-emerald-500 text-2xl"></i>
-                    </div>
-                    <div>
-                        <p class="text-xs font-bold text-slate-700">لم يبدأ النشاط بعد</p>
-                        <p class="text-[9px] text-slate-400 mt-0.5 leading-normal" style="max-width:180px;">
-                            اربط واتساب وفعّل السيناريوهات ليبدأ مبهر بالعمل
-                        </p>
-                    </div>
-                    {% if not isConnected %}
-                    <a href="/whatsapp-web"
-                       class="text-[10px] font-bold text-emerald-700 bg-emerald-100 hover:bg-emerald-200 border border-emerald-200 px-3 py-1 rounded-full transition">
-                        <i class="fa-brands fa-whatsapp text-[9px]"></i> ربط الآن
-                    </a>
-                    {% endif %}
-                </div>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-
-
-    {# ─────────────────────────────────────────────
-       4.  Sales Opportunities  (icon-list style)
-    ───────────────────────────────────────────── #}
-    <div class="dash-card p-4">
-        <div class="flex items-center gap-2 mb-3">
-            <div class="ic ic-purple w-8 h-8 rounded-xl text-[11px]"><i class="fa-solid fa-lightbulb"></i></div>
-            <h3 class="text-xs font-bold text-slate-800">فرص مبيعات تنتظرك</h3>
-        </div>
-
-        <div class="space-y-2">
-            {# Opp 1: Abandoned Carts #}
-            <div class="opp-row p-3 flex items-center justify-between gap-3">
-                <div class="flex items-center gap-2.5">
-                    <div class="ic ic-green w-8 h-8 rounded-xl text-[11px]"><i class="fa-solid fa-cart-shopping"></i></div>
-                    <div class="text-right">
-                        <p class="text-xs font-bold text-slate-800">السلات المتروكة</p>
-                        {% if is_scenarios_configured %}
-                        <p class="text-[9px] font-bold text-emerald-600">متابعة نشطة ✅</p>
-                        {% else %}
-                        <p class="text-[9px] font-bold text-amber-600">يحتاج تفعيل</p>
-                        {% endif %}
-                    </div>
-                </div>
-                <a href="/automation/carts"
-                   class="text-[10px] font-bold text-slate-600 bg-slate-50 hover:bg-slate-100 border border-slate-200 px-2.5 py-1 rounded-lg transition flex-shrink-0">
-                    عرض ←
-                </a>
-            </div>
-
-            {# Opp 2: Campaigns #}
-            <div class="opp-row p-3 flex items-center justify-between gap-3">
-                <div class="flex items-center gap-2.5">
-                    <div class="ic ic-blue w-8 h-8 rounded-xl text-[11px]"><i class="fa-solid fa-bullhorn"></i></div>
-                    <div class="text-right">
-                        <p class="text-xs font-bold text-slate-800">حملات واتساب</p>
-                        {% if plan_name == 'الأساسية' %}
-                        <p class="text-[9px] font-bold text-blue-600">متاحة ومحدودة</p>
-                        {% else %}
-                        <p class="text-[9px] font-bold text-emerald-600">غير محدودة ✅</p>
-                        {% endif %}
-                    </div>
-                </div>
-                <a href="/campaigns/create"
-                   class="text-[10px] font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 border border-indigo-100 px-2.5 py-1 rounded-lg transition flex-shrink-0">
-                    بدء حملة ←
-                </a>
-            </div>
-
-            {# Opp 3: Inactive Customers #}
-            <div class="opp-row p-3 flex items-center justify-between gap-3">
-                <div class="flex items-center gap-2.5">
-                    <div class="ic ic-purple w-8 h-8 rounded-xl text-[11px]"><i class="fa-solid fa-user-clock"></i></div>
-                    <div class="text-right">
-                        <p class="text-xs font-bold text-slate-800">العملاء غير النشطين</p>
-                        {% if plan_name == 'الأساسية' %}
-                        <p class="text-[9px] font-bold text-slate-400">متاح في باقة النمو</p>
-                        {% elif is_scenarios_configured %}
-                        <p class="text-[9px] font-bold text-emerald-600">نشط ✅</p>
-                        {% else %}
-                        <p class="text-[9px] font-bold text-amber-600">يحتاج تفعيل</p>
-                        {% endif %}
-                    </div>
-                </div>
-                {% if plan_name == 'الأساسية' %}
-                <a href="/pricing"
-                   class="text-[10px] font-bold text-purple-600 bg-purple-50 hover:bg-purple-100 border border-purple-100 px-2.5 py-1 rounded-lg transition flex-shrink-0">
-                    ترقية ←
-                </a>
-                {% else %}
-                <a href="/scenarios"
-                   class="text-[10px] font-bold text-slate-600 bg-slate-50 hover:bg-slate-100 border border-slate-200 px-2.5 py-1 rounded-lg transition flex-shrink-0">
-                    إعدادات ←
-                </a>
-                {% endif %}
-            </div>
-        </div>
-    </div>
+    </section>
 
 </div>
 {% endblock %}
@@ -521,46 +656,37 @@
 {% block scripts %}
 <script>
 (function () {
-    const ctx = document.getElementById('messagesChart');
-    const wrap = document.getElementById('chartWrap');
-    if (!ctx || !wrap) return;
+    // ═══════════════════════════════════════
+    // MAIN LINE CHART
+    // ═══════════════════════════════════════
+    const ctx = document.getElementById('v5MainChart');
+    if (!ctx) return;
 
     const labels = {{ chartLabels | safe }};
-    const data   = {{ chartData | safe }};
-    const hasData = Array.isArray(data) && data.some(v => v > 0);
+    const dataOut = {{ chartData | safe }};
+    const dataIn  = {{ chartDataIn | safe }};
+    const hasData = Array.isArray(dataOut) && dataOut.some(v => v > 0);
 
+    const wrap = ctx.parentElement;
     if (!hasData) {
-        // Adjust container heights for empty state
-        const chartCard = document.getElementById('chartCard');
-        if (chartCard) chartCard.style.minHeight = '140px';
-        wrap.style.minHeight = '80px';
-
         wrap.innerHTML = `
-            <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;
-                        height:100%;gap:6px;text-align:center;color:#94a3b8;padding:8px;">
-                <div style="width:36px;height:36px;border-radius:50%;background:#f1f5f9;
-                            display:flex;align-items:center;justify-content:center;">
-                    <i class="fa-solid fa-cart-shopping" style="font-size:14px;color:#cbd5e1;"></i>
+            <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:8px;text-align:center;color:var(--v-text-light);padding:16px;">
+                <div style="width:44px;height:44px;border-radius:50%;background:var(--v-bg-hover);display:flex;align-items:center;justify-content:center;">
+                    <i class="fa-solid fa-chart-line" style="font-size:18px;color:#CBD5E1;"></i>
                 </div>
-                <div>
-                    <p style="font-size:10px;font-weight:700;color:#64748b;margin:0;">بانتظار رصد أول سلة متروكة لبدء تحليل الأداء.</p>
-                    <p style="font-size:8px;color:#94a3b8;margin:2px 0 0;">ستظهر نشاط السلات هنا بعد ربط واتساب وتشغيل المساعد</p>
-                </div>
+                <p style="font-size:12px;font-weight:700;color:var(--v-text-main);margin:0;">بانتظار أول نشاط</p>
+                <p style="font-size:10px;color:var(--v-text-sec);margin:0;">ستظهر بيانات الرسائل هنا بعد ربط واتساب</p>
             </div>`;
         return;
     }
 
-    const c    = ctx.getContext('2d');
-    
-    // Gradient for Abandoned (amber)
-    const gradAbandoned = c.createLinearGradient(0, 0, 0, 148);
-    gradAbandoned.addColorStop(0, 'rgba(217,119,6,0.14)');
-    gradAbandoned.addColorStop(1, 'rgba(217,119,6,0)');
-
-    // Gradient for Recovered (emerald)
-    const gradRecovered = c.createLinearGradient(0, 0, 0, 148);
-    gradRecovered.addColorStop(0, 'rgba(16,185,129,0.14)');
-    gradRecovered.addColorStop(1, 'rgba(16,185,129,0)');
+    const c = ctx.getContext('2d');
+    const gradPurple = c.createLinearGradient(0, 0, 0, 220);
+    gradPurple.addColorStop(0, 'rgba(124, 58, 237, 0.15)');
+    gradPurple.addColorStop(1, 'rgba(124, 58, 237, 0.00)');
+    const gradTeal = c.createLinearGradient(0, 0, 0, 220);
+    gradTeal.addColorStop(0, 'rgba(13, 148, 136, 0.12)');
+    gradTeal.addColorStop(1, 'rgba(13, 148, 136, 0.00)');
 
     new Chart(ctx, {
         type: 'line',
@@ -568,75 +694,79 @@
             labels,
             datasets: [
                 {
-                    label: 'متروكة',
-                    data: data,
-                    borderColor: '#d97706',
-                    backgroundColor: gradAbandoned,
-                    borderWidth: 2,
-                    fill: true,
-                    tension: 0.4,
-                    pointBackgroundColor: '#d97706',
-                    pointBorderColor: '#fff',
-                    pointBorderWidth: 1.5,
-                    pointRadius: 3,
-                    pointHoverRadius: 5
+                    label: 'الرسائل المرسلة', data: dataOut,
+                    borderColor: '#7C3AED', backgroundColor: gradPurple,
+                    borderWidth: 3, fill: true, tension: 0.38,
+                    pointBackgroundColor: '#fff', pointBorderColor: '#7C3AED',
+                    pointBorderWidth: 3, pointRadius: 5, pointHoverRadius: 7
                 },
                 {
-                    label: 'مستعادة',
-                    data: data.map(v => Math.round(v * 0.35)),
-                    borderColor: '#10b981',
-                    backgroundColor: gradRecovered,
-                    borderWidth: 2,
-                    fill: true,
-                    tension: 0.4,
-                    pointBackgroundColor: '#10b981',
-                    pointBorderColor: '#fff',
-                    pointBorderWidth: 1.5,
-                    pointRadius: 3,
-                    pointHoverRadius: 5
+                    label: 'الرسائل الواردة', data: dataIn,
+                    borderColor: '#0D9488', backgroundColor: gradTeal,
+                    borderWidth: 3, fill: true, tension: 0.38,
+                    pointBackgroundColor: '#fff', pointBorderColor: '#0D9488',
+                    pointBorderWidth: 3, pointRadius: 5, pointHoverRadius: 7
                 }
             ]
         },
         options: {
-            responsive: true,
-            maintainAspectRatio: false,
+            responsive: true, maintainAspectRatio: false,
             plugins: {
-                legend: { 
-                    display: true,
-                    position: 'top',
-                    align: 'end',
-                    labels: {
-                        font: { family: 'Cairo', size: 9, weight: 'bold' },
-                        boxWidth: 8,
-                        usePointStyle: true,
-                        padding: 10
-                    }
-                },
+                legend: { display: false },
                 tooltip: {
-                    backgroundColor: '#0f172a',
-                    titleColor: '#94a3b8',
-                    bodyColor: '#ffffff',
-                    padding: 10,
-                    cornerRadius: 10,
-                    titleFont: { family: 'Cairo', size: 10 },
-                    bodyFont:  { family: 'Inter',  size: 13, weight: '700' }
+                    backgroundColor: '#0F172A', titleColor: '#94A3B8', bodyColor: '#fff',
+                    padding: 12, cornerRadius: 10,
+                    titleFont: { family: 'Cairo', size: 10, weight: '600' },
+                    bodyFont: { family: 'Cairo', size: 12, weight: '700' },
+                    displayColors: false
                 }
             },
             scales: {
                 y: {
                     beginAtZero: true,
-                    grid: { color: '#f1f5f9', drawBorder: false },
-                    ticks: { font: { family: 'Inter', size: 9 }, color: '#94a3b8', maxTicksLimit: 4 },
+                    grid: { color: 'rgba(226,232,240,0.5)', drawBorder: false },
+                    ticks: { font: { family: 'Inter', size: 10 }, color: '#94A3B8', maxTicksLimit: 5 },
                     border: { display: false }
                 },
                 x: {
                     grid: { display: false },
-                    ticks: { font: { family: 'Cairo', size: 9 }, color: '#94a3b8' },
+                    ticks: { font: { family: 'Cairo', size: 10 }, color: '#94A3B8' },
                     border: { display: false }
                 }
             }
         }
     });
+
+    // ═══════════════════════════════════════
+    // PERFORMANCE DONUT
+    // ═══════════════════════════════════════
+    const dCtx = document.getElementById('v5DonutChart');
+    if (dCtx) {
+        const aiReplies = {{ ai_replies | default(0) }};
+        const msgSent = {{ messages_sent | default(0) }};
+        const campaigns = {{ campaigns_count | default(0) }};
+        new Chart(dCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['الردود الذكية', 'الرسائل المرسلة', 'الحملات'],
+                datasets: [{
+                    data: [aiReplies || 1, msgSent || 1, campaigns || 1],
+                    backgroundColor: ['#0D9488', '#7C3AED', '#E2E8F0'],
+                    borderWidth: 0, cutout: '78%'
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: true,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: '#0F172A', bodyColor: '#fff', padding: 10, cornerRadius: 8,
+                        bodyFont: { family: 'Cairo', size: 11, weight: '600' }, displayColors: true
+                    }
+                }
+            }
+        });
+    }
 })();
 </script>
 {% endblock %}
