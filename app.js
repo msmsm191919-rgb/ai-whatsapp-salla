@@ -2491,8 +2491,9 @@ app.get("/whatsapp-web", ensureAuthenticated, async (req, res) => {
       tenant = await db.models.Tenant.findOne({ where: { salla_merchant_id: req.user.merchant.id } });
     }
 
-    if (!tenant) {
-      return res.redirect('/login');
+    if (!tenant || !tenant.store_name) {
+      console.error("❌ Access Blocked: Missing valid Tenant Context in DB");
+      return res.status(403).send("🔒 Access Denied: Valid Tenant Context is required to access WhatsApp pairing.");
     }
 
     const userToRender = {
