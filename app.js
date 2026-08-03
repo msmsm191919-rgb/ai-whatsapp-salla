@@ -1004,62 +1004,10 @@ app.get("/login/token", async (req, res) => {
   });
 });
 
-if (process.env.NODE_ENV === 'development') {
-  app.get("/login/bypass", async (req, res) => {
-    const secret = req.query.secret;
-    if (secret !== 'mubhir1919') {
-      return res.status(403).send("🔒 Access Denied: Invalid Secret Code.");
-    }
-
-    const merchantId = req.query.merchant_id || "682209569";
-    const storeName = req.query.store_name || "المتجر التجريبي";
-
-    try {
-      const db = SallaDatabase.connection;
-      if (!db || !db.models?.Tenant) {
-        return res.status(500).send("Database not ready yet.");
-      }
-
-      // 1. Create or Find Tenant in DB
-      let tenant = await db.models.Tenant.findOne({ where: { salla_merchant_id: merchantId } });
-      if (!tenant) {
-        tenant = await db.models.Tenant.create({
-          salla_merchant_id: merchantId,
-          store_name: storeName,
-          email: "bypass@mubhirbot.com",
-          store_domain: "bypass-store.salla.sa",
-          platform: "salla"
-        });
-        // Ensure Trial Subscription
-        await SallaDatabase.ensureTrialSubscription(tenant.id);
-      }
-
-      // 2. Persist local test session through Passport
-      const userSession = {
-        merchant: {
-          id: merchantId,
-          name: storeName
-        },
-        tenant_id: tenant.id,
-        platform: "salla"
-      };
-
-      req.login(userSession, (err) => {
-        if (err) {
-          return res.status(500).send("Login session error: " + err.message);
-        }
-
-        req.session.save((saveErr) => {
-          if (saveErr) return res.status(500).send("Session save error: " + saveErr.message);
-          res.redirect("/dashboard?welcome=1");
-        });
-      });
-    } catch (e) {
-      console.error("Bypass login error:", e);
-      res.status(500).send("Error: " + e.message);
-    }
-  });
-}
+// 🔒 Security Hardening: /login/bypass is completely disabled
+app.all("/login/bypass", (req, res) => {
+  return res.status(403).send("🔒 Access Denied: /login/bypass is permanently disabled.");
+});
 
 function validateOAuthState(req, res, next) {
   const { state } = req.query;
@@ -2506,20 +2454,61 @@ app.get("/customers", async (req, res) => {
 // ═══════════════════════════════════════════════════════════════════
 // waWeb imported at top of file
 
-// يحلّ معرّف التاجر الحالي (للجلسة المنفصلة)
+// يحلّ معرّف التاجر الحالي بناءً على الجلسة المصادق عليها حصراً
 async function _waTenantId(req) {
-  if (!req.user) {
-    if (process.env.NODE_ENV !== 'development') return null;
-    req.user = { merchant: { id: 123456789, name: 'Demo Merchant' } };
+  if (!req.user && !req.session?.tenantId) {
+    return null;
   }
   const db = SallaDatabase.connection;
-  const tenant = await db.models.Tenant.findOne({ where: { salla_merchant_id: req.user.merchant.id } });
-  return tenant ? tenant.id : null;
+  if (!db || !db.models?.Tenant) return null;
+
+  // 1. Deducing directly from session tenantId / user tenant_id
+  const tenantId = req.user?.tenant_id || req.session?.tenantId;
+  if (tenantId) {
+    const tenant = await db.models.Tenant.findByPk(tenantId);
+    return tenant ? tenant.id : null;
+  }
+
+  // 2. Deducing from authenticated merchant ID
+  if (req.user?.merchant?.id) {
+    const tenant = await db.models.Tenant.findOne({ where: { salla_merchant_id: req.user.merchant.id } });
+    return tenant ? tenant.id : null;
+  }
+
+  return null;
 }
 
-// صفحة الربط (QR)
-app.get("/whatsapp-web", (req, res) => {
-  res.render("whatsapp_web.html", { user: req.user, activePage: 'wa_web' });
+// صفحة الربط (QR) — مصادق عليها حصراً
+app.get("/whatsapp-web", ensureAuthenticated, async (req, res) => {
+  try {
+    const db = SallaDatabase.connection;
+    const tenantId = req.user?.tenant_id || req.session?.tenantId;
+    let tenant = null;
+
+    if (tenantId) {
+      tenant = await db.models.Tenant.findByPk(tenantId);
+    } else if (req.user?.merchant?.id) {
+      tenant = await db.models.Tenant.findOne({ where: { salla_merchant_id: req.user.merchant.id } });
+    }
+
+    if (!tenant) {
+      return res.redirect('/login');
+    }
+
+    const userToRender = {
+      ...req.user,
+      tenant_id: tenant.id,
+      merchant: {
+        ...(req.user?.merchant || {}),
+        name: tenant.store_name
+      }
+    };
+
+    res.render("whatsapp_web.html", { user: userToRender, activePage: 'wa_web' });
+  } catch (e) {
+    console.error("Error rendering whatsapp-web:", e);
+    res.redirect('/login');
+  }
 });
 
 // صفحة محاكي واتساب (Simulator)
