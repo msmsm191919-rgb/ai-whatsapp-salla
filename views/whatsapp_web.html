@@ -172,11 +172,18 @@
         if (status === 'disconnected' || status === 'auth_required') {
             el('startBtn').innerHTML = '<i class="fa-solid fa-qrcode ml-1"></i> ابدأ الربط';
             el('startBtn').classList.remove('hidden');
+            el('startBtn').disabled = false;
         } else if (status === 'error') {
             el('startBtn').innerHTML = '<i class="fa-solid fa-arrows-rotate ml-1"></i> إعادة المحاولة';
             el('startBtn').classList.remove('hidden');
+            el('startBtn').disabled = false;
+        } else if (status === 'starting' || status === 'initializing_recovery') {
+            el('startBtn').innerHTML = '<i class="fa-solid fa-spinner fa-spin ml-1"></i> جاري الإقلاع...';
+            el('startBtn').classList.remove('hidden');
+            el('startBtn').disabled = true;
         } else {
             el('startBtn').classList.add('hidden');
+            el('startBtn').disabled = false;
         }
 
         if (status === 'qr') {
@@ -190,30 +197,47 @@
         } else {
             el('logoutBtn').classList.add('hidden');
         }
-
-        // Continuous polling prevents race conditions if state changes asynchronously
     }
-    let autoStarted = false;
+
+    let isStarting = false;
     async function poll() {
         try { 
             const data = await (await fetch('/api/wa-web/status')).json();
-            setStatus(data);
-            if ((!data.status || data.status === 'disconnected') && !autoStarted) {
-                autoStarted = true;
-                startWa();
+            if (!isStarting) {
+                setStatus(data);
             }
-        } catch (e) {}
+        } catch (e) {
+            console.error("Poll error:", e);
+        }
     }
+
     async function startWa() {
+        if (isStarting) return;
+        isStarting = true;
         const btn = document.getElementById('startBtn');
-        if (btn) btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري الإقلاع...';
-        await fetch('/api/wa-web/start', { method: 'POST' });
-        poll();
+        if (btn) {
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin ml-1"></i> جاري الإقلاع...';
+            btn.disabled = true;
+        }
+        try {
+            const res = await fetch('/api/wa-web/start', { method: 'POST' });
+            const data = await res.json();
+            if (!data.ok) {
+                setStatus({ status: 'error', error: data.error || 'فشل بدء جلسة واتساب' });
+            }
+        } catch (e) {
+            setStatus({ status: 'error', error: 'حدث خطأ في الاتصال بالسيرفر' });
+        } finally {
+            isStarting = false;
+            poll();
+        }
     }
+
     async function logoutWa() {
         await fetch('/api/wa-web/logout', { method: 'POST' });
         location.reload();
     }
+
     poll();
     setInterval(poll, 3000);
 </script>
