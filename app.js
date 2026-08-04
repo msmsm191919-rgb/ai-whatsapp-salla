@@ -1349,6 +1349,8 @@ function ensureAuthenticated(req, res, next) {
   console.log(`- Action: Redirecting to /login`);
   console.log(`============================================================\n`);
   res.redirect('/login');
+}
+
 async function getTenantFromReq(req) {
   const db = SallaDatabase.connection;
   if (!db || !db.models?.Tenant) return null;

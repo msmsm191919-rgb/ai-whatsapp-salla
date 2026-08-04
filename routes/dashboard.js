@@ -162,7 +162,6 @@ router.get('/', async (req, res) => {
     const renewalDate = subEndDate
       ? new Date(subEndDate).toLocaleDateString('ar-SA', { year: 'numeric', month: 'long', day: 'numeric' })
       : 'غير محدد';
-    } catch (e) { /* AbandonedCart model may not exist yet */ }
 
     const settings = tenant?.settings || {};
     const aiConfig = settings.ai_config || {};
