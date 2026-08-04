@@ -75,74 +75,93 @@ router.get('/', async (req, res) => {
       daysLeft = Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
     }
 
-    const currentPeriod = new Date().toISOString().slice(0, 7);
-    const currentUsage = await db.models.UsageCounter.findOne({
-      where: { tenant_id: tenant?.id, period_key: currentPeriod }
-    });
-    const messagesSent = currentUsage?.messages_sent || 0;
-    const aiRequests = currentUsage?.ai_requests || 0;
-    const usagePercent = msgLimit > 0 ? Math.min(Math.round((messagesSent / msgLimit) * 100), 100) : 0;
-    const messagesRemaining = msgLimit > 0 ? Math.max(msgLimit - messagesSent, 0) : '∞';
-
-    const recentLogs = await db.models.MessageLog.findAll({
-      where: { tenant_id: tenant?.id },
-      order: [['created_at', 'DESC']],
-      limit: 5
-    });
-
-    // Real chart data from last 7 days (outgoing + incoming)
+    let messagesSent = 0;
+    let aiRequests = 0;
+    let recentLogs = [];
     const chartLabels = [];
     const chartDataOut = [];
     const chartDataIn = [];
+    let growthPercent = 0;
+    let campaignsCount = 0;
+    let contactsCount = 0;
+    let totalCarts = 0, recoveredCarts = 0, recoveredValue = 0, recentCartsData = [];
+
     for (let i = 6; i >= 0; i--) {
       const d = new Date();
       d.setDate(d.getDate() - i);
-      const dayStart = new Date(d); dayStart.setHours(0, 0, 0, 0);
-      const dayEnd = new Date(d); dayEnd.setHours(23, 59, 59, 999);
       chartLabels.push(d.toLocaleDateString('ar-SA', { weekday: 'short' }));
-      const outCount = await db.models.MessageLog.count({
-        where: { tenant_id: tenant?.id, direction: 'out', created_at: { [Op.between]: [dayStart, dayEnd] } }
-      });
-      const inCount = await db.models.MessageLog.count({
-        where: { tenant_id: tenant?.id, direction: 'in', created_at: { [Op.between]: [dayStart, dayEnd] } }
-      });
-      chartDataOut.push(outCount);
-      chartDataIn.push(inCount);
+      chartDataOut.push(0);
+      chartDataIn.push(0);
     }
 
-    const lastMonthKey = new Date(new Date().setMonth(new Date().getMonth() - 1)).toISOString().slice(0, 7);
-    const lastMonthUsage = await db.models.UsageCounter.findOne({
-      where: { tenant_id: tenant?.id, period_key: lastMonthKey }
-    });
-    const lastAI = lastMonthUsage?.ai_requests || 0;
-    let growthPercent = lastAI > 0 ? ((aiRequests - lastAI) / lastAI) * 100 : (aiRequests > 0 ? 100 : 0);
+    if (tenant && tenant.id) {
+      const currentPeriod = new Date().toISOString().slice(0, 7);
+      const currentUsage = await db.models.UsageCounter.findOne({
+        where: { tenant_id: tenant.id, period_key: currentPeriod }
+      });
+      messagesSent = currentUsage?.messages_sent || 0;
+      aiRequests = currentUsage?.ai_requests || 0;
 
-    const campaignsCount = await db.models.Campaign.count({ where: { tenant_id: tenant?.id } });
-    const contactsCount = await db.models.Customer.count({ where: { tenant_id: tenant?.id } });
+      recentLogs = await db.models.MessageLog.findAll({
+        where: { tenant_id: tenant.id },
+        order: [['created_at', 'DESC']],
+        limit: 5
+      });
+
+      // Real chart data from last 7 days (outgoing + incoming)
+      chartDataOut.length = 0;
+      chartDataIn.length = 0;
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        const dayStart = new Date(d); dayStart.setHours(0, 0, 0, 0);
+        const dayEnd = new Date(d); dayEnd.setHours(23, 59, 59, 999);
+        const outCount = await db.models.MessageLog.count({
+          where: { tenant_id: tenant.id, direction: 'out', created_at: { [Op.between]: [dayStart, dayEnd] } }
+        });
+        const inCount = await db.models.MessageLog.count({
+          where: { tenant_id: tenant.id, direction: 'in', created_at: { [Op.between]: [dayStart, dayEnd] } }
+        });
+        chartDataOut.push(outCount);
+        chartDataIn.push(inCount);
+      }
+
+      const lastMonthKey = new Date(new Date().setMonth(new Date().getMonth() - 1)).toISOString().slice(0, 7);
+      const lastMonthUsage = await db.models.UsageCounter.findOne({
+        where: { tenant_id: tenant.id, period_key: lastMonthKey }
+      });
+      const lastAI = lastMonthUsage?.ai_requests || 0;
+      growthPercent = lastAI > 0 ? ((aiRequests - lastAI) / lastAI) * 100 : (aiRequests > 0 ? 100 : 0);
+
+      campaignsCount = await db.models.Campaign.count({ where: { tenant_id: tenant.id } });
+      contactsCount = await db.models.Customer.count({ where: { tenant_id: tenant.id } });
+
+      try {
+        if (db.models.AbandonedCart) {
+          totalCarts = await db.models.AbandonedCart.count({ where: { tenant_id: tenant.id } });
+          recoveredCarts = await db.models.AbandonedCart.count({ where: { tenant_id: tenant.id, status: 'recovered' } });
+          const recoveredRows = await db.models.AbandonedCart.findAll({
+            where: { tenant_id: tenant.id, status: 'recovered' },
+            attributes: ['cart_total']
+          });
+          recoveredValue = recoveredRows.reduce((sum, r) => sum + (parseFloat(r.cart_total) || 0), 0);
+          recentCartsData = await db.models.AbandonedCart.findAll({
+            where: { tenant_id: tenant.id },
+            order: [['created_at', 'DESC']],
+            limit: 4
+          });
+          recentCartsData = recentCartsData.map(c => c.get({ plain: true }));
+        }
+      } catch (errCarts) {
+        console.warn(`[dashboard] AbandonedCart query skipped: ${errCarts.message}`);
+      }
+    }
+
+    const usagePercent = msgLimit > 0 ? Math.min(Math.round((messagesSent / msgLimit) * 100), 100) : 0;
+    const messagesRemaining = msgLimit > 0 ? Math.max(msgLimit - messagesSent, 0) : '∞';
     const renewalDate = subEndDate
       ? new Date(subEndDate).toLocaleDateString('ar-SA', { year: 'numeric', month: 'long', day: 'numeric' })
       : 'غير محدد';
-
-    // V5 Dashboard: Abandoned carts stats
-    let totalCarts = 0, recoveredCarts = 0, recoveredValue = 0, recentCartsData = [];
-    try {
-      if (db.models.AbandonedCart) {
-        totalCarts = await db.models.AbandonedCart.count({ where: { tenant_id: tenant?.id } });
-        recoveredCarts = await db.models.AbandonedCart.count({ where: { tenant_id: tenant?.id, status: 'recovered' } });
-        // Get recovered value
-        const recoveredRows = await db.models.AbandonedCart.findAll({
-          where: { tenant_id: tenant?.id, status: 'recovered' },
-          attributes: ['cart_total']
-        });
-        recoveredValue = recoveredRows.reduce((sum, r) => sum + (parseFloat(r.cart_total) || 0), 0);
-        // Recent carts for table
-        recentCartsData = await db.models.AbandonedCart.findAll({
-          where: { tenant_id: tenant?.id },
-          order: [['created_at', 'DESC']],
-          limit: 4
-        });
-        recentCartsData = recentCartsData.map(c => c.get({ plain: true }));
-      }
     } catch (e) { /* AbandonedCart model may not exist yet */ }
 
     const settings = tenant?.settings || {};

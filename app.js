@@ -1349,6 +1349,27 @@ function ensureAuthenticated(req, res, next) {
   console.log(`- Action: Redirecting to /login`);
   console.log(`============================================================\n`);
   res.redirect('/login');
+async function getTenantFromReq(req) {
+  const db = SallaDatabase.connection;
+  if (!db || !db.models?.Tenant) return null;
+
+  const tenantId = req.user?.tenant_id || req.session?.tenantId;
+  if (tenantId) {
+    const tenant = await db.models.Tenant.findByPk(tenantId, {
+      include: [{ model: db.models.Subscription, include: [db.models.Plan], required: false }]
+    });
+    if (tenant) return tenant;
+  }
+
+  if (req.user?.merchant?.id) {
+    const tenant = await db.models.Tenant.findOne({
+      where: { salla_merchant_id: req.user.merchant.id },
+      include: [{ model: db.models.Subscription, include: [db.models.Plan], required: false }]
+    });
+    if (tenant) return tenant;
+  }
+
+  return null;
 }
 
 async function ensureSubscriptionActive(req, res, next) {
@@ -2211,35 +2232,39 @@ app.get(["/pricing", "/billing"], async (req, res) => {
 // Automation: Abandoned Carts
 app.get("/automation/carts", require('./services/planGate').requirePage('automation_carts'), async (req, res) => {
   try {
-    if (!req.user) req.user = { merchant: { id: 123456789, name: 'Demo Merchant' } };
     const db = SallaDatabase.connection;
+    const tenant = await getTenantFromReq(req);
 
-    // 1. Get Tenant
-    const tenant = await db.models.Tenant.findOne({
-      where: { salla_merchant_id: req.user.merchant.id },
-      include: [{ model: db.models.Subscription, include: [db.models.Plan] }]
-    });
-
-    // 2. Plan Check
     const plan = tenant?.Subscription?.Plan;
-    // For now, assume enabled if plan exists, or check specific feature flag if we had one
     const automationEnabled = true;
 
-    // 3. Fetch Carts
-    const carts = (db.models.Cart) ? await db.models.Cart.findAll({
-      where: { tenant_id: tenant?.id },
-      include: ['Customer'],
-      order: [['created_at', 'DESC']]
-    }) : [];
+    // Fetch Carts safely guarded
+    let carts = [];
+    if (tenant && tenant.id && db.models.Cart) {
+      carts = await db.models.Cart.findAll({
+        where: { tenant_id: tenant.id },
+        include: ['Customer'],
+        order: [['created_at', 'DESC']]
+      });
+    }
 
-    // 4. Calculate Stats
     const totalAbandoned = carts.length;
     const totalRecovered = carts.filter(c => c.status === 'recovered').length;
     const potentialRevenue = carts.reduce((n, { total_amount }) => n + (parseFloat(total_amount) || 0), 0);
     const recoveredRevenue = carts.filter(c => c.status === 'recovered').reduce((n, { total_amount }) => n + (parseFloat(total_amount) || 0), 0);
 
+    const userToRender = req.user ? {
+      ...req.user,
+      tenant_id: tenant?.id,
+      store_name: tenant?.store_name || (req.user?.merchant?.name || 'المتجر'),
+      merchant: {
+        ...(req.user?.merchant || {}),
+        name: tenant?.store_name || (req.user?.merchant?.name || 'المتجر')
+      }
+    } : null;
+
     res.render("automation/carts.html", {
-      user: req.user,
+      user: userToRender,
       activePage: 'carts',
       plan_name: plan?.name || 'الأساسية',
       automation_enabled: automationEnabled,
@@ -2256,32 +2281,22 @@ app.get("/automation/carts", require('./services/planGate').requirePage('automat
 // Automation: Order Updates & Review Requests
 app.get("/automation/orders", require('./services/planGate').requirePage('automation_orders'), async (req, res) => {
   try {
-    if (!req.user) req.user = { merchant: { id: 123456789, name: 'Demo Merchant' } };
     const db = SallaDatabase.connection;
-    const { Op } = require('sequelize');
+    const tenant = await getTenantFromReq(req);
 
-    // 1. Get Tenant
-    const tenant = await db.models.Tenant.findOne({
-      where: { salla_merchant_id: req.user.merchant.id },
-      include: [{ model: db.models.Subscription, include: [db.models.Plan] }]
-    });
-
-    // 2. Plan Check
     const plan = tenant?.Subscription?.Plan;
     const automationEnabled = true;
 
-    // 3. Fetch Order Messages
     let orderMessages = [];
-    if (db.models.MessageLog) {
+    if (tenant && tenant.id && db.models.MessageLog) {
       const messages = await db.models.MessageLog.findAll({
         where: {
-          tenant_id: tenant?.id,
+          tenant_id: tenant.id,
           direction: 'out'
         },
         order: [['created_at', 'DESC']],
         limit: 50
       });
-      // Filter for Review Requests or Order Updates
       orderMessages = messages.filter(m => {
         const content = m.content || "";
         const meta = m.metadata || {};
@@ -2289,8 +2304,18 @@ app.get("/automation/orders", require('./services/planGate').requirePage('automa
       });
     }
 
+    const userToRender = req.user ? {
+      ...req.user,
+      tenant_id: tenant?.id,
+      store_name: tenant?.store_name || (req.user?.merchant?.name || 'المتجر'),
+      merchant: {
+        ...(req.user?.merchant || {}),
+        name: tenant?.store_name || (req.user?.merchant?.name || 'المتجر')
+      }
+    } : null;
+
     res.render("automation/orders.html", {
-      user: req.user,
+      user: userToRender,
       activePage: 'orders',
       plan_name: plan?.name || 'الأساسية',
       automation_enabled: automationEnabled,
@@ -2306,19 +2331,8 @@ app.get("/automation/orders", require('./services/planGate').requirePage('automa
 // Campaigns Route
 app.get("/campaigns", require('./services/planGate').requirePage('campaigns'), async (req, res) => {
   try {
-    if (!req.user) req.user = { merchant: { id: 123456789, name: 'Demo Merchant' } };
     const db = SallaDatabase.connection;
-
-    // Get Tenant with Subscription + Plan
-    const tenant = await db.models.Tenant.findOne({
-      where: { salla_merchant_id: req.user.merchant.id },
-      include: [
-        {
-          model: db.models.Subscription,
-          include: [db.models.Plan]
-        }
-      ]
-    });
+    const tenant = await getTenantFromReq(req);
 
     // Plan data
     const subscription = tenant?.Subscription;
@@ -2328,27 +2342,46 @@ app.get("/campaigns", require('./services/planGate').requirePage('campaigns'), a
     const msgLimit = plan?.msg_limit_monthly || 1000;
     const campaignsEnabled = planFeatures.campaigns || false;
 
-    // Usage data
-    const currentPeriod = new Date().toISOString().slice(0, 7);
-    const currentUsage = await db.models.UsageCounter.findOne({
-      where: { tenant_id: tenant?.id, period_key: currentPeriod }
-    });
-    const messagesSent = currentUsage?.messages_sent || 0;
+    // Usage & campaigns data safely guarded
+    let messagesSent = 0;
+    let campaigns = [];
+    let contactsCount = 0;
+
+    if (tenant && tenant.id) {
+      const currentPeriod = new Date().toISOString().slice(0, 7);
+      const currentUsage = await db.models.UsageCounter.findOne({
+        where: { tenant_id: tenant.id, period_key: currentPeriod }
+      });
+      messagesSent = currentUsage?.messages_sent || 0;
+
+      if (db.models.Campaign) {
+        campaigns = await db.models.Campaign.findAll({
+          where: { tenant_id: tenant.id },
+          order: [['created_at', 'DESC']]
+        });
+      }
+
+      if (db.models.Customer) {
+        contactsCount = await db.models.Customer.count({ where: { tenant_id: tenant.id } });
+      }
+    }
+
     const messagesRemaining = msgLimit > 0 ? Math.max(msgLimit - messagesSent, 0) : -1; // -1 = unlimited
-
-    // Fetch campaigns
-    const campaigns = (db.models.Campaign) ? await db.models.Campaign.findAll({
-      where: { tenant_id: tenant?.id },
-      order: [['created_at', 'DESC']]
-    }) : [];
-
-    // Campaign stats
     const totalSent = campaigns.reduce((sum, c) => sum + (c.stats_sent || 0), 0);
     const totalCampaigns = campaigns.length;
-    const contactsCount = await db.models.Customer.count({ where: { tenant_id: tenant?.id } });
+
+    const userToRender = req.user ? {
+      ...req.user,
+      tenant_id: tenant?.id,
+      store_name: tenant?.store_name || (req.user?.merchant?.name || 'المتجر'),
+      merchant: {
+        ...(req.user?.merchant || {}),
+        name: tenant?.store_name || (req.user?.merchant?.name || 'المتجر')
+      }
+    } : null;
 
     res.render("campaigns.html", {
-      user: req.user,
+      user: userToRender,
       campaigns,
       activePage: 'campaigns',
       plan_name: planName,
@@ -2369,14 +2402,8 @@ app.get("/campaigns", require('./services/planGate').requirePage('campaigns'), a
 
 app.get("/campaigns/create", require('./services/planGate').requirePage('campaigns'), async (req, res) => {
   try {
-    if (!req.user) req.user = { merchant: { id: 123456789, name: 'Demo Merchant' } };
     const db = SallaDatabase.connection;
-
-    // Check plan permission for campaigns
-    const tenant = await db.models.Tenant.findOne({
-      where: { salla_merchant_id: req.user.merchant.id },
-      include: [{ model: db.models.Subscription, include: [db.models.Plan] }]
-    });
+    const tenant = await getTenantFromReq(req);
 
     const plan = tenant?.Subscription?.Plan;
     const planFeatures = plan?.features || {};
