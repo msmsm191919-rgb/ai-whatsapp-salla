@@ -25,7 +25,7 @@ const BASE_SYSTEM_PROMPT = `
 
 class AIService {
 
-    async generateReply(tenantId, userMessage, customerName = 'عميلنا', previousMessages = [], aiRequestId = null) {
+    async generateReply(tenantId, userMessage, customerName = 'عميلنا', previousMessages = [], aiRequestId = null, options = {}) {
         const actualRequestId = aiRequestId || crypto.randomUUID();
         try {
             const planGate = require('./planGate');
