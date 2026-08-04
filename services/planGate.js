@@ -331,17 +331,14 @@ async function getFullPlanForTenant(tenantId) {
 function requirePage(pageKey) {
     return async (req, res, next) => {
         try {
-            const merchantId = req.user?.merchant?.id;
-            if (!merchantId) return res.status(401).send("Unauthorized");
-            const db = SallaDatabase.connection;
-            const tenant = await db.models.Tenant.findOne({ where: { salla_merchant_id: merchantId } });
+            const tenant = await resolveTenant(req);
+            if (!tenant && !req.user) return res.status(401).send("Unauthorized");
             const plan = tenant ? await getTenantPlan(tenant.id) : null;
             const planName = plan?.name || DEFAULT_PLAN;
 
             if (!isPageAllowed(planName, pageKey)) {
-                // ضمان وجود user object للـ layout
-                const safeUser = req.user || { merchant: { id: merchantId, name: tenant?.store_name || 'متجرك' } };
-                if (!safeUser.merchant) safeUser.merchant = { id: merchantId, name: tenant?.store_name || 'متجرك' };
+                const safeUser = req.user || { merchant: { id: tenant?.salla_merchant_id || tenant?.id || 1, name: tenant?.store_name || 'متجرك' } };
+                if (!safeUser.merchant) safeUser.merchant = { id: tenant?.salla_merchant_id || tenant?.id || 1, name: tenant?.store_name || 'متجرك' };
 
                 return res.status(403).render('upgrade_required.html', {
                     user: safeUser,
@@ -369,10 +366,8 @@ function requirePage(pageKey) {
 function requireFeature(featureKey) {
     return async (req, res, next) => {
         try {
-            const merchantId = req.user?.merchant?.id;
-            if (!merchantId) return res.status(401).json({ error: 'unauthorized' });
-            const db = SallaDatabase.connection;
-            const tenant = await db.models.Tenant.findOne({ where: { salla_merchant_id: merchantId } });
+            const tenant = await resolveTenant(req);
+            if (!tenant && !req.user) return res.status(401).json({ error: 'unauthorized' });
             const plan = tenant ? await getTenantPlan(tenant.id) : null;
             const planName = plan?.name || DEFAULT_PLAN;
 
@@ -395,17 +390,14 @@ function requireFeature(featureKey) {
 function requireFeaturePage(featureKey) {
     return async (req, res, next) => {
         try {
-            const merchantId = req.user?.merchant?.id;
-            if (!merchantId) return res.status(401).send("Unauthorized");
-            const db = SallaDatabase.connection;
-            const tenant = await db.models.Tenant.findOne({ where: { salla_merchant_id: merchantId } });
+            const tenant = await resolveTenant(req);
+            if (!tenant && !req.user) return res.status(401).send("Unauthorized");
             const plan = tenant ? await getTenantPlan(tenant.id) : null;
             const planName = plan?.name || DEFAULT_PLAN;
 
             if (!isFeatureAllowed(planName, featureKey)) {
-                // ضمان وجود user object للـ layout
-                const safeUser = req.user || { merchant: { id: merchantId, name: tenant?.store_name || 'متجرك' } };
-                if (!safeUser.merchant) safeUser.merchant = { id: merchantId, name: tenant?.store_name || 'متجرك' };
+                const safeUser = req.user || { merchant: { id: tenant?.salla_merchant_id || tenant?.id || 1, name: tenant?.store_name || 'متجرك' } };
+                if (!safeUser.merchant) safeUser.merchant = { id: tenant?.salla_merchant_id || tenant?.id || 1, name: tenant?.store_name || 'متجرك' };
 
                 return res.status(403).render('upgrade_required.html', {
                     user: safeUser,
