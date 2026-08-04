@@ -11,16 +11,25 @@ router.get('/', async (req, res) => {
     console.log(`- Session Tenant (req.user):`, req.user);
 
     const db = SallaDatabase.connection;
-    const merchantId = req.user?.merchant?.id;
-    console.log(`- Tenant Resolver - Querying salla_merchant_id: ${merchantId}`);
+    const tenantId = req.user?.tenant_id || req.session?.tenantId;
+    let tenant = null;
 
-    const tenant = await db.models.Tenant.findOne({
-      where: { salla_merchant_id: merchantId },
-      include: [
-        { model: db.models.Subscription, include: [db.models.Plan] },
-        'WhatsAppConfig'
-      ]
-    });
+    if (tenantId) {
+      tenant = await db.models.Tenant.findByPk(tenantId, {
+        include: [
+          { model: db.models.Subscription, include: [db.models.Plan] },
+          'WhatsAppConfig'
+        ]
+      });
+    } else if (req.user?.merchant?.id) {
+      tenant = await db.models.Tenant.findOne({
+        where: { salla_merchant_id: req.user.merchant.id },
+        include: [
+          { model: db.models.Subscription, include: [db.models.Plan] },
+          'WhatsAppConfig'
+        ]
+      });
+    }
 
     if (!tenant) {
       console.log(`- Tenant Resolver Result: NOT FOUND`);

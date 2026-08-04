@@ -1353,18 +1353,26 @@ function ensureAuthenticated(req, res, next) {
 
 async function ensureSubscriptionActive(req, res, next) {
   try {
-    const merchantId = req.user?.merchant?.id;
-    if (!merchantId) return next();
-
     const db = SallaDatabase.connection;
     if (!db) return next();
 
-    const tenant = await db.models.Tenant.findOne({
-      where: { salla_merchant_id: merchantId },
-      include: [{ model: db.models.Subscription }]
-    });
+    const tenantId = req.user?.tenant_id || req.session?.tenantId;
+    let tenant = null;
 
-    if (!tenant || !tenant.Subscription) {
+    if (tenantId) {
+      tenant = await db.models.Tenant.findByPk(tenantId, {
+        include: [{ model: db.models.Subscription }]
+      });
+    } else if (req.user?.merchant?.id) {
+      tenant = await db.models.Tenant.findOne({
+        where: { salla_merchant_id: req.user.merchant.id },
+        include: [{ model: db.models.Subscription }]
+      });
+    }
+
+    if (!tenant) return next();
+
+    if (!tenant.Subscription) {
       if (req.xhr || req.headers.accept?.includes('json') || req.originalUrl.startsWith('/api')) {
         return res.status(403).json({
           error: 'no_subscription',
