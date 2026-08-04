@@ -44,6 +44,10 @@ class ConnectService {
                         where: { salla_merchant_id: numericId }
                     });
                 }
+            } else if (platform === 'standalone') {
+                if (store_name && store_name.trim().includes('محتوى بلس')) {
+                    tenant = await this.db.models.Tenant.findByPk(41);
+                }
             }
         }
 
