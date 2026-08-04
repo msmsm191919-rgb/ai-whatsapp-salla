@@ -16,6 +16,14 @@
         </div>
 
         <div class="p-4 sm:p-7 text-center">
+            <!-- حساب المتجر الحالي -->
+            <div class="mb-4">
+                <span class="text-xs text-slate-500 font-bold">حساب المتجر: </span>
+                <span class="text-xs font-black text-teal-700 bg-teal-50 border border-teal-200 px-3 py-1 rounded-lg">
+                    <i class="fa-solid fa-store text-[10px] ml-1 text-teal-600"></i>{{ user.merchant.name or user.store_name or store_name or 'محتوى بلس' }}
+                </span>
+            </div>
+
             <!-- الحالة -->
             <div id="statusBadge" class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold mb-5"
                 style="background:#fef3c7; color:#b45309;">
