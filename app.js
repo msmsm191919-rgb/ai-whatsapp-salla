@@ -2135,13 +2135,20 @@ app.get('/billing', async (req, res) => {
 // ---------------------------------------------------------
 app.get(["/pricing", "/billing"], async (req, res) => {
   try {
-    if (!req.user) req.user = { merchant: { id: 123456789, name: 'Demo Merchant' } };
     const db = SallaDatabase.connection;
+    const tenantId = req.user?.tenant_id || req.session?.tenantId;
+    let tenant = null;
 
-    const tenant = await db.models.Tenant.findOne({
-      where: { salla_merchant_id: req.user.merchant.id },
-      include: [{ model: db.models.Subscription, include: [db.models.Plan] }]
-    });
+    if (tenantId) {
+      tenant = await db.models.Tenant.findByPk(tenantId, {
+        include: [{ model: db.models.Subscription, include: [db.models.Plan] }]
+      });
+    } else if (req.user?.merchant?.id) {
+      tenant = await db.models.Tenant.findOne({
+        where: { salla_merchant_id: req.user.merchant.id },
+        include: [{ model: db.models.Subscription, include: [db.models.Plan] }]
+      });
+    }
 
     const subscription = tenant?.Subscription;
     const plan = subscription?.Plan;
@@ -2150,15 +2157,28 @@ app.get(["/pricing", "/billing"], async (req, res) => {
     const subStatus = subscription?.status || null;
     const subEndDate = subscription?.end_date;
 
-    // Usage
-    const currentPeriod = new Date().toISOString().slice(0, 7);
-    const currentUsage = await db.models.UsageCounter.findOne({
-      where: { tenant_id: tenant?.id, period_key: currentPeriod }
-    });
-    const messagesSent = currentUsage?.messages_sent || 0;
+    // Usage safely guarded against undefined tenant_id
+    let messagesSent = 0;
+    if (tenant && tenant.id) {
+      const currentPeriod = new Date().toISOString().slice(0, 7);
+      const currentUsage = await db.models.UsageCounter.findOne({
+        where: { tenant_id: tenant.id, period_key: currentPeriod }
+      });
+      messagesSent = currentUsage?.messages_sent || 0;
+    }
+
+    const userToRender = req.user ? {
+      ...req.user,
+      tenant_id: tenant?.id,
+      store_name: tenant?.store_name || (req.user?.merchant?.name || 'المتجر'),
+      merchant: {
+        ...(req.user?.merchant || {}),
+        name: tenant?.store_name || (req.user?.merchant?.name || 'المتجر')
+      }
+    } : null;
 
     res.render("pricing.html", {
-      user: req.user,
+      user: userToRender,
       activePage: 'pricing',
       current_plan: planName,
       plan_name: planName,
