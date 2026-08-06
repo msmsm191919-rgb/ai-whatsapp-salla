@@ -1,0 +1,16 @@
+Feature_Name,Category,Salla_Merchant,Standalone_Merchant,Plan_Gated,Backend_Service,DB_Table,Status
+Hero Dashboard,Analytics,YES,YES,NO,routes/dashboard.js,Tenants/Subscriptions,Working
+WhatsApp QR Pairing,Integration,YES,YES,NO,services/waWeb.js,WhatsAppConfigs,Working
+AI Auto-Reply Bot,AI,YES,YES,NO,services/AIService.js,Tenants,Working
+Knowledge Base Custom Text,AI,YES,YES,NO,services/PromptManager.js,Tenants,Working
+Message Logs & Human Takeover,Conversations,YES,YES,NO,app.js & HandoffService,MessageLogs,Working
+Bulk Campaign Broadcasts,Marketing,YES,YES,YES (Growth+),app.js,Campaigns/Customers,Working
+Customer Management,CRM,YES,YES,NO,app.js,Customers,Working
+Smart Trigger Scenarios,Automation,YES,YES,YES,app.js,Tenants,Working
+Abandoned Cart Recovery,Automation,YES,NO (Mock),YES (Basic+),jobs/cartRecoveryJob.js,Carts,Working (Salla Only)
+Order Status Updates,Automation,YES,NO (Mock),YES (Basic+),jobs/orderStatusJob.js,MessageLogs,Working (Salla Only)
+Multi-WhatsApp Numbers,Settings,YES,YES,YES (API Access),app.js,WhatsAppConfigs,Working
+Tier Plans & Upgrade,Billing,YES,YES,NO,services/planGate.js,Plans/Subscriptions,Working
+Tap & Salla Payments,Billing,YES,YES,NO,services/BillingService.js,Payments,Working
+WhatsApp Chat Simulator,Testing,YES,YES,NO,app.js,Memory Engine,Working
+Super Admin Panel,Administration,NO,NO,NO (Super Admin),routes/admin.js,Global,Working

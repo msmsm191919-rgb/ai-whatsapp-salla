@@ -1,0 +1,60 @@
+Route,Method,File,Target_User,Public,Middleware,Tenant_Scoped,Status
+/admin/login,GET/POST,app.js & routes/admin.js,Admin,YES,express-rate-limit,NO,Working
+/admin,GET,routes/admin.js,Admin,NO,ensureAuthenticated & adminOnly,NO,Working
+/admin/tenants,GET,routes/admin.js,Admin,NO,adminOnly,NO,Working
+/admin/tenants/:id,GET,routes/admin.js,Admin,NO,adminOnly,NO,Working
+/admin/tenants/:id/status,POST,routes/admin.js,Admin,NO,adminOnly,NO,Working
+/admin/customers,GET,routes/admin.js,Admin,NO,adminOnly,NO,Working
+/admin/customers/export,GET,routes/admin.js,Admin,NO,adminOnly,NO,Working
+/admin/subscriptions,GET,routes/admin.js,Admin,NO,adminOnly,NO,Working
+/admin/billing,GET,routes/admin.js,Admin,NO,adminOnly,NO,Working
+/admin/usage,GET,routes/admin.js,Admin,NO,adminOnly,NO,Working
+/admin/reports,GET,routes/admin.js,Admin,NO,adminOnly,NO,Working
+/admin/reports/export,GET,routes/admin.js,Admin,NO,adminOnly,NO,Working
+/admin/logs,GET,routes/admin.js,Admin,NO,adminOnly,NO,Working
+/admin/logs/:id,GET,routes/admin.js,Admin,NO,adminOnly,NO,Working
+/admin/plans,GET,routes/admin.js,Admin,NO,adminOnly,NO,Working
+/admin/plans/save,POST,routes/admin.js,Admin,NO,adminOnly,NO,Working
+/admin/settings,GET/POST,routes/admin.js,Admin,NO,adminOnly,NO,Working
+/admin/wa/:id/restart,POST,routes/admin.js,Admin,NO,adminOnly,YES,Working
+/admin/wa/:id/logout,POST,routes/admin.js,Admin,NO,adminOnly,YES,Working
+/dashboard,GET,routes/dashboard.js,Merchant,NO,ensureAuthenticated & getTenantFromReq,YES,Working
+/login,GET,app.js,Salla Merchant,YES,passport.authenticate,NO,Working
+/oauth/callback,GET,app.js,Salla Merchant,YES,passport.authenticate,YES,Working
+/connect,GET,app.js,Merchant,YES,None,NO,Working
+/connect/standalone,POST,app.js,Standalone Merchant,YES,express-rate-limit,YES,Working
+/whatsapp-web,GET,app.js,Merchant,NO,ensureAuthenticated & requirePage('whatsapp-web'),YES,Working
+/api/wa-web/start,POST,app.js,Merchant,NO,ensureAuthenticated,YES,Working
+/api/wa-web/status,GET,app.js,Merchant,NO,ensureAuthenticated,YES,Working
+/api/wa-web/logout,POST,app.js,Merchant,NO,ensureAuthenticated,YES,Working
+/logs,GET,app.js,Merchant,NO,ensureAuthenticated & requirePage('logs'),YES,Working
+/logs/export,GET,app.js,Merchant,NO,ensureAuthenticated,YES,Working
+/campaigns,GET,app.js,Merchant,NO,ensureAuthenticated & requirePage('campaigns'),YES,Working
+/campaigns/create,GET,app.js,Merchant,NO,ensureAuthenticated & requirePage('campaigns'),YES,Working
+/api/campaigns/send,POST,app.js,Merchant,NO,ensureAuthenticated & requireFeature('campaigns'),YES,Working
+/automation/carts,GET,app.js,Merchant,NO,ensureAuthenticated & requirePage('automation_carts'),YES,Working
+/automation/orders,GET,app.js,Merchant,NO,ensureAuthenticated & requirePage('automation_orders'),YES,Working
+/scenarios,GET,app.js,Merchant,NO,ensureAuthenticated & requirePage('scenarios'),YES,Working
+/api/scenarios/save,POST,app.js,Merchant,NO,ensureAuthenticated,YES,Working
+/customers,GET,app.js,Merchant,NO,ensureAuthenticated & requirePage('customers'),YES,Working
+/api/customers,POST,app.js,Merchant,NO,ensureAuthenticated,YES,Working
+/api/customers/:id,DELETE,app.js,Merchant,NO,ensureAuthenticated,YES,Working
+/api/customers/import,POST,app.js,Merchant,NO,ensureAuthenticated,YES,Working
+/customers/export,GET,app.js,Merchant,NO,ensureAuthenticated,YES,Working
+/ai-settings,GET,app.js,Merchant,NO,ensureAuthenticated,YES,Working
+/settings/ai,POST,app.js,Merchant,NO,ensureAuthenticated,YES,Working
+/settings/whatsapp,GET,app.js,Merchant,NO,ensureAuthenticated & requireFeature('whatsapp_api'),YES,Working
+/api/whatsapp-numbers,POST,app.js,Merchant,NO,ensureAuthenticated,YES,Working
+/pricing,GET,app.js,Merchant,NO,ensureAuthenticated,YES,Working
+/billing,GET,app.js,Merchant,NO,ensureAuthenticated,YES,Working
+/billing/checkout,POST,app.js,Merchant,NO,ensureAuthenticated,YES,Working
+/billing/return,GET,app.js,Merchant,YES,None,YES,Working
+/webhook,POST,app.js,System,YES,sallaWebhookSecurity,YES,Working
+/webhook/meta,GET/POST,app.js,System,YES,metaWebhookSecurity,YES,Working
+/webhook/tap,POST,app.js,System,YES,tapSecurity,YES,Working
+/simulator,GET,app.js,Merchant,NO,ensureAuthenticated,YES,Working
+/api/demo/chat,POST,app.js,Merchant,NO,ensureAuthenticated,YES,Working
+/privacy,GET,app.js,Public,YES,None,NO,Working
+/terms,GET,app.js,Public,YES,None,NO,Working
+/support,GET,app.js,Public,YES,None,NO,Working
+/health,GET,app.js,Public,YES,None,NO,Working

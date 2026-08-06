@@ -16,7 +16,7 @@ const SallaDatabase = require("./database/db_instance");
                 price_monthly: 49,
                 price_yearly: 470,
                 msg_limit_monthly: 3000,
-                trial_days: 7,
+                trial_days: 3,
                 is_active: true,
                 features: {
                     campaigns: true,
@@ -46,7 +46,7 @@ const SallaDatabase = require("./database/db_instance");
                 price_monthly: 149,
                 price_yearly: 1430,
                 msg_limit_monthly: -1,           // رسائل غير محدودة
-                trial_days: 7,
+                trial_days: 3,
                 is_active: true,
                 features: {
                     campaigns: true,
@@ -76,7 +76,7 @@ const SallaDatabase = require("./database/db_instance");
                 price_monthly: 299,
                 price_yearly: 2850,
                 msg_limit_monthly: -1,           // رسائل غير محدودة
-                trial_days: 7,
+                trial_days: 3,
                 is_active: true,
                 features: {
                     campaigns: true,

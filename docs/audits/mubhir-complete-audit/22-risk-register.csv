@@ -1,0 +1,5 @@
+Risk_ID,Category,Severity,Description,Impact,Mitigation_Status
+RISK-01,Data Architecture,Medium,Duplicate Tenant records for 'محتوى بلس' (Tenants 13, 41, 44, 45) created during development standalone signups,Potential data fragmentation if session cookie switches tenant ID,Tenant 41 is locked as canonical production tenant for Content Plus
+RISK-02,Authentication,Medium,Standalone direct signup (/connect/standalone) creates instant dashboard session without email OTP verification,Potential account takeover if someone enters an existing store name,Should add email OTP or password authentication for standalone accounts post-review
+RISK-03,Email System,Low,Nodemailer configured without active external SMTP credentials,Transactional alert emails for disconnects fall back to system logs,Integrate Resend/SendGrid SMTP credentials post-review
+RISK-04,UI Consistency,Low,Salla-specific sections (Abandoned Carts / Order Updates) appear in Standalone merchant sidebar,Minor UX clutter for standalone service merchants,Add conditional platform check in sidebar navigation to hide e-commerce sections for standalone service stores

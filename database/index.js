@@ -48,11 +48,10 @@ class SallaDatabase {
       // 3. Sync Schema
       // 3. Sync Schema
       if (this.connection && this.connection.sync) {
-        // Re-enabling alter to sync new columns (to_phone)
-        try {
-          // Revert to safer sync (alter) now that we attempted rebuild
-          await this.connection.sync({ alter: true });
-          console.log("✅ Database Synced Successfully.");
+        if (process.env.ALLOW_SCHEMA_SYNC !== 'false') {
+          try {
+            await this.connection.sync({ alter: true });
+            console.log("✅ Database Synced Successfully.");
 
           // SEED PLANS (SaaS Requirement - Competitive Update)
           const { PLANS } = require('../services/planGate');
@@ -107,6 +106,9 @@ class SallaDatabase {
         } catch (e) {
           console.warn("⚠️ Sync Alter Failed (might be locked), trying normal sync...");
           await this.connection.sync();
+        }
+        } else {
+          console.log("ℹ️ Schema sync skipped due to ALLOW_SCHEMA_SYNC = 'false'.");
         }
       }
 
@@ -206,7 +208,7 @@ class SallaDatabase {
 
       // 3. Create Trial Subscription
       const startDate = new Date();
-      const trialDays = defaultPlan.trial_days || 7; // Fallback
+      const trialDays = defaultPlan.trial_days || 3; // Fallback to 3 days
       const endDate = new Date();
       endDate.setDate(startDate.getDate() + trialDays);
 

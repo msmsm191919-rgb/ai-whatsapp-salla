@@ -4,16 +4,21 @@ const SallaDatabase = require('../database/db_instance');
 const { Op } = require('sequelize');
 
 // ═══════════════════════════════════════════════════════════════════
+// 🌟 المصدر الرئيسي الموحد لسياسة التجربة المجانية (Single Source of Truth)
+// ═══════════════════════════════════════════════════════════════════
+const GLOBAL_TRIAL_DAYS = 3;
+
+// ═══════════════════════════════════════════════════════════════════
 // خريطة الباقات
 const PLANS = {
     // ════════════════════════════════════════
     // 1️⃣ الأساسية — 49 ر.س / شهر — للبداية السريعة
-    // 🎁 تجربة مجانية 7 أيام للعملاء الجدد (status='trial')، بعدها يدفع أو يتوقف
+    // 🎁 تجربة مجانية 3 أيام للعملاء الجدد (status='trial')، بعدها يدفع أو يتوقف
     // ════════════════════════════════════════
     'الأساسية': {
         price_monthly: 49,
         price_yearly: 470,
-        trial_days: 7,
+        trial_days: GLOBAL_TRIAL_DAYS,
         pages: [
             'dashboard', 'customers', 'scenarios', 'knowledge_base',
             'ai_settings', 'logs', 'settings', 'account',
@@ -51,7 +56,7 @@ const PLANS = {
     'النمو': {
         price_monthly: 149,
         price_yearly: 1430,
-        trial_days: 7,
+        trial_days: GLOBAL_TRIAL_DAYS,
         pages: [
             'dashboard', 'customers', 'scenarios', 'knowledge_base',
             'ai_settings', 'logs', 'settings', 'account',
@@ -87,7 +92,7 @@ const PLANS = {
     'الشركات': {
         price_monthly: 299,
         price_yearly: 2850,
-        trial_days: 7,
+        trial_days: GLOBAL_TRIAL_DAYS,
         pages: [
             'dashboard', 'customers', 'scenarios', 'knowledge_base',
             'ai_settings', 'logs', 'settings', 'account',
@@ -463,6 +468,9 @@ function injectPlanContext() {
 }
 
 module.exports = {
+    // Single Source of Truth
+    GLOBAL_TRIAL_DAYS,
+
     // Plans registry
     PLANS,
     DEFAULT_PLAN,

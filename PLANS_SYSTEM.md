@@ -58,7 +58,7 @@
 | تقارير وإحصائيات متقدمة | `features.reports: true` |
 | سجل كامل للمحادثات والإشعارات | `features.logs: true` |
 | ربط 3 أرقام واتساب | `limits.whatsapp_numbers: 3` |
-| تجربة مجانية 7 أيام | `trial_days: 7` |
+| تجربة مجانية 3 أيام | `trial_days: 3` |
 
 ---
 
@@ -74,7 +74,7 @@
 | إشعارات التدخل البشري | `features.human_intervention_notif: true` |
 | تقارير متقدمة للشركات | `features.reports_enterprise: true` |
 | حلول مخصصة حسب احتياج النشاط | `features.custom_solutions: true` |
-| تجربة مجانية 7 أيام | `trial_days: 7` |
+| تجربة مجانية 3 أيام | `trial_days: 3` |
 
 ---
 

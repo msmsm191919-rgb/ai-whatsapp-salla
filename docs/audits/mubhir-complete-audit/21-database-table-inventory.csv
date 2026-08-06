@@ -1,0 +1,15 @@
+Table_Name,Primary_Key,Foreign_Keys,Has_Tenant_ID,Record_Count,Description
+Tenants,id,None,NO (Is Tenant),45,Merchant store profiles and JSON configuration settings
+Subscriptions,id,"tenant_id, plan_id",YES,45,Active plan subscriptions and validity period
+Plans,id,None,NO,3,Package definitions (Basic: 49 SAR, Growth: 149 SAR, Enterprise: 299 SAR)
+WhatsAppConfigs,id,tenant_id,YES,1,Configured WhatsApp phone numbers and WABA credentials
+MessageLogs,id,tenant_id,YES,83,Inbound and outbound message conversation history
+Customers,id,tenant_id,YES,3,Customer profiles and phone directory per store
+Campaigns,id,tenant_id,YES,2,Marketing campaign broadcasts and execution stats
+Carts,id,tenant_id,YES,0,Abandoned cart recovery records
+SallaOAuth,id,tenant_id,YES,29,Encrypted OAuth tokens for Salla stores
+WebhookEvents,id,tenant_id,YES,22,Incoming webhooks payload audit log
+UsageCounters,id,tenant_id,YES,2,Monthly message and AI quota counter
+Payments,id,tenant_id,"tenant_id, plan_id",YES,0,Payment transaction history and invoices
+ai_usage_logs,id,tenant_id,YES,0,OpenAI token consumption accounting
+SequelizeMeta,name,None,NO,1,Sequelize database migration execution history

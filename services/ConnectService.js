@@ -1,8 +1,6 @@
-// services/ConnectService.js
-// Orchestrator للربط — ينشئ/يحدّث Tenant + Subscription بعد OAuth ناجح من أي منصة
-
 const SallaDatabase = require('../database/db_instance');
 const PlatformRegistry = require('./platforms');
+const { GLOBAL_TRIAL_DAYS } = require('./planGate');
 
 class ConnectService {
 
@@ -113,7 +111,7 @@ class ConnectService {
                     status: 'trial',
                     is_yearly: false,
                     start_date: new Date(),
-                    end_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days trial
+                    end_date: new Date(Date.now() + GLOBAL_TRIAL_DAYS * 24 * 60 * 60 * 1000) // 3 days trial
                 });
             }
         }
