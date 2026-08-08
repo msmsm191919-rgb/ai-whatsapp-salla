@@ -23,7 +23,8 @@ class SystemEmailService extends EmailProviderInterface {
         this.smtpHost = process.env.SMTP_HOST || null;
         this.smtpPort = process.env.SMTP_PORT || 587;
         this.smtpUser = process.env.SMTP_USER || null;
-        this.smtpPass = process.env.SMTP_PASS || null;
+        this.smtpPass = process.env.SMTP_PASS || process.env.SMTP_PASSWORD || null;
+        this.smtpSecure = process.env.SMTP_SECURE !== undefined ? (process.env.SMTP_SECURE === 'true' || process.env.SMTP_SECURE === '1') : (Number(this.smtpPort) === 465);
         this.fromEmail = process.env.EMAIL_FROM || process.env.SENDER_EMAIL || 'info@mubhirbot.com';
         this.fromName = process.env.EMAIL_FROM_NAME || 'مبهر AI';
 
@@ -37,7 +38,7 @@ class SystemEmailService extends EmailProviderInterface {
             this.transporter = nodemailer.createTransport({
                 host: this.smtpHost,
                 port: Number(this.smtpPort),
-                secure: Number(this.smtpPort) === 465,
+                secure: this.smtpSecure,
                 connectionTimeout: 10000,
                 socketTimeout: 10000,
                 auth: {
