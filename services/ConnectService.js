@@ -105,13 +105,15 @@ class ConnectService {
         if (created) {
             const basicPlan = await this.db.models.Plan.findOne({ where: { name: 'الأساسية' } });
             if (basicPlan) {
+                // Bridge: Standalone uses GLOBAL_TRIAL_DAYS (3 days), Salla respects Salla Portal trial duration (7 days)
+                const trialDays = platform === 'standalone' ? GLOBAL_TRIAL_DAYS : 7;
                 await this.db.models.Subscription.create({
                     tenant_id: tenant.id,
                     plan_id: basicPlan.id,
                     status: 'trial',
                     is_yearly: false,
                     start_date: new Date(),
-                    end_date: new Date(Date.now() + GLOBAL_TRIAL_DAYS * 24 * 60 * 60 * 1000) // 3 days trial
+                    end_date: new Date(Date.now() + trialDays * 24 * 60 * 60 * 1000)
                 });
             }
         }
