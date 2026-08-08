@@ -1201,14 +1201,34 @@ app.get('/oauth/:platform/callback', validateOAuthState, async (req, res) => {
   }
 });
 
-// POST /connect/standalone — تسجيل مستقل (بدون منصة)
+// POST /connect/standalone — تسجيل مستقل دقيق ومؤمّن
 app.post('/connect/standalone', async (req, res) => {
   try {
-    const { store_name, email, phone } = req.body;
+    const { store_name, email, phone, password, owner_name } = req.body;
     if (!store_name || !email) return res.status(400).json({ ok: false, error: 'store_name & email required' });
 
+    const db = SallaDatabase.connection;
+    const existingTenant = await db.models.Tenant.findOne({
+      where: {
+        [require('sequelize').Op.or]: [
+          { email: email.trim().toLowerCase() },
+          { store_name: store_name.trim() }
+        ]
+      }
+    });
+
+    // إغلاق ثغرة الانتحال: إذا كان الحساب موجوداً مسبقاً، يرفض التسجيل المباشر ويلزم كلمة المرور
+    if (existingTenant && existingTenant.password_hash) {
+      if (!password || !ConnectService.verifyPassword(password, existingTenant.password_hash)) {
+        return res.status(401).json({
+          ok: false,
+          error: 'هذا الحساب موجود مسبقاً. يرجى إدخال كلمة المرور الصحيحة لحسابك.'
+        });
+      }
+    }
+
     const adapter = PlatformRegistry.get('standalone');
-    const tokenData = await adapter.exchangeCodeForToken(null, null, { store_name, email, phone });
+    const tokenData = await adapter.exchangeCodeForToken(null, null, { store_name, email, phone, password, owner_name });
 
     const { tenant, created } = await ConnectService.upsertTenantFromOAuth({
       platform: 'standalone',
@@ -1230,6 +1250,140 @@ app.post('/connect/standalone', async (req, res) => {
     });
   } catch (e) {
     console.error('[standalone signup] error:', e);
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+// POST /auth/standalone/login — تسجيل دخول التاجر المستقل بكلمة المرور
+app.post('/auth/standalone/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ ok: false, error: 'البريد الإلكتروني وكلمة المرور مطلوبة' });
+    }
+
+    const db = SallaDatabase.connection;
+    const tenant = await db.models.Tenant.findOne({
+      where: { email: email.trim().toLowerCase() }
+    });
+
+    if (!tenant || !tenant.password_hash) {
+      return res.status(401).json({ ok: false, error: 'بيانات الدخول غير صحيحة' });
+    }
+
+    const isValid = ConnectService.verifyPassword(password, tenant.password_hash);
+    if (!isValid) {
+      return res.status(401).json({ ok: false, error: 'بيانات الدخول غير صحيحة' });
+    }
+
+    const userSession = {
+      merchant: { id: tenant.platform_store_id || tenant.salla_merchant_id, name: tenant.store_name },
+      tenant_id: tenant.id,
+      platform: tenant.platform || 'standalone'
+    };
+
+    req.login(userSession, function(err) {
+      if (err) return res.status(500).json({ ok: false, error: 'فشل حفظ الجلسة' });
+      req.session.save(() => {
+        res.json({ ok: true, redirect: '/dashboard' });
+      });
+    });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+// GET /auth/standalone/verify-email — تأكيد رابط البريد الإلكتروني
+app.get('/auth/standalone/verify-email', async (req, res) => {
+  try {
+    const { token } = req.query;
+    if (!token) return res.status(400).send('رمز التأكيد غير موجود');
+
+    const db = SallaDatabase.connection;
+    const tenant = await db.models.Tenant.findOne({
+      where: { email_verification_token: token }
+    });
+
+    if (!tenant) return res.status(400).send('رمز التأكيد غير صالحة أو تم استخدامه من قبل');
+
+    if (tenant.email_verification_expires_at && new Date(tenant.email_verification_expires_at) < new Date()) {
+      return res.status(400).send('رابط التأكيد منتهي الصلاحية');
+    }
+
+    await tenant.update({
+      is_email_verified: true,
+      email_verified_at: new Date(),
+      email_verification_token: null
+    });
+
+    res.send('<html><body style="font-family:sans-serif;text-align:center;padding:50px;" dir="rtl"><h2>✅ تم تأكيد البريد الإلكتروني بنجاح!</h2><p><a href="/login">اضغط هنا لتسجيل الدخول</a></p></body></html>');
+  } catch (e) {
+    res.status(500).send('فشل تأكيد البريد الإلكتروني: ' + e.message);
+  }
+});
+
+// POST /auth/standalone/forgot-password — طلب إعادة تعيين كلمة المرور
+app.post('/auth/standalone/forgot-password', async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ ok: false, error: 'البريد الإلكتروني مطلوب' });
+
+    const db = SallaDatabase.connection;
+    const tenant = await db.models.Tenant.findOne({
+      where: { email: email.trim().toLowerCase() }
+    });
+
+    if (tenant) {
+      const crypto = require('crypto');
+      const resetToken = crypto.randomBytes(32).toString('hex');
+      const resetExpires = new Date(Date.now() + 60 * 60 * 1000);
+
+      await tenant.update({
+        password_reset_token: resetToken,
+        password_reset_expires_at: resetExpires
+      });
+
+      const EmailService = require('./services/EmailService');
+      await EmailService.sendPasswordResetEmail({
+        to: tenant.email,
+        token: resetToken,
+        ownerName: tenant.owner_name || tenant.store_name
+      });
+    }
+
+    res.json({ ok: true, message: 'إذا كان البريد مسجلاً لدينا، تم إرسال رابط إعادة التعيين.' });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+// POST /auth/standalone/reset-password — تطبيق كلمة المرور الجديدة
+app.post('/auth/standalone/reset-password', async (req, res) => {
+  try {
+    const { token, new_password } = req.body;
+    if (!token || !new_password || new_password.length < 8) {
+      return res.status(400).json({ ok: false, error: 'كلمة المرور يجب أن تكون 8 أحرف على الأقل' });
+    }
+
+    const db = SallaDatabase.connection;
+    const tenant = await db.models.Tenant.findOne({
+      where: { password_reset_token: token }
+    });
+
+    if (!tenant) return res.status(400).json({ ok: false, error: 'رمز التعيين غير صالحة' });
+
+    if (tenant.password_reset_expires_at && new Date(tenant.password_reset_expires_at) < new Date()) {
+      return res.status(400).json({ ok: false, error: 'رمز التعيين منتهي الصلاحية' });
+    }
+
+    await tenant.update({
+      password_hash: ConnectService.hashPassword(new_password),
+      password_reset_token: null,
+      password_reset_expires_at: null
+    });
+
+    res.json({ ok: true, message: 'تم تحديث كلمة المرور بنجاح. يمكنك الآن الدخول.' });
+  } catch (e) {
     res.status(500).json({ ok: false, error: e.message });
   }
 });

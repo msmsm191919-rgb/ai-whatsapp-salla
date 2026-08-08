@@ -48,9 +48,20 @@ module.exports = (sequelize, DataTypes) => {
 
             store_name: DataTypes.STRING,
             store_domain: DataTypes.STRING,
+            owner_name: DataTypes.STRING,
             email: DataTypes.STRING,
             contact_email: DataTypes.STRING,
             contact_phone: DataTypes.STRING,
+            password_hash: DataTypes.STRING,
+            is_email_verified: {
+                type: DataTypes.BOOLEAN,
+                defaultValue: false
+            },
+            email_verification_token: DataTypes.STRING,
+            email_verification_expires_at: DataTypes.DATE,
+            password_reset_token: DataTypes.STRING,
+            password_reset_expires_at: DataTypes.DATE,
+            email_verified_at: DataTypes.DATE,
             status: {
                 type: DataTypes.ENUM('active', 'blocked_over_limit', 'blocked_payment', 'suspended_manual', 'degraded_webhook', 'inactive'),
                 defaultValue: 'active'

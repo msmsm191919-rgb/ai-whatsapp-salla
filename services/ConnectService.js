@@ -1,10 +1,35 @@
+const crypto = require('crypto');
 const SallaDatabase = require('../database/db_instance');
 const PlatformRegistry = require('./platforms');
 const { GLOBAL_TRIAL_DAYS } = require('./planGate');
+const EmailService = require('./EmailService');
+
+function hashPassword(password) {
+    if (!password) return null;
+    const salt = crypto.randomBytes(16).toString('hex');
+    const hash = crypto.pbkdf2Sync(password, salt, 10000, 64, 'sha512').toString('hex');
+    return `${salt}:${hash}`;
+}
+
+function verifyPassword(password, storedHash) {
+    if (!password || !storedHash || !storedHash.includes(':')) return false;
+    const [salt, originalHash] = storedHash.split(':');
+    const hash = crypto.pbkdf2Sync(password, salt, 10000, 64, 'sha512').toString('hex');
+    try {
+        return crypto.timingSafeEqual(Buffer.from(hash, 'utf8'), Buffer.from(originalHash, 'utf8'));
+    } catch (e) {
+        return false;
+    }
+}
 
 class ConnectService {
 
     get db() { return SallaDatabase.connection; }
+
+    hashPassword(p) { return hashPassword(p); }
+    verifyPassword(p, h) { return verifyPassword(p, h); }
+    static hashPassword(p) { return hashPassword(p); }
+    static verifyPassword(p, h) { return verifyPassword(p, h); }
 
     /**
      * بعد ما تنجح عملية OAuth (أي منصة) — نسجّل التاجر في النظام
@@ -22,7 +47,7 @@ class ConnectService {
         const {
             access_token, refresh_token, expires_in,
             store_id, store_name, store_domain, email, owner_name, contact_phone,
-            authorization // Zid extra
+            password, authorization // Zid extra
         } = tokenData;
 
         if (!store_id) throw new Error('store_id missing from token data');
@@ -33,19 +58,31 @@ class ConnectService {
         });
         let created = false;
 
-        if (!tenant) {
-            // ابحث بـ salla_merchant_id إذا كان salla (للـ legacy)
-            if (platform === 'salla') {
-                const numericId = Number(store_id);
-                if (!Number.isNaN(numericId)) {
-                    tenant = await this.db.models.Tenant.findOne({
-                        where: { salla_merchant_id: numericId }
-                    });
+        if (!tenant && platform === 'standalone') {
+            if (email) {
+                tenant = await this.db.models.Tenant.findOne({ where: { email: email.trim().toLowerCase() } });
+            }
+            if (!tenant && store_name && store_name.trim().includes('محتوى بلس')) {
+                tenant = await this.db.models.Tenant.findByPk(41);
+            }
+        } else if (!tenant && platform === 'salla') {
+            const numericId = Number(store_id);
+            if (!Number.isNaN(numericId)) {
+                tenant = await this.db.models.Tenant.findOne({
+                    where: { salla_merchant_id: numericId }
+                });
+            }
+        }
+
+        // إغلاق ثغرة الانتحال: إذا كان الحساب المستقل موجوداً مسبقاً، يلزم التحقق من كلمة المرور
+        if (tenant && platform === 'standalone') {
+            if (tenant.password_hash) {
+                if (!password || !verifyPassword(password, tenant.password_hash)) {
+                    throw new Error('بيانات الدخول غير صحيحة. يرجى إدخال كلمة المرور الصحيحة لحسابك.');
                 }
-            } else if (platform === 'standalone') {
-                if (store_name && store_name.trim().includes('محتوى بلس')) {
-                    tenant = await this.db.models.Tenant.findByPk(41);
-                }
+            } else if (password) {
+                // تعيين كلمة المرور لأول مرة للحسابات المستقلة القديمة
+                await tenant.update({ password_hash: hashPassword(password) });
             }
         }
 
@@ -54,33 +91,48 @@ class ConnectService {
             if (platform === 'salla') {
                 sallaMerchantId = Number(store_id);
             } else {
-                // توليد معرف سلة رقمي فريد ومميز للمنصة المستقلة لضمان التوافق التام مع استعلامات الداشبورد
                 sallaMerchantId = Math.floor(100000000 + Math.random() * 900000000);
             }
 
-            // أنشئ tenant جديد
+            const verificationToken = crypto.randomBytes(32).toString('hex');
+            const tokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 Hours
+
             tenant = await this.db.models.Tenant.create({
                 platform,
                 platform_store_id: String(store_id),
                 salla_merchant_id: sallaMerchantId,
                 store_name: store_name || 'متجر جديد',
+                owner_name: owner_name || null,
                 store_domain,
-                email,
-                contact_email: email,
+                email: email ? email.trim().toLowerCase() : null,
+                contact_email: email ? email.trim().toLowerCase() : null,
                 contact_phone,
+                password_hash: password ? hashPassword(password) : null,
+                is_email_verified: false,
+                email_verification_token: verificationToken,
+                email_verification_expires_at: tokenExpiry,
                 status: 'active',
                 settings: {}
             });
             created = true;
+
+            if (email) {
+                await EmailService.sendVerificationEmail({
+                    to: email,
+                    token: verificationToken,
+                    ownerName: owner_name || store_name,
+                    storeName: store_name
+                });
+            }
         } else {
-            // حدّث البيانات
             await tenant.update({
                 platform,
                 platform_store_id: String(store_id),
                 store_name: store_name || tenant.store_name,
+                owner_name: owner_name || tenant.owner_name,
                 store_domain: store_domain || tenant.store_domain,
-                email: email || tenant.email,
-                contact_email: email || tenant.contact_email,
+                email: email ? email.trim().toLowerCase() : tenant.email,
+                contact_email: email ? email.trim().toLowerCase() : tenant.contact_email,
                 contact_phone: contact_phone || tenant.contact_phone,
                 status: 'active'
             });
