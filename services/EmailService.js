@@ -213,11 +213,7 @@ class SystemEmailService extends EmailProviderInterface {
 
     formatStoreDisplayName(name) {
         if (!name) return 'مبهر';
-        const trimmed = name.trim();
-        if (trimmed.startsWith('متجر') || trimmed.toLowerCase().startsWith('store')) {
-            return trimmed;
-        }
-        return `متجر ${trimmed}`;
+        return name.trim();
     }
 
     // 1. Email Verification (Security Email — No Promo)
@@ -272,12 +268,13 @@ class SystemEmailService extends EmailProviderInterface {
     // 3. Trial Started Email (Welcome — Promotional Block Allowed)
     async sendTrialStartedEmail({ to, ownerName, storeName, trialDays = 3 }) {
         const appUrl = process.env.APP_URL || 'https://app.mubhirbot.com';
+        const displayStoreName = this.formatStoreDisplayName(storeName);
         const title = `بدء التجربة المجانية (${trialDays} أيام) — مبهر AI`;
 
         const contentHtml = `
             <p>أهلاً بك في مبهر AI! 🎉</p>
-            <p>تم تفعيل تجربتك المجانية بنجاح لمدة <strong>${trialDays} أيام</strong> لمتجر <strong>${storeName || ''}</strong>.</p>
-            <p>يمكنك الآن ربط رقم الواتساب وتدريب الرد الآلي الذكي لبدء استقبال المحادثات وزيادة مبيعات متجرك.</p>
+            <p>تم تفعيل تجربتك المجانية بنجاح لمدة <strong>${trialDays} أيام</strong> لـ <strong>${displayStoreName}</strong>.</p>
+            <p>يمكنك الآن ربط رقم الواتساب وتدريب الرد الآلي الذكي لبدء استقبال المحادثات وزيادة المبيعات.</p>
         `;
 
         const promoBlockHtml = `
@@ -299,11 +296,12 @@ class SystemEmailService extends EmailProviderInterface {
     // 4. Trial Ending Email (Warning — No Promo)
     async sendTrialEndingEmail({ to, ownerName, storeName, daysLeft = 1 }) {
         const appUrl = process.env.APP_URL || 'https://app.mubhirbot.com';
+        const displayStoreName = this.formatStoreDisplayName(storeName);
         const title = `تنبيه: متبقي يوم واحد على انتهاء التجربة المجانية — مبهر AI`;
 
         const contentHtml = `
             <p>تنبيه انتهاء التجربة المجانية ⏳</p>
-            <p>متبقي يوم واحد فقط على انتهاء التجربة المجانية لمتجر <strong>${storeName || ''}</strong>.</p>
+            <p>متبقي يوم واحد فقط على انتهاء التجربة المجانية لـ <strong>${displayStoreName}</strong>.</p>
             <p>لتجنب انقطاع الرد الآلي الذكي والحملات، يرجى تأكيد باقة اشتراكك من صفحة الفوترة.</p>
         `;
 
@@ -321,11 +319,12 @@ class SystemEmailService extends EmailProviderInterface {
     // 5. Trial Expired Email (Billing Expired — No Promo)
     async sendTrialExpiredEmail({ to, ownerName, storeName }) {
         const appUrl = process.env.APP_URL || 'https://app.mubhirbot.com';
+        const displayStoreName = this.formatStoreDisplayName(storeName);
         const title = `انتهت فترة التجربة المجانية — مبهر AI`;
 
         const contentHtml = `
             <p>انتهت فترة التجربة المجانية 🔔</p>
-            <p>انتهت تجاربك المجانية لمتجر <strong>${storeName || ''}</strong>.</p>
+            <p>انتهت تجاربك المجانية لـ <strong>${displayStoreName}</strong>.</p>
             <p>اشترك الآن في إحدى باقات مبهر لاستعادة خدمات الرد الآلي وإرسال الحملات التسويقية.</p>
         `;
 
@@ -343,11 +342,12 @@ class SystemEmailService extends EmailProviderInterface {
     // 6. Payment Success Email (Payment — Promotional Block Allowed)
     async sendPaymentSuccessEmail({ to, ownerName, storeName, amount, planName }) {
         const appUrl = process.env.APP_URL || 'https://app.mubhirbot.com';
+        const displayStoreName = this.formatStoreDisplayName(storeName);
         const title = `تأكيد نجاح عملية الدفع — مبهر AI`;
 
         const contentHtml = `
             <p>تمت عملية الدفع بنجاح ✅</p>
-            <p>شكراً لك! تم تجديد اشتراك متجر <strong>${storeName || ''}</strong> بنجاح في باقة <strong>${planName || 'الأساسية'}</strong>.</p>
+            <p>شكراً لك! تم تجديد اشتراك <strong>${displayStoreName}</strong> بنجاح في باقة <strong>${planName || 'الأساسية'}</strong>.</p>
             <p>المبلغ المدفوع: <strong>${amount || ''} ر.س</strong>.</p>
         `;
 
@@ -370,11 +370,12 @@ class SystemEmailService extends EmailProviderInterface {
     // 7. Payment Failed Email (Security/Billing Alert — No Promo)
     async sendPaymentFailedEmail({ to, ownerName, storeName, planName }) {
         const appUrl = process.env.APP_URL || 'https://app.mubhirbot.com';
+        const displayStoreName = this.formatStoreDisplayName(storeName);
         const title = `تنبيه: فشل عملية الدفع — مبهر AI`;
 
         const contentHtml = `
             <p>تعذر إتمام عملية الدفع ⚠️</p>
-            <p>تعذر الخصم التلقائي لاشتراك متجر <strong>${storeName || ''}</strong> في باقة <strong>${planName || ''}</strong>.</p>
+            <p>تعذر الخصم التلقائي لاشتراك <strong>${displayStoreName}</strong> في باقة <strong>${planName || ''}</strong>.</p>
             <p>يرجى تحديث وسيلة الدفع المسجلة لتجنب إيقاف الخدمة.</p>
         `;
 
@@ -420,11 +421,12 @@ class SystemEmailService extends EmailProviderInterface {
     // 9. QR Restored Email (Success Alert — No Promo)
     async sendQRRestoredEmail({ to, ownerName, storeName }) {
         const appUrl = process.env.APP_URL || 'https://app.mubhirbot.com';
-        const title = `تم استعادة اتصال الواتساب بنجاح — متجر ${storeName || ''}`;
+        const displayStoreName = this.formatStoreDisplayName(storeName);
+        const title = `تم استعادة اتصال الواتساب بنجاح — ${displayStoreName}`;
 
         const contentHtml = `
             <p>تم استعادة الاتصال ✅</p>
-            <p>تمت إعادة ربط واتساب متجر <strong>${storeName || ''}</strong> بنجاح. البوت الذكي يعمل الآن بكفاءة عالية.</p>
+            <p>تمت إعادة ربط واتساب <strong>${displayStoreName}</strong> بنجاح. البوت الذكي يعمل الآن بكفاءة عالية.</p>
         `;
 
         const html = this.renderMubhirEmailLayout({
