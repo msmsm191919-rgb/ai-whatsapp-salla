@@ -211,15 +211,25 @@ class SystemEmailService extends EmailProviderInterface {
         }
     }
 
+    formatStoreDisplayName(name) {
+        if (!name) return 'مبهر';
+        const trimmed = name.trim();
+        if (trimmed.startsWith('متجر') || trimmed.toLowerCase().startsWith('store')) {
+            return trimmed;
+        }
+        return `متجر ${trimmed}`;
+    }
+
     // 1. Email Verification (Security Email — No Promo)
     async sendVerificationEmail({ to, token, ownerName, storeName }) {
         const appUrl = process.env.APP_URL || 'https://app.mubhirbot.com';
         const verifyUrl = `${appUrl}/auth/standalone/verify-email?token=${encodeURIComponent(token)}`;
-        const title = `تأكيد البريد الإلكتروني — متجر ${storeName || 'مبهر'}`;
+        const displayStoreName = this.formatStoreDisplayName(storeName);
+        const title = `تأكيد البريد الإلكتروني — ${displayStoreName}`;
 
         const contentHtml = `
             <p>مرحباً <strong>${ownerName || 'عزيزنا التاجر'}</strong> 🚀</p>
-            <p>شكراً لتسجيلك في مبهر AI لمتجر <strong>${storeName || ''}</strong>.</p>
+            <p>شكراً لتسجيلك في مبهر AI لـ <strong>${displayStoreName}</strong>.</p>
             <p>يرجى النقر على الزر أدناه لتأكيد بريدك الإلكتروني وتفعيل حسابك والبدء في استخدام البوت الذكي.</p>
         `;
 
@@ -387,11 +397,12 @@ class SystemEmailService extends EmailProviderInterface {
         }
 
         const appUrl = process.env.APP_URL || 'https://app.mubhirbot.com';
-        const title = `تنبيه هام: انقطاع اتصال الواتساب — متجر ${storeName || ''}`;
+        const displayStoreName = this.formatStoreDisplayName(storeName);
+        const title = `تنبيه هام: انقطاع اتصال الواتساب — ${displayStoreName}`;
 
         const contentHtml = `
             <p>انقطاع اتصال واتساب ⚠️</p>
-            <p>تم إغلاق أو انقطاع جلسة الواتساب الخاصة بمتجر <strong>${storeName || ''}</strong>.</p>
+            <p>تم إغلاق أو انقطاع جلسة الواتساب الخاصة بـ <strong>${displayStoreName}</strong>.</p>
             <p>يرجى مسح رمز QR الجديد من لوحة التحكم لاستعادة الرد الآلي والحملات.</p>
         `;
 
