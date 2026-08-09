@@ -75,6 +75,21 @@ class SystemEmailService extends EmailProviderInterface {
         return name.trim();
     }
 
+    getDashboardUrl(platform) {
+        const appUrl = process.env.APP_URL || 'https://app.mubhirbot.com';
+        return platform === 'standalone' ? `${appUrl}/standalone/dashboard` : `${appUrl}/dashboard`;
+    }
+
+    getBillingUrl(platform) {
+        const appUrl = process.env.APP_URL || 'https://app.mubhirbot.com';
+        return platform === 'standalone' ? `${appUrl}/standalone/billing` : `${appUrl}/billing`;
+    }
+
+    getWhatsAppWebUrl(platform) {
+        const appUrl = process.env.APP_URL || 'https://app.mubhirbot.com';
+        return platform === 'standalone' ? `${appUrl}/standalone/whatsapp-web` : `${appUrl}/whatsapp-web`;
+    }
+
     /**
      * 🎨 Centralized Branded Email Layout Engine — CLEAN LIGHT THEME & POLISHED HEADER
      */
@@ -278,8 +293,8 @@ class SystemEmailService extends EmailProviderInterface {
     }
 
     // 3. Trial Started Email (Saudi Tone — Promotional Block Allowed)
-    async sendTrialStartedEmail({ to, ownerName, storeName, trialDays = 3 }) {
-        const appUrl = process.env.APP_URL || 'https://app.mubhirbot.com';
+    async sendTrialStartedEmail({ to, ownerName, storeName, trialDays = 3, platform = 'salla' }) {
+        const ctaUrl = this.getDashboardUrl(platform);
         const displayStoreName = this.formatStoreDisplayName(storeName);
         const title = `بدء التجربة المجانية`;
 
@@ -297,7 +312,7 @@ class SystemEmailService extends EmailProviderInterface {
             title,
             contentHtml,
             ctaText: 'الدخول إلى لوحة التحكم',
-            ctaUrl: `${appUrl}/dashboard`,
+            ctaUrl,
             fallbackText: 'اضغط هنا لفتح لوحة التحكم',
             promoBlockHtml,
             isSecurityAlert: false
@@ -307,8 +322,8 @@ class SystemEmailService extends EmailProviderInterface {
     }
 
     // 4. Trial Ending Email (Saudi Tone — No Promo)
-    async sendTrialEndingEmail({ to, ownerName, storeName, daysLeft = 1 }) {
-        const appUrl = process.env.APP_URL || 'https://app.mubhirbot.com';
+    async sendTrialEndingEmail({ to, ownerName, storeName, daysLeft = 1, platform = 'salla' }) {
+        const ctaUrl = this.getBillingUrl(platform);
         const displayStoreName = this.formatStoreDisplayName(storeName);
         const title = `تنبيه: متبقي يوم على انتهاء التجربة`;
 
@@ -322,7 +337,7 @@ class SystemEmailService extends EmailProviderInterface {
             title,
             contentHtml,
             ctaText: 'إدارة الاشتراك والفوترة',
-            ctaUrl: `${appUrl}/billing`,
+            ctaUrl,
             fallbackText: 'اضغط هنا لفتح صفحة الفوترة',
             isSecurityAlert: true
         });
@@ -331,8 +346,8 @@ class SystemEmailService extends EmailProviderInterface {
     }
 
     // 5. Trial Expired Email (Saudi Tone — No Promo)
-    async sendTrialExpiredEmail({ to, ownerName, storeName }) {
-        const appUrl = process.env.APP_URL || 'https://app.mubhirbot.com';
+    async sendTrialExpiredEmail({ to, ownerName, storeName, platform = 'salla' }) {
+        const ctaUrl = this.getBillingUrl(platform);
         const displayStoreName = this.formatStoreDisplayName(storeName);
         const title = `انتهت فترة التجربة المجانية`;
 
@@ -346,7 +361,7 @@ class SystemEmailService extends EmailProviderInterface {
             title,
             contentHtml,
             ctaText: 'تفعيل الاشتراك الآن',
-            ctaUrl: `${appUrl}/billing`,
+            ctaUrl,
             fallbackText: 'اضغط هنا لفتح صفحة الفوترة',
             isSecurityAlert: true
         });
@@ -355,8 +370,8 @@ class SystemEmailService extends EmailProviderInterface {
     }
 
     // 6. Payment Success Email (Saudi Tone, Retained Summary Table)
-    async sendPaymentSuccessEmail({ to, ownerName, storeName, amount, planName }) {
-        const appUrl = process.env.APP_URL || 'https://app.mubhirbot.com';
+    async sendPaymentSuccessEmail({ to, ownerName, storeName, amount, planName, platform = 'salla' }) {
+        const ctaUrl = this.getDashboardUrl(platform);
         const displayStoreName = this.formatStoreDisplayName(storeName);
         const title = `تمت عملية الدفع بنجاح`;
         const todayDate = new Date().toLocaleDateString('ar-SA', { year: 'numeric', month: 'long', day: 'numeric' });
@@ -387,7 +402,7 @@ class SystemEmailService extends EmailProviderInterface {
             title,
             contentHtml,
             ctaText: 'فتح لوحة التحكم',
-            ctaUrl: `${appUrl}/dashboard`,
+            ctaUrl,
             fallbackText: 'اضغط هنا لفتح لوحة التحكم',
             promoBlockHtml,
             isSecurityAlert: false
@@ -397,8 +412,8 @@ class SystemEmailService extends EmailProviderInterface {
     }
 
     // 7. Payment Failed Email (Saudi Tone — No Promo)
-    async sendPaymentFailedEmail({ to, ownerName, storeName, planName }) {
-        const appUrl = process.env.APP_URL || 'https://app.mubhirbot.com';
+    async sendPaymentFailedEmail({ to, ownerName, storeName, planName, platform = 'salla' }) {
+        const ctaUrl = this.getBillingUrl(platform);
         const displayStoreName = this.formatStoreDisplayName(storeName);
         const title = `فشلت عملية الدفع`;
 
@@ -412,7 +427,7 @@ class SystemEmailService extends EmailProviderInterface {
             title,
             contentHtml,
             ctaText: 'تحديث وسيلة الدفع',
-            ctaUrl: `${appUrl}/billing`,
+            ctaUrl,
             fallbackText: 'اضغط هنا لفتح صفحة الفوترة',
             isSecurityAlert: true
         });
@@ -421,13 +436,13 @@ class SystemEmailService extends EmailProviderInterface {
     }
 
     // 8. QR Disconnected Email (Saudi Tone — No Promo & Grace Period)
-    async sendQRDisconnectedEmail({ to, ownerName, storeName, isSustained = false }) {
+    async sendQRDisconnectedEmail({ to, ownerName, storeName, isSustained = false, platform = 'salla' }) {
         if (!isSustained) {
             console.log(`[EmailService IGNORE] Transient QR disconnect for store ${storeName}. Email suppressed.`);
             return { sent: false, suppressed: true, reason: 'transient_disconnect' };
         }
 
-        const appUrl = process.env.APP_URL || 'https://app.mubhirbot.com';
+        const ctaUrl = this.getWhatsAppWebUrl(platform);
         const displayStoreName = this.formatStoreDisplayName(storeName);
         const title = `انقطع اتصال واتساب`;
 
@@ -441,7 +456,7 @@ class SystemEmailService extends EmailProviderInterface {
             title,
             contentHtml,
             ctaText: 'إعادة ربط واتساب',
-            ctaUrl: `${appUrl}/whatsapp-web`,
+            ctaUrl,
             fallbackText: 'اضغط هنا لفتح صفحة ربط الواتساب',
             isSecurityAlert: true
         });
@@ -450,8 +465,8 @@ class SystemEmailService extends EmailProviderInterface {
     }
 
     // 9. QR Restored Email (Saudi Tone — No Promo)
-    async sendQRRestoredEmail({ to, ownerName, storeName }) {
-        const appUrl = process.env.APP_URL || 'https://app.mubhirbot.com';
+    async sendQRRestoredEmail({ to, ownerName, storeName, platform = 'salla' }) {
+        const ctaUrl = this.getDashboardUrl(platform);
         const displayStoreName = this.formatStoreDisplayName(storeName);
         const title = `تم استعادة اتصال الواتساب`;
 
@@ -464,7 +479,7 @@ class SystemEmailService extends EmailProviderInterface {
             title,
             contentHtml,
             ctaText: 'فتح لوحة التحكم',
-            ctaUrl: `${appUrl}/dashboard`,
+            ctaUrl,
             fallbackText: 'اضغط هنا لفتح لوحة التحكم',
             isSecurityAlert: false
         });

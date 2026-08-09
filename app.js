@@ -516,10 +516,18 @@ app.use((req, res, next) => {
 // 'qr' = ربط QR متصل | 'api' = WhatsApp API مفعّل | 'none' = ما ربط شي بعد
 app.use(async (req, res, next) => {
   try {
-    const merchantId = req.user?.merchant?.id || (process.env.NODE_ENV === 'development' ? 123456789 : null);
     const db = SallaDatabase.connection;
     if (!db || !db.models?.Tenant) { res.locals.activeChannel = 'none'; return next(); }
-    const tenant = await db.models.Tenant.findOne({ where: { salla_merchant_id: merchantId } });
+
+    const tenantId = req.user?.tenant_id || req.session?.tenantId;
+    let tenant = null;
+
+    if (tenantId) {
+      tenant = await db.models.Tenant.findByPk(tenantId);
+    } else if (req.user?.merchant?.id) {
+      tenant = await db.models.Tenant.findOne({ where: { salla_merchant_id: req.user.merchant.id } });
+    }
+
     if (!tenant) { res.locals.activeChannel = 'none'; return next(); }
     const waWebMod = require('./services/waWeb');
     if (waWebMod.isReady(tenant.id)) {
@@ -1246,7 +1254,9 @@ app.post('/connect/standalone', async (req, res) => {
         console.error('[standalone login error]:', err);
         return res.status(500).json({ ok: false, error: 'Login session initialization failed' });
       }
-      res.json({ ok: true, tenant_id: tenant.id, created, redirect: '/dashboard?welcome=1&platform=standalone' });
+      const redirectTo = req.session?.returnTo || '/standalone/dashboard?welcome=1';
+      if (req.session?.returnTo) delete req.session.returnTo;
+      res.json({ ok: true, tenant_id: tenant.id, created, redirect: redirectTo });
     });
   } catch (e) {
     console.error('[standalone signup] error:', e);
@@ -1284,8 +1294,10 @@ app.post('/auth/standalone/login', async (req, res) => {
 
     req.login(userSession, function(err) {
       if (err) return res.status(500).json({ ok: false, error: 'فشل حفظ الجلسة' });
+      const redirectTo = req.session?.returnTo || '/standalone/dashboard';
+      if (req.session?.returnTo) delete req.session.returnTo;
       req.session.save(() => {
-        res.json({ ok: true, redirect: '/dashboard' });
+        res.json({ ok: true, redirect: redirectTo });
       });
     });
   } catch (e) {
@@ -1613,24 +1625,145 @@ function ensureAuthenticated(req, res, next) {
   console.log(`\n=================== [RUNTIME AUTH DEBUG] ===================`);
   console.log(`- Source Route: ${req.originalUrl}`);
   console.log(`- Session Tenant (req.user):`, req.user);
-  if (req.isAuthenticated() || (req.user && req.user.merchant && req.user.merchant.id)) {
+  if (req.isAuthenticated() || (req.user && (req.user.tenant_id || req.user.merchant?.id))) {
     console.log(`- Access Result: GRANTED`);
-    console.log(`- tenant.id (merchant_id): ${req.user.merchant.id}`);
-    console.log(`- platform: ${req.user.platform || 'salla'}`);
     console.log(`============================================================\n`);
     return next();
   }
   console.log(`- Access Result: DENIED`);
-  console.log(`- Fallback Reason: No authenticated session found (req.user is undefined or missing merchant ID)`);
+  console.log(`- Fallback Reason: No authenticated session found`);
   if (req.originalUrl.startsWith('/api/')) {
     console.log(`- Action: Returning 401 Unauthorized for API route`);
     console.log(`============================================================\n`);
     return res.status(401).json({ ok: false, error: 'Authentication required' });
   }
+
+  // Standalone requests store returnTo and redirect to standalone login page
+  if (req.originalUrl.startsWith('/standalone')) {
+    req.session = req.session || {};
+    req.session.returnTo = req.originalUrl;
+    console.log(`- Action: Standalone route detected. Redirecting to /connect?platform=standalone`);
+    console.log(`============================================================\n`);
+    return res.redirect('/connect?platform=standalone');
+  }
+
   console.log(`- Action: Redirecting to /login`);
   console.log(`============================================================\n`);
   res.redirect('/login');
 }
+
+async function ensureStandaloneAuthenticated(req, res, next) {
+  if (req.originalUrl.startsWith('/admin/login') || req.originalUrl.startsWith('/admin/logout')) {
+    return next();
+  }
+
+  if (req.isAuthenticated() || (req.user && (req.user.tenant_id || req.user.merchant?.id))) {
+    const tenant = await getTenantFromReq(req);
+    if (tenant) {
+      if (tenant.platform === 'standalone') {
+        req.tenant = tenant;
+        return next();
+      }
+      // Salla merchant attempting to access Standalone route
+      console.log(`[PlatformGuard] Salla merchant tried accessing Standalone route ${req.originalUrl}. Redirecting to /dashboard.`);
+      return res.redirect('/dashboard');
+    }
+  }
+
+  req.session = req.session || {};
+  req.session.returnTo = req.originalUrl;
+  return res.redirect('/connect?platform=standalone');
+}
+
+// 🌐 STANDALONE NAMESPACE ROUTES
+app.get('/standalone/dashboard', ensureStandaloneAuthenticated, async (req, res) => {
+  try {
+    const tenant = req.tenant;
+    const db = SallaDatabase.connection;
+    const waWebMod = require('./services/waWeb');
+    const isConnected = !!(tenant?.WhatsAppConfig?.access_token) || (tenant ? waWebMod.isReady(tenant.id) : false);
+    const subscription = tenant?.Subscription;
+    const plan = subscription?.Plan;
+    const subStatus = subscription?.status || 'no_subscription';
+
+    const hasAccess = subscription && (subStatus === 'active' || subStatus === 'trial');
+    const planName = plan?.name || (subStatus === 'expired' ? 'اشتراك منتهي' : (subStatus === 'no_subscription' ? 'لا يوجد اشتراك' : 'الأساسية'));
+    const msgLimit = hasAccess ? (plan?.msg_limit_monthly || 1000) : 0;
+    const priceMonthly = plan?.price_monthly || 0;
+    const priceYearly = plan?.price_yearly || 0;
+    const isYearly = subscription?.is_yearly || false;
+    const subEndDate = subscription?.end_date;
+
+    let daysLeft = null;
+    if (subEndDate) {
+      const diff = new Date(subEndDate) - new Date();
+      daysLeft = Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
+    }
+
+    let messagesSent = 0;
+    let aiRequests = 0;
+    let growthPercent = 0;
+
+    if (tenant && tenant.id) {
+      const currentPeriod = new Date().toISOString().slice(0, 7);
+      const currentUsage = await db.models.UsageCounter.findOne({
+        where: { tenant_id: tenant.id, period_key: currentPeriod }
+      });
+      messagesSent = currentUsage?.messages_sent || 0;
+      aiRequests = currentUsage?.ai_requests || 0;
+    }
+
+    const usagePercent = msgLimit > 0 ? Math.min(Math.round((messagesSent / msgLimit) * 100), 100) : 0;
+    const messagesRemaining = msgLimit > 0 ? Math.max(msgLimit - messagesSent, 0) : '∞';
+    const storeName = tenant?.store_name || 'متجرك';
+
+    res.render('standalone_dashboard.html', {
+      tenant, user: req.user, activePage: 'dashboard', isConnected,
+      plan_name: planName, plan_price: isYearly ? priceYearly : priceMonthly,
+      sub_status: subStatus, days_left: daysLeft,
+      messages_sent: messagesSent, msg_limit: msgLimit,
+      messages_remaining: messagesRemaining, usage_percent: usagePercent,
+      ai_replies: aiRequests, ai_growth: growthPercent.toFixed(1),
+      store_name: storeName
+    });
+  } catch (e) {
+    console.error('Standalone Dashboard Error:', e);
+    res.status(500).send('Standalone Dashboard Error: ' + e.message);
+  }
+});
+
+app.get('/standalone/billing', ensureStandaloneAuthenticated, async (req, res) => {
+  const tenant = req.tenant;
+  const subscription = tenant?.Subscription;
+  const plan = subscription?.Plan;
+  res.render('billing.html', {
+    tenant,
+    user: req.user,
+    activePage: 'billing',
+    subscription,
+    plan,
+    store_name: tenant?.store_name || 'متجرك'
+  });
+});
+
+app.get('/standalone/whatsapp-web', ensureStandaloneAuthenticated, async (req, res) => {
+  const tenant = req.tenant;
+  const userToRender = {
+    ...req.user,
+    tenant_id: tenant.id,
+    store_name: tenant.store_name,
+    merchant: {
+      ...(req.user?.merchant || {}),
+      name: tenant.store_name
+    }
+  };
+  res.render('whatsapp_web.html', {
+    user: userToRender,
+    activePage: 'wa_web',
+    store_name: tenant.store_name,
+    tenant_id: tenant.id
+  });
+});
 
 async function getTenantFromReq(req) {
   const db = SallaDatabase.connection;

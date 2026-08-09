@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}مبهر AI{% endblock %}</title>
+
+    <!-- Fonts: Cairo (Arabic) + Inter (Latin/Numbers) -->
+    <link href="/css/fonts.css" rel="stylesheet">
+
+    <!-- Tailwind CSS -->
+    <script src="/js/tailwind.js"></script>
+
+    <!-- Font Awesome -->
+    <link href="/css/all.min.css" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'cairo': ['Cairo', 'sans-serif'],
+                        'inter': ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50:  '#f0fdfa',
+                            100: '#ccfbf1',
+                            200: '#99f6e4',
+                            300: '#5eead4',
+                            400: '#2dd4bf',
+                            500: '#14b8a6',
+                            600: '#0d9488',
+                            700: '#0f766e',
+                            800: '#115e59',
+                            900: '#134e4a',
+                        },
+                        navy: {
+                            800: '#0f172a',
+                            700: '#1e293b',
+                            600: '#334155',
+                            500: '#475569',
+                        }
+                    },
+                    boxShadow: {
+                        'card': '0 1px 3px 0 rgba(0,0,0,0.04), 0 1px 2px -1px rgba(0,0,0,0.04)',
+                        'card-hover': '0 10px 40px -10px rgba(0,0,0,0.10)',
+                        'sidebar': '1px 0 0 0 rgba(255,255,255,0.04)',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        *, *::before, *::after { box-sizing: border-box; }
+        body { font-family: 'Cairo', 'Inter', sans-serif; background-color: #f8fafc; color: #1e293b; -webkit-font-smoothing: antialiased; }
+        .font-mono, .num, [data-num] { font-family: 'Inter', 'Cairo', sans-serif; }
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 99px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        .sidebar-link {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 14px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #64748b;
+            border-radius: 12px;
+            transition: all 0.18s ease;
+            text-decoration: none;
+            position: relative;
+        }
+        .sidebar-link:hover { background-color: #f1f5f9; color: #0d9488; }
+        .sidebar-link.active { background-color: #f0fdfa; color: #0d9488; font-weight: 700; }
+        .sidebar-link.active .nav-icon { color: #0d9488; }
+
+        .sidebar-group-label {
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: #94a3b8;
+            padding: 0 14px;
+            margin: 20px 0 6px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .card { background: #ffffff; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+        .topbar { background: rgba(255,255,255,0.85); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-bottom: 1px solid #f1f5f9; }
+    </style>
+
+    {% block styles %}{% endblock %}
+</head>
+
+<body>
+<div class="flex h-screen overflow-hidden">
+
+    <div id="sidebarOverlay" class="fixed inset-0 bg-black/50 z-40 hidden lg:hidden backdrop-blur-sm" onclick="toggleSidebar()"></div>
+
+    <!-- ══════════════════════════════════════
+         STANDALONE SIDEBAR
+    ══════════════════════════════════════ -->
+    <aside id="sidebar" class="fixed lg:static inset-y-0 -right-60 lg:right-0 z-50 w-60 flex flex-col transition-all duration-300 overflow-hidden bg-white border-l border-slate-100 shadow-sm">
+
+        <!-- Logo Header -->
+        <div class="relative z-10 flex items-center justify-between px-5 py-5 border-b border-slate-100 logo-container flex-shrink-0">
+            <a href="/standalone/dashboard" class="flex items-center gap-2 text-decoration-none">
+                <div class="w-10 h-10 flex items-center justify-center flex-shrink-0">
+                    <img src="/salla-assets/salla_app_icon_512_transparent.png" alt="مبهر AI" class="w-full h-full object-contain">
+                </div>
+                <div class="logo-text">
+                    <h1 class="text-slate-800 font-bold text-base tracking-tight leading-none">مبهر <span class="text-teal-600 font-black">AI</span></h1>
+                    <span class="text-[10px] text-slate-400 font-semibold">حساب مستقل</span>
+                </div>
+            </a>
+            <button onclick="toggleSidebar()" class="lg:hidden w-7 h-7 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition" title="إغلاق القائمة">
+                <i class="fa-solid fa-xmark text-base"></i>
+            </button>
+        </div>
+
+        <!-- Standalone Clean Navigation -->
+        <nav class="relative z-10 flex-1 overflow-y-auto py-4 px-3 space-y-0.5">
+
+            <a href="/standalone/dashboard" class="sidebar-link {{ 'active' if activePage == 'dashboard' else '' }}">
+                <i class="fa-solid fa-chart-pie w-4 text-center nav-icon"></i>
+                <span>الرئيسية</span>
+            </a>
+
+            <div class="sidebar-group-label"><i class="fa-solid fa-message opacity-60 text-[8px]"></i> الرسائل والحملات</div>
+
+            <a href="/logs" class="sidebar-link {{ 'active' if activePage == 'logs' else '' }}">
+                <i class="fa-solid fa-comments w-4 text-center nav-icon"></i>
+                <span>المحادثات</span>
+            </a>
+
+            <a href="/campaigns" class="sidebar-link {{ 'active' if activePage == 'campaigns' else '' }}">
+                <i class="fa-solid fa-bullhorn w-4 text-center nav-icon"></i>
+                <span>الحملات</span>
+            </a>
+
+            <div class="sidebar-group-label"><i class="fa-solid fa-brain opacity-60 text-[8px]"></i> الذكاء الاصطناعي</div>
+
+            <a href="/ai-settings" class="sidebar-link {{ 'active' if activePage == 'ai_settings' else '' }}">
+                <i class="fa-solid fa-robot w-4 text-center nav-icon"></i>
+                <span>المساعد الذكي</span>
+            </a>
+            <a href="/scenarios" class="sidebar-link {{ 'active' if activePage == 'scenarios' else '' }}">
+                <i class="fa-solid fa-wand-magic-sparkles w-4 text-center nav-icon"></i>
+                <span>السيناريوهات</span>
+            </a>
+
+            <div class="sidebar-group-label"><i class="fa-solid fa-sliders opacity-60 text-[8px]"></i> الحساب والفوترة</div>
+
+            <a href="/customers" class="sidebar-link {{ 'active' if activePage == 'customers' else '' }}">
+                <i class="fa-solid fa-users w-4 text-center nav-icon"></i>
+                <span>العملاء</span>
+            </a>
+            <a href="/standalone/whatsapp-web" class="sidebar-link {{ 'active' if activePage == 'wa_web' else '' }}">
+                <i class="fa-brands fa-whatsapp w-4 text-center nav-icon"></i>
+                <span>ربط واتساب</span>
+            </a>
+            <a href="/standalone/billing" class="sidebar-link {{ 'active' if activePage == 'billing' else '' }}">
+                <i class="fa-solid fa-receipt w-4 text-center nav-icon"></i>
+                <span>الاشتراك والفوترة</span>
+            </a>
+            <a href="/settings" class="sidebar-link {{ 'active' if activePage == 'settings' else '' }}">
+                <i class="fa-solid fa-gear w-4 text-center nav-icon"></i>
+                <span>إعدادات النشاط</span>
+            </a>
+            <a href="/support" class="sidebar-link {{ 'active' if activePage == 'support' else '' }}">
+                <i class="fa-solid fa-headset w-4 text-center nav-icon"></i>
+                <span>الدعم الفني</span>
+            </a>
+            <a href="/admin/logout" class="sidebar-link text-rose-600 hover:bg-rose-50 hover:text-rose-700 mt-4">
+                <i class="fa-solid fa-right-from-bracket w-4 text-center nav-icon"></i>
+                <span>تسجيل الخروج</span>
+            </a>
+        </nav>
+
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="flex-1 flex flex-col h-screen overflow-hidden min-w-0">
+
+        <!-- Top Header -->
+        <header id="topHeader" class="topbar h-16 flex items-center justify-between px-4 sm:px-6 lg:px-8 z-20 sticky top-0 flex-shrink-0">
+            <div class="flex items-center gap-4">
+                <button onclick="toggleSidebar()" class="lg:hidden w-9 h-9 flex items-center justify-center rounded-lg hover:bg-slate-100 transition text-slate-600">
+                    <i class="fa-solid fa-bars text-base"></i>
+                </button>
+                <div>
+                    <h2 class="text-[17px] font-bold text-slate-800 leading-tight">{% block header_title %}لوحة التحكم{% endblock %}</h2>
+                    <p class="text-[11px] text-slate-400 leading-none mt-0.5 hidden sm:block">{% block header_subtitle %}إدارة نشاطك في مبهر AI{% endblock %}</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <div class="flex items-center gap-2 px-3 py-1.5 bg-teal-50 border border-teal-100 rounded-full">
+                    <span class="w-2 h-2 rounded-full bg-teal-500"></span>
+                    <span class="text-[11px] font-bold text-teal-700">{{ store_name }}</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Page Content -->
+        <div id="pageContentContainer" class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+            {% block content %}{% endblock %}
+        </div>
+
+    </main>
+</div>
+
+<script>
+    function toggleSidebar() {
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('sidebarOverlay');
+        sidebar.classList.toggle('-right-60');
+        sidebar.classList.toggle('right-0');
+        overlay.classList.toggle('hidden');
+    }
+</script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

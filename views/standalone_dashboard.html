@@ -1,0 +1,134 @@
+{% extends "layouts/standalone_dashboard_master.html" %}
+
+{% block title %}لوحة التحكم المستقلة | مبهر AI{% endblock %}
+{% block header_title %}لوحة التحكم{% endblock %}
+{% block header_subtitle %}إدارة نشاطك وحساب الواتساب الذكي{% endblock %}
+
+{% block styles %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+    .kpi-card { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.03); }
+    .kpi-title { font-size: 13px; font-weight: 700; color: #64748b; margin-bottom: 6px; }
+    .kpi-value { font-size: 24px; font-weight: 900; color: #0f172a; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+    <!-- Welcome Card -->
+    <div class="bg-gradient-to-r from-teal-700 to-teal-600 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
+        <div class="relative z-10">
+            <h1 class="text-xl font-bold mb-1">مرحباً بك، {{ store_name }} 👋</h1>
+            <p class="text-teal-100 text-xs sm:text-sm">حسابك المستقل جاهز في منصة مبهر AI. يمكنك ربط الواتساب وإدارة الحملات والرد الآلي الذكي.</p>
+        </div>
+    </div>
+
+    <!-- Quick Stats Grid -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+
+        <div class="kpi-card">
+            <div class="flex items-center justify-between">
+                <div>
+                    <div class="kpi-title">حالة الواتساب</div>
+                    <div class="kpi-value text-base">
+                        {% if isConnected %}
+                        <span class="text-emerald-600 font-bold"><i class="fa-solid fa-circle-check ml-1"></i> متصل</span>
+                        {% else %}
+                        <span class="text-rose-600 font-bold"><i class="fa-solid fa-triangle-exclamation ml-1"></i> غير متصل</span>
+                        {% if not isConnected %}
+                        <div class="mt-2">
+                            <a href="/standalone/whatsapp-web" class="inline-block px-3 py-1.5 bg-teal-600 text-white rounded-lg text-xs font-bold hover:bg-teal-700">ربط الواتساب الآن</a>
+                        </div>
+                        {% endif %}
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="w-10 h-10 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center">
+                    <i class="fa-brands fa-whatsapp text-xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="flex items-center justify-between">
+                <div>
+                    <div class="kpi-title">الرسائل المرسلة</div>
+                    <div class="kpi-value">{{ messages_sent }}</div>
+                    <div class="text-[11px] text-slate-400 mt-1">المتبقي: {{ messages_remaining }}</div>
+                </div>
+                <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                    <i class="fa-solid fa-paper-plane text-lg"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="flex items-center justify-between">
+                <div>
+                    <div class="kpi-title">ردود الذكاء الاصطناعي</div>
+                    <div class="kpi-value">{{ ai_replies }}</div>
+                    <div class="text-[11px] text-emerald-600 font-bold mt-1">نمو {{ ai_growth }}%</div>
+                </div>
+                <div class="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">
+                    <i class="fa-solid fa-robot text-lg"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="flex items-center justify-between">
+                <div>
+                    <div class="kpi-title">الباقة الحالية</div>
+                    <div class="kpi-value text-base text-teal-700">{{ plan_name }}</div>
+                    <div class="text-[11px] text-slate-400 mt-1">الحالة: {{ sub_status }}</div>
+                </div>
+                <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+                    <i class="fa-solid fa-gem text-lg"></i>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Quick Action Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <a href="/standalone/whatsapp-web" class="bg-white border border-slate-200 rounded-2xl p-5 hover:border-teal-500 transition shadow-sm group">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 rounded-xl bg-teal-50 text-teal-600 group-hover:bg-teal-600 group-hover:text-white transition flex items-center justify-center">
+                    <i class="fa-brands fa-whatsapp text-2xl"></i>
+                </div>
+                <div>
+                    <h3 class="font-bold text-slate-800 text-sm">ربط واتساب QR</h3>
+                    <p class="text-xs text-slate-500 mt-0.5">افتح جلسة واتساب لاستقبال الردود تلقائياً</p>
+                </div>
+            </div>
+        </a>
+
+        <a href="/ai-settings" class="bg-white border border-slate-200 rounded-2xl p-5 hover:border-teal-500 transition shadow-sm group">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 group-hover:bg-purple-600 group-hover:text-white transition flex items-center justify-center">
+                    <i class="fa-solid fa-robot text-2xl"></i>
+                </div>
+                <div>
+                    <h3 class="font-bold text-slate-800 text-sm">إعداد المساعد الذكي</h3>
+                    <p class="text-xs text-slate-500 mt-0.5">درب البوت على معلومات نشاطك وإجاباتك</p>
+                </div>
+            </div>
+        </a>
+
+        <a href="/campaigns" class="bg-white border border-slate-200 rounded-2xl p-5 hover:border-teal-500 transition shadow-sm group">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition flex items-center justify-center">
+                    <i class="fa-solid fa-bullhorn text-2xl"></i>
+                </div>
+                <div>
+                    <h3 class="font-bold text-slate-800 text-sm">إرسال حملة جماعية</h3>
+                    <p class="text-xs text-slate-500 mt-0.5">أرسل العروض والرسائل لعملائك بنقرة واحدة</p>
+                </div>
+            </div>
+        </a>
+    </div>
+
+</div>
+{% endblock %}

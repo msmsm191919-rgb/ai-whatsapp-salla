@@ -33,7 +33,7 @@ router.get('/', async (req, res) => {
 
     if (!tenant) {
       console.log(`- Tenant Resolver Result: NOT FOUND`);
-      console.log(`  (Fallback Reason: Tenant does not exist in DB for salla_merchant_id: ${merchantId})`);
+      console.log(`  (Fallback Reason: Tenant does not exist in DB)`);
       console.log(`======================================================================\n`);
     } else {
       console.log(`- Tenant Resolver Result: FOUND`);
@@ -42,6 +42,12 @@ router.get('/', async (req, res) => {
       console.log(`  - Store Name: ${tenant.store_name}`);
       console.log(`  - Salla Merchant ID: ${tenant.salla_merchant_id}`);
       
+      // 🔒 Platform Guard: Redirect Standalone merchants to /standalone/dashboard
+      if (tenant.platform === 'standalone') {
+        console.log(`[PlatformGuard] Standalone merchant detected. Redirecting to /standalone/dashboard`);
+        return res.redirect('/standalone/dashboard');
+      }
+
       const sub = tenant.Subscription;
       if (!sub) {
         console.log(`- Subscription Resolver Result: NOT FOUND`);
