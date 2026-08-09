@@ -233,7 +233,7 @@ class SystemEmailService extends EmailProviderInterface {
 
         const contentHtml = `
             <p>يا هلا تاجرنا العزيز 👋</p>
-            <p>شكرًا لانضمامك لمبهر لـ <strong>${displayStoreName}</strong>. باقي خطوة بسيطة لتفعيل حسابك والبدء باستخدام خدمات مبهر.</p>
+            <p>شكرًا لانضمامك لمبهر. باقي خطوة بسيطة لتفعيل حساب <strong>${displayStoreName}</strong> والبدء باستخدام خدمات مبهر.</p>
             <p>اضغط الزر أدناه لتأكيد بريدك الإلكتروني.</p>
         `;
 
@@ -361,7 +361,7 @@ class SystemEmailService extends EmailProviderInterface {
 
         const contentHtml = `
             <p>يا هلا تاجرنا العزيز 👋</p>
-            <p>يعطيك العافية، تم تجديد اشتراكك في مبهر بنجاح لـ <strong>${displayStoreName}</strong>.</p>
+            <p>يعطيك العافية، تم تجديد اشتراك <strong>${displayStoreName}</strong> في مبهر بنجاح.</p>
             <p>تقدر تكمل استخدام خدماتك مباشرة من لوحة التحكم.</p>
             
             <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:20px 0;background-color:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:16px;">
