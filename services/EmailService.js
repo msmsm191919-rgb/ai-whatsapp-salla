@@ -133,15 +133,15 @@ class SystemEmailService extends EmailProviderInterface {
                         <td align="center">
                             <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:560px;background-color:#ffffff;border:1px solid #e2e8f0;border-radius:16px;overflow:hidden;box-shadow:0 4px 12px rgba(15,23,42,0.05);">
                                 
-                                <!-- LIGHT BRAND HEADER -->
+                                <!-- OFFICIAL BRAND HEADER -->
                                 <tr>
                                     <td style="padding:20px 28px;background-color:#f8fafc;border-bottom:1px solid #e2e8f0;">
                                         <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
                                             <tr>
                                                 <td dir="rtl" align="right" style="font-family:'Cairo',Arial,sans-serif;">
-                                                    <div style="display:inline-block;padding:6px 12px;background:linear-gradient(135deg,#0d9488,#14b8a6);border-radius:8px;color:#ffffff;font-weight:900;font-size:14px;">
-                                                        ⚡ مبهر AI
-                                                    </div>
+                                                    <a href="${appUrl}" target="_blank" style="text-decoration:none;">
+                                                        <img src="${appUrl}/images/logo.png" alt="مبهر AI" width="130" style="display:inline-block;max-width:140px;height:auto;border:0;outline:none;" />
+                                                    </a>
                                                 </td>
                                             </tr>
                                         </table>
