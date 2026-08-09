@@ -89,6 +89,7 @@ class SystemEmailService extends EmailProviderInterface {
         isSecurityAlert = false
     }) {
         const appUrl = process.env.APP_URL || 'https://app.mubhirbot.com';
+        const marketingUrl = process.env.MARKETING_URL || process.env.PUBLIC_URL || 'https://mubhirbot.com';
 
         // Optional promotional block (light Mubhir teal tint background)
         const renderPromo = (!isSecurityAlert && promoBlockHtml) ? `
@@ -131,13 +132,13 @@ class SystemEmailService extends EmailProviderInterface {
                         <td align="center">
                             <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:560px;background-color:#ffffff;border:1px solid #e2e8f0;border-radius:16px;overflow:hidden;box-shadow:0 4px 12px rgba(15,23,42,0.05);">
                                 
-                                <!-- OFFICIAL APPROVED BRAND HEADER (20% REDUCED HEIGHT) -->
+                                <!-- OFFICIAL APPROVED BRAND HEADER -->
                                 <tr>
                                     <td style="padding:14px 24px;background-color:#f8fafc;border-bottom:1px solid #e2e8f0;">
                                         <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
                                             <tr>
                                                 <td dir="rtl" align="right" style="font-family:'Cairo',Arial,sans-serif;">
-                                                    <a href="${appUrl}" target="_blank" style="text-decoration:none;">
+                                                    <a href="${marketingUrl}" target="_blank" style="text-decoration:none;">
                                                         <table role="presentation" cellspacing="0" cellpadding="0" style="display:inline-block;">
                                                             <tr>
                                                                 <td style="vertical-align:middle;padding-left:10px;">
@@ -180,9 +181,10 @@ class SystemEmailService extends EmailProviderInterface {
                                             مبهر AI — المنصة الذكية لأتمتة التسويق عبر واتساب والمبيعات في المملكة العربية السعودية
                                         </p>
                                         <div style="font-size:12px;color:#64748b;">
-                                            <a href="${appUrl}" style="color:#0d9488;text-decoration:none;margin:0 8px;font-weight:bold;">الموقع الرسمي</a> •
-                                            <a href="${appUrl}/privacy" style="color:#0d9488;text-decoration:none;margin:0 8px;">سياسة الخصوصية</a> •
-                                            <a href="${appUrl}/terms" style="color:#0d9488;text-decoration:none;margin:0 8px;">الشروط والأحكام</a>
+                                            <a href="${marketingUrl}" style="color:#0d9488;text-decoration:none;margin:0 6px;font-weight:bold;">الموقع الرسمي</a> •
+                                            <a href="${marketingUrl}/privacy" style="color:#0d9488;text-decoration:none;margin:0 6px;">سياسة الخصوصية</a> •
+                                            <a href="${marketingUrl}/terms" style="color:#0d9488;text-decoration:none;margin:0 6px;">الشروط والأحكام</a> •
+                                            <a href="${marketingUrl}/support" style="color:#0d9488;text-decoration:none;margin:0 6px;">الدعم الفني</a>
                                         </div>
                                     </td>
                                 </tr>
@@ -439,8 +441,8 @@ class SystemEmailService extends EmailProviderInterface {
             title,
             contentHtml,
             ctaText: 'إعادة ربط واتساب',
-            ctaUrl: `${appUrl}/dashboard`,
-            fallbackText: 'اضغط هنا لفتح لوحة التحكم لربط واتساب',
+            ctaUrl: `${appUrl}/whatsapp-web`,
+            fallbackText: 'اضغط هنا لفتح صفحة ربط الواتساب',
             isSecurityAlert: true
         });
 

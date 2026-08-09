@@ -1357,6 +1357,133 @@ app.post('/auth/standalone/forgot-password', async (req, res) => {
   }
 });
 
+// GET /auth/standalone/reset-password — عرض صفحة إعادة تعيين كلمة المرور
+app.get('/auth/standalone/reset-password', async (req, res) => {
+  try {
+    const { token } = req.query;
+    if (!token) return res.status(400).send('<html><body style="font-family:sans-serif;text-align:center;padding:50px;" dir="rtl"><h2>⚠️ رابط غير صالح</h2><p>رمز إعادة تعيين كلمة المرور غير موجود.</p></body></html>');
+
+    const db = SallaDatabase.connection;
+    const tenant = await db.models.Tenant.findOne({
+      where: { password_reset_token: token }
+    });
+
+    if (!tenant) {
+      return res.status(400).send('<html><body style="font-family:sans-serif;text-align:center;padding:50px;" dir="rtl"><h2>⚠️ رابط غير صالح</h2><p>رمز إعادة التعيين غير صالح أو تم استخدامه من قبل.</p></body></html>');
+    }
+
+    if (tenant.password_reset_expires_at && new Date(tenant.password_reset_expires_at) < new Date()) {
+      return res.status(400).send('<html><body style="font-family:sans-serif;text-align:center;padding:50px;" dir="rtl"><h2>⏳ رابط منتهي الصلاحية</h2><p>انتهت صلاحية رابط إعادة تعيين كلمة المرور (صالح لمدة ساعة واحدة فقط).</p></body></html>');
+    }
+
+    res.send(`
+      <!DOCTYPE html>
+      <html lang="ar" dir="rtl">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>إعادة تعيين كلمة المرور — مبهر AI</title>
+        <style>
+          body { font-family: 'Cairo', Arial, sans-serif; background-color: #f8fafc; margin: 0; padding: 40px 16px; color: #0f172a; }
+          .card { max-width: 440px; margin: 0 auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 32px; box-shadow: 0 4px 12px rgba(15,23,42,0.05); }
+          .logo { text-align: center; font-size: 24px; font-weight: 900; color: #0f172a; margin-bottom: 24px; }
+          .logo span { color: #0d9488; }
+          h2 { font-size: 20px; font-weight: 800; margin-bottom: 8px; text-align: center; }
+          p { font-size: 14px; color: #64748b; margin-bottom: 24px; text-align: center; }
+          .form-group { margin-bottom: 20px; text-align: right; }
+          label { display: block; font-size: 13px; font-weight: 700; margin-bottom: 8px; color: #334155; }
+          input { width: 100%; padding: 12px 14px; font-size: 14px; border: 1px solid #cbd5e1; border-radius: 10px; box-sizing: border-box; outline: none; }
+          input:focus { border-color: #0d9488; }
+          button { width: 100%; padding: 14px; font-size: 16px; font-weight: bold; color: #ffffff; background: linear-gradient(135deg,#0d9488,#14b8a6); border: none; border-radius: 12px; cursor: pointer; margin-top: 10px; }
+          button:disabled { opacity: 0.6; cursor: not-allowed; }
+          .alert { padding: 12px 16px; border-radius: 10px; font-size: 13px; margin-bottom: 16px; display: none; }
+          .alert-error { background: #fef2f2; border: 1px solid #fecaca; color: #dc2626; }
+          .alert-success { background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; }
+        </style>
+      </head>
+      <body>
+        <div class="card">
+          <div class="logo">مبهر <span>AI</span></div>
+          <h2>إعادة تعيين كلمة المرور</h2>
+          <p>أدخل كلمة المرور الجديدة لحسابك لـ <strong>${tenant.store_name || tenant.owner_name || ''}</strong></p>
+
+          <div id="alertBox" class="alert"></div>
+
+          <form id="resetForm" onsubmit="handleReset(event)">
+            <input type="hidden" id="resetToken" value="${token}">
+            
+            <div class="form-group">
+              <label>كلمة المرور الجديدة (8 أحرف على الأقل)</label>
+              <input type="password" id="newPassword" required minlength="8" placeholder="••••••••">
+            </div>
+
+            <div class="form-group">
+              <label>تأكيد كلمة المرور الجديدة</label>
+              <input type="password" id="confirmPassword" required minlength="8" placeholder="••••••••">
+            </div>
+
+            <button type="submit" id="submitBtn">تحديث كلمة المرور</button>
+          </form>
+        </div>
+
+        <script>
+          async function handleReset(e) {
+            e.preventDefault();
+            const token = document.getElementById('resetToken').value;
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            const alertBox = document.getElementById('alertBox');
+            const submitBtn = document.getElementById('submitBtn');
+
+            alertBox.style.display = 'none';
+
+            if (newPassword !== confirmPassword) {
+              alertBox.className = 'alert alert-error';
+              alertBox.innerText = 'كلمتا المرور غير متطابقتين';
+              alertBox.style.display = 'block';
+              return;
+            }
+
+            submitBtn.disabled = true;
+            submitBtn.innerText = 'جاري التحديث...';
+
+            try {
+              const res = await fetch('/auth/standalone/reset-password', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token, new_password: newPassword })
+              });
+
+              const data = await res.json();
+              if (res.ok && data.ok) {
+                alertBox.className = 'alert alert-success';
+                alertBox.innerText = '✅ تم تحديث كلمة المرور بنجاح! جاري توجيهك لصفحة الدخول...';
+                alertBox.style.display = 'block';
+                setTimeout(() => { window.location.href = '/login'; }, 2000);
+              } else {
+                alertBox.className = 'alert alert-error';
+                alertBox.innerText = data.error || 'حدث خطأ أثناء التحديث';
+                alertBox.style.display = 'block';
+                submitBtn.disabled = false;
+                submitBtn.innerText = 'تحديث كلمة المرور';
+              }
+            } catch (err) {
+              alertBox.className = 'alert alert-error';
+              alertBox.innerText = 'تعذر الاتصال بالسيرفر';
+              alertBox.style.display = 'block';
+              submitBtn.disabled = false;
+              submitBtn.innerText = 'تحديث كلمة المرور';
+            }
+          }
+        </script>
+      </body>
+      </html>
+    `);
+  } catch (e) {
+    res.status(500).send('فشل عرض صفحة إعادة التعيين: ' + e.message);
+  }
+});
+
 // POST /auth/standalone/reset-password — تطبيق كلمة المرور الجديدة
 app.post('/auth/standalone/reset-password', async (req, res) => {
   try {
