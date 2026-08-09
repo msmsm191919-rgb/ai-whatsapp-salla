@@ -1,6 +1,23 @@
-# Mubhir Master Symbol Map
+# Mubhir Master Symbol Map (Exact Symbol Counts & Inventory)
 
-| Symbol Name | Type | File Path | Line Range | Platform Scope | Tenant Scoped | Status |
+## Exact Symbol Statistics
+- **TOTAL_FUNCTIONS**: `890`
+- **TOTAL_CLASSES**: `8`
+- **TOTAL_CLASS_METHODS**: `48`
+- **TOTAL_SERVICE_METHODS**: `45`
+- **TOTAL_MIDDLEWARE_SYMBOLS**: `6`
+- **TOTAL_ROUTE_HANDLERS**: `74`
+- **TOTAL_MODEL_SYMBOLS**: `20`
+- **TOTAL_JOB_SYMBOLS**: `2`
+- **TOTAL_EVENT_LISTENERS**: `14`
+- **TOTAL_HELPERS**: `22`
+- **TOTAL_SYMBOLS**: `1129`
+
+---
+
+## Core Symbol Registry
+
+| Symbol Name | Symbol Type | File Path | Line Range | Platform Scope | Tenant Scoped | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | `ensureAuthenticated` | Middleware | `app.js` | L1616 - L1641 | `salla` | Yes | `ACTIVE` |
 | `ensureStandaloneAuthenticated` | Middleware | `app.js` | L1643 - L1661 | `standalone` | Yes | `ACTIVE` |
@@ -12,6 +29,7 @@
 | `sendTrialEndingEmail` | Service Method | `services/EmailService.js` | L310 - L331 | `SHARED` | Yes | `ACTIVE` |
 | `sendTrialExpiredEmail` | Service Method | `services/EmailService.js` | L334 - L355 | `SHARED` | Yes | `ACTIVE` |
 | `sendPaymentSuccessEmail` | Service Method | `services/EmailService.js` | L358 - L397 | `SHARED` | Yes | `ACTIVE` |
+| `sendPaymentFailedEmail` | Service Method | `services/EmailService.js` | L400 - L421 | `SHARED` | Yes | `ACTIVE` |
 | `sendPaymentFailedEmail` | Service Method | `services/EmailService.js` | L400 - L421 | `SHARED` | Yes | `ACTIVE` |
 | `sendQRDisconnectedEmail` | Service Method | `services/EmailService.js` | L424 - L450 | `SHARED` | Yes | `ACTIVE` |
 | `sendQRRestoredEmail` | Service Method | `services/EmailService.js` | L453 - L473 | `SHARED` | Yes | `ACTIVE` |
