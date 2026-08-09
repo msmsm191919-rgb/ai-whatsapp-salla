@@ -1,5 +1,5 @@
 // services/EmailService.js
-// Production Transactional Email Service & Branded Design System for Mubhir AI
+// Production Transactional Email Service & Clean Light Branded Design System for Mubhir AI
 
 const nodemailer = require('nodemailer');
 
@@ -76,7 +76,8 @@ class SystemEmailService extends EmailProviderInterface {
     }
 
     /**
-     * 🎨 Centralized Branded Email Layout Engine (Mubhir AI Mobile UX Design System)
+     * 🎨 Centralized Branded Email Layout Engine — CLEAN LIGHT EMAIL THEME
+     * Outer background: #F8FAFC | Card: #FFFFFF | Headings: #0F172A | Body: #334155 | Border: #E2E8F0
      */
     renderMubhirEmailLayout({
         title,
@@ -90,31 +91,31 @@ class SystemEmailService extends EmailProviderInterface {
     }) {
         const appUrl = process.env.APP_URL || 'https://app.mubhirbot.com';
 
-        // Optional promotional block (suppressed for security & urgent alert emails)
+        // Optional promotional block (light Mubhir teal tint background)
         const renderPromo = (!isSecurityAlert && promoBlockHtml) ? `
-            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-top:24px;background:rgba(20,184,166,0.08);border:1px solid rgba(20,184,166,0.2);border-radius:12px;padding:16px;">
+            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-top:24px;background-color:#f0fdfa;border:1px solid #ccfbf1;border-radius:12px;padding:16px;">
                 <tr>
-                    <td dir="rtl" style="font-family:'Cairo',Arial,sans-serif;font-size:13px;line-height:1.6;color:#cbd5e1;">
+                    <td dir="rtl" style="font-family:'Cairo',Arial,sans-serif;font-size:13px;line-height:1.6;color:#0f766e;">
                         ${promoBlockHtml}
                     </td>
                 </tr>
             </table>
         ` : '';
 
-        // Primary Mobile-Polished CTA Button + Secure Anchor Fallback (No Raw Tokens)
+        // Primary CTA Button (Mubhir Teal Gradient) + Secure Anchor Fallback
         const renderCTA = (ctaText && ctaUrl) ? `
             <table role="presentation" cellspacing="0" cellpadding="0" style="margin:28px 0 16px 0;">
                 <tr>
                     <td align="center" style="border-radius:12px;background:linear-gradient(135deg,#0d9488 0%,#14b8a6 100%);">
-                        <a href="${ctaUrl}" target="_blank" style="font-family:'Cairo',Arial,sans-serif;font-size:16px;font-weight:bold;color:#ffffff;text-decoration:none;padding:14px 28px;border-radius:12px;display:inline-block;border:1px solid rgba(255,255,255,0.15);line-height:24px;">
+                        <a href="${ctaUrl}" target="_blank" style="font-family:'Cairo',Arial,sans-serif;font-size:16px;font-weight:bold;color:#ffffff;text-decoration:none;padding:14px 28px;border-radius:12px;display:inline-block;border:1px solid rgba(255,255,255,0.2);line-height:24px;">
                             ${ctaText}
                         </a>
                     </td>
                 </tr>
             </table>
-            <p dir="rtl" style="font-family:'Cairo',Arial,sans-serif;font-size:12px;color:#94a3b8;margin-top:12px;">
-                إذا لم يعمل الزر أعلاه، اضغط على الرابط البديل التالية:<br>
-                <a href="${ctaUrl}" style="color:#14b8a6;text-decoration:underline;font-weight:bold;">${fallbackText}</a>
+            <p dir="rtl" style="font-family:'Cairo',Arial,sans-serif;font-size:12px;color:#64748b;margin-top:12px;">
+                إذا لم يعمل الزر أعلاه، اضغط على الرابط البديل التالي:<br>
+                <a href="${ctaUrl}" style="color:#0d9488;text-decoration:underline;font-weight:bold;">${fallbackText}</a>
             </p>
         ` : '';
 
@@ -126,15 +127,15 @@ class SystemEmailService extends EmailProviderInterface {
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
                 <title>${title}</title>
             </head>
-            <body style="margin:0;padding:0;background-color:#0b1329;font-family:'Cairo',Arial,sans-serif;-webkit-font-smoothing:antialiased;">
-                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color:#0b1329;padding:32px 16px;">
+            <body style="margin:0;padding:0;background-color:#f8fafc;font-family:'Cairo',Arial,sans-serif;-webkit-font-smoothing:antialiased;">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color:#f8fafc;padding:32px 16px;">
                     <tr>
                         <td align="center">
-                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:560px;background-color:#151e32;border:1px solid rgba(255,255,255,0.1);border-radius:16px;overflow:hidden;box-shadow:0 20px 40px rgba(0,0,0,0.4);">
+                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:560px;background-color:#ffffff;border:1px solid #e2e8f0;border-radius:16px;overflow:hidden;box-shadow:0 4px 12px rgba(15,23,42,0.05);">
                                 
-                                <!-- COMPACT BRAND HEADER -->
+                                <!-- LIGHT BRAND HEADER -->
                                 <tr>
-                                    <td style="padding:20px 28px;background:linear-gradient(180deg,rgba(13,148,136,0.12) 0%,rgba(21,30,50,0) 100%);border-bottom:1px solid rgba(255,255,255,0.06);">
+                                    <td style="padding:20px 28px;background-color:#f8fafc;border-bottom:1px solid #e2e8f0;">
                                         <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
                                             <tr>
                                                 <td dir="rtl" align="right" style="font-family:'Cairo',Arial,sans-serif;">
@@ -150,16 +151,16 @@ class SystemEmailService extends EmailProviderInterface {
                                 <!-- BODY CONTENT -->
                                 <tr>
                                     <td dir="rtl" style="padding:28px;font-family:'Cairo',Arial,sans-serif;text-align:right;">
-                                        <h1 style="margin:0 0 16px 0;font-size:20px;font-weight:800;color:#f8fafc;line-height:1.4;">
+                                        <h1 style="margin:0 0 16px 0;font-size:20px;font-weight:800;color:#0f172a;line-height:1.4;">
                                             ${title}
                                         </h1>
-                                        <div style="font-size:14px;line-height:1.7;color:#cbd5e1;">
+                                        <div style="font-size:14px;line-height:1.7;color:#334155;">
                                             ${contentHtml}
                                         </div>
                                         
                                         ${renderCTA}
 
-                                        ${secondaryHtml ? `<div style="margin-top:20px;font-size:13px;color:#cbd5e1;">${secondaryHtml}</div>` : ''}
+                                        ${secondaryHtml ? `<div style="margin-top:20px;font-size:13px;color:#64748b;">${secondaryHtml}</div>` : ''}
 
                                         ${renderPromo}
                                     </td>
@@ -167,14 +168,14 @@ class SystemEmailService extends EmailProviderInterface {
 
                                 <!-- FOOTER -->
                                 <tr>
-                                    <td dir="rtl" style="padding:24px 28px;background-color:#0f172a;border-top:1px solid rgba(255,255,255,0.06);text-align:center;font-family:'Cairo',Arial,sans-serif;">
-                                        <p style="margin:0 0 12px 0;font-size:12px;color:#94a3b8;line-height:1.5;">
+                                    <td dir="rtl" style="padding:24px 28px;background-color:#f8fafc;border-top:1px solid #e2e8f0;text-align:center;font-family:'Cairo',Arial,sans-serif;">
+                                        <p style="margin:0 0 12px 0;font-size:12px;color:#64748b;line-height:1.5;">
                                             مبهر AI — المنصة الذكية لأتمتة التسويق عبر واتساب والمبيعات في المملكة العربية السعودية
                                         </p>
-                                        <div style="font-size:12px;color:#cbd5e1;">
-                                            <a href="${appUrl}" style="color:#14b8a6;text-decoration:none;margin:0 8px;font-weight:bold;">الموقع الرسمي</a> •
-                                            <a href="${appUrl}/privacy" style="color:#14b8a6;text-decoration:none;margin:0 8px;">سياسة الخصوصية</a> •
-                                            <a href="${appUrl}/terms" style="color:#14b8a6;text-decoration:none;margin:0 8px;">الشروط والأحكام</a>
+                                        <div style="font-size:12px;color:#64748b;">
+                                            <a href="${appUrl}" style="color:#0d9488;text-decoration:none;margin:0 8px;font-weight:bold;">الموقع الرسمي</a> •
+                                            <a href="${appUrl}/privacy" style="color:#0d9488;text-decoration:none;margin:0 8px;">سياسة الخصوصية</a> •
+                                            <a href="${appUrl}/terms" style="color:#0d9488;text-decoration:none;margin:0 8px;">الشروط والأحكام</a>
                                         </div>
                                     </td>
                                 </tr>
@@ -216,7 +217,7 @@ class SystemEmailService extends EmailProviderInterface {
         }
     }
 
-    // 1. Email Verification (Short H1, Secure Anchor Fallback — No Promo)
+    // 1. Email Verification (Light Theme, Secure Anchor Fallback — No Promo)
     async sendVerificationEmail({ to, token, ownerName, storeName }) {
         const appUrl = process.env.APP_URL || 'https://app.mubhirbot.com';
         const verifyUrl = `${appUrl}/auth/standalone/verify-email?token=${encodeURIComponent(token)}`;
@@ -242,7 +243,7 @@ class SystemEmailService extends EmailProviderInterface {
         return this.dispatchEmail({ to, subject: `${title} — ${displayStoreName}`, html, action: 'VERIFICATION' });
     }
 
-    // 2. Password Reset Email (Short H1, Secure Anchor Fallback — No Promo)
+    // 2. Password Reset Email (Light Theme, Secure Anchor Fallback — No Promo)
     async sendPasswordResetEmail({ to, token, ownerName }) {
         const appUrl = process.env.APP_URL || 'https://app.mubhirbot.com';
         const resetUrl = `${appUrl}/auth/standalone/reset-password?token=${encodeURIComponent(token)}`;
@@ -267,7 +268,7 @@ class SystemEmailService extends EmailProviderInterface {
         return this.dispatchEmail({ to, subject: `${title} — مبهر AI`, html, action: 'PASSWORD_RESET' });
     }
 
-    // 3. Trial Started Email (Short H1 — Promotional Block Allowed)
+    // 3. Trial Started Email (Light Theme — Promotional Block Allowed)
     async sendTrialStartedEmail({ to, ownerName, storeName, trialDays = 3 }) {
         const appUrl = process.env.APP_URL || 'https://app.mubhirbot.com';
         const displayStoreName = this.formatStoreDisplayName(storeName);
@@ -296,14 +297,14 @@ class SystemEmailService extends EmailProviderInterface {
         return this.dispatchEmail({ to, subject: `${title} (${trialDays} أيام) — ${displayStoreName}`, html, action: 'TRIAL_STARTED' });
     }
 
-    // 4. Trial Ending Email (Short H1 — No Promo)
+    // 4. Trial Ending Email (Light Theme, Warning Accent — No Promo)
     async sendTrialEndingEmail({ to, ownerName, storeName, daysLeft = 1 }) {
         const appUrl = process.env.APP_URL || 'https://app.mubhirbot.com';
         const displayStoreName = this.formatStoreDisplayName(storeName);
         const title = `تنبيه: متبقي يوم على انتهاء التجربة`;
 
         const contentHtml = `
-            <p>تنبيه انتهاء التجربة المجانية ⏳</p>
+            <p style="color:#d97706;font-weight:bold;">تنبيه انتهاء التجربة المجانية ⏳</p>
             <p>متبقي يوم واحد فقط على انتهاء التجربة المجانية لـ <strong>${displayStoreName}</strong>.</p>
             <p>لتجنب انقطاع الرد الآلي الذكي والحملات، يرجى تأكيد باقة اشتراكك من صفحة الفوترة.</p>
         `;
@@ -320,14 +321,14 @@ class SystemEmailService extends EmailProviderInterface {
         return this.dispatchEmail({ to, subject: `${title} — ${displayStoreName}`, html, action: 'TRIAL_ENDING' });
     }
 
-    // 5. Trial Expired Email (Short H1 — No Promo)
+    // 5. Trial Expired Email (Light Theme, Red Warning — No Promo)
     async sendTrialExpiredEmail({ to, ownerName, storeName }) {
         const appUrl = process.env.APP_URL || 'https://app.mubhirbot.com';
         const displayStoreName = this.formatStoreDisplayName(storeName);
         const title = `انتهت فترة التجربة المجانية`;
 
         const contentHtml = `
-            <p>انتهت فترة التجربة المجانية 🔔</p>
+            <p style="color:#dc2626;font-weight:bold;">انتهت فترة التجربة المجانية 🔔</p>
             <p>انتهت تجاربك المجانية لـ <strong>${displayStoreName}</strong>.</p>
             <p>اشترك الآن في إحدى باقات مبهر لاستعادة خدمات الرد الآلي وإرسال الحملات التسويقية.</p>
         `;
@@ -344,7 +345,7 @@ class SystemEmailService extends EmailProviderInterface {
         return this.dispatchEmail({ to, subject: `${title} — ${displayStoreName}`, html, action: 'TRIAL_EXPIRED' });
     }
 
-    // 6. Payment Success Email (Transaction Summary Component Included)
+    // 6. Payment Success Email (Light Theme, Clean Light Summary Card)
     async sendPaymentSuccessEmail({ to, ownerName, storeName, amount, planName }) {
         const appUrl = process.env.APP_URL || 'https://app.mubhirbot.com';
         const displayStoreName = this.formatStoreDisplayName(storeName);
@@ -352,13 +353,13 @@ class SystemEmailService extends EmailProviderInterface {
         const todayDate = new Date().toLocaleDateString('ar-SA', { year: 'numeric', month: 'long', day: 'numeric' });
 
         const contentHtml = `
-            <p>شكراً لك <strong>${ownerName || ''}</strong> ✅</p>
+            <p style="color:#059669;font-weight:bold;">شكراً لك ${ownerName || ''} ✅</p>
             <p>تم تجديد اشتراك <strong>${displayStoreName}</strong> بنجاح في منصة مبهر AI.</p>
             
-            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:20px 0;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:16px;">
+            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:20px 0;background-color:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:16px;">
                 <tr>
-                    <td dir="rtl" style="font-family:'Cairo',Arial,sans-serif;font-size:13px;color:#cbd5e1;line-height:2;">
-                        <strong style="color:#14b8a6;">📋 ملخص المعاملة:</strong><br>
+                    <td dir="rtl" style="font-family:'Cairo',Arial,sans-serif;font-size:13px;color:#334155;line-height:2;">
+                        <strong style="color:#0d9488;">📋 ملخص المعاملة:</strong><br>
                         • <strong>الباقة:</strong> ${planName || 'الأساسية'}<br>
                         • <strong>المبلغ المدفوع:</strong> ${amount || '149'} ر.س<br>
                         • <strong>حالة الدفع:</strong> مكتمل ✅<br>
@@ -385,14 +386,14 @@ class SystemEmailService extends EmailProviderInterface {
         return this.dispatchEmail({ to, subject: `${title} — ${displayStoreName}`, html, action: 'PAYMENT_SUCCESS' });
     }
 
-    // 7. Payment Failed Email (Short H1 — No Promo)
+    // 7. Payment Failed Email (Light Theme, Red Alert — No Promo)
     async sendPaymentFailedEmail({ to, ownerName, storeName, planName }) {
         const appUrl = process.env.APP_URL || 'https://app.mubhirbot.com';
         const displayStoreName = this.formatStoreDisplayName(storeName);
         const title = `فشلت عملية الدفع`;
 
         const contentHtml = `
-            <p>تعذر إتمام عملية الدفع ⚠️</p>
+            <p style="color:#dc2626;font-weight:bold;">تعذر إتمام عملية الدفع ⚠️</p>
             <p>تعذر الخصم التلقائي لاشتراك <strong>${displayStoreName}</strong> في باقة <strong>${planName || 'الأساسية'}</strong>.</p>
             <p>يرجى تحديث وسيلة الدفع المسجلة لتجنب إيقاف الخدمة.</p>
         `;
@@ -409,7 +410,7 @@ class SystemEmailService extends EmailProviderInterface {
         return this.dispatchEmail({ to, subject: `${title} — ${displayStoreName}`, html, action: 'PAYMENT_FAILED' });
     }
 
-    // 8. QR Disconnected Email (Short H1 — No Promo & Grace Period)
+    // 8. QR Disconnected Email (Light Theme, Critical Amber/Red Alert — No Promo & Grace Period)
     async sendQRDisconnectedEmail({ to, ownerName, storeName, isSustained = false }) {
         if (!isSustained) {
             console.log(`[EmailService IGNORE] Transient QR disconnect for store ${storeName}. Email suppressed.`);
@@ -421,7 +422,7 @@ class SystemEmailService extends EmailProviderInterface {
         const title = `انقطع اتصال واتساب`;
 
         const contentHtml = `
-            <p>انقطاع اتصال واتساب ⚠️</p>
+            <p style="color:#dc2626;font-weight:bold;">انقطاع اتصال واتساب ⚠️</p>
             <p>تم إغلاق أو انقطاع جلسة الواتساب الخاصة بـ <strong>${displayStoreName}</strong>.</p>
             <p>يرجى مسح رمز QR الجديد من لوحة التحكم لاستعادة الرد الآلي والحملات.</p>
         `;
@@ -438,14 +439,14 @@ class SystemEmailService extends EmailProviderInterface {
         return this.dispatchEmail({ to, subject: `${title} — ${displayStoreName}`, html, action: 'QR_DISCONNECTED' });
     }
 
-    // 9. QR Restored Email (Short H1 — No Promo)
+    // 9. QR Restored Email (Light Theme, Emerald Success — No Promo)
     async sendQRRestoredEmail({ to, ownerName, storeName }) {
         const appUrl = process.env.APP_URL || 'https://app.mubhirbot.com';
         const displayStoreName = this.formatStoreDisplayName(storeName);
         const title = `تم استعادة اتصال الواتساب`;
 
         const contentHtml = `
-            <p>تم استعادة الاتصال ✅</p>
+            <p style="color:#059669;font-weight:bold;">تم استعادة الاتصال ✅</p>
             <p>تمت إعادة ربط واتساب <strong>${displayStoreName}</strong> بنجاح. البوت الذكي يعمل الآن بكفاءة عالية.</p>
         `;
 
