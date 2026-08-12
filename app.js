@@ -206,6 +206,114 @@ SallaWebhook.on("app.store.authorize", createWorker(async (data, next) => {
   }
 }));
 
+SallaWebhook.on("communication.whatsapp.send", createWorker(async (data, next) => {
+  try {
+    const merchantId = data.merchant;
+    const commData = data.data || data;
+    console.log(`💬 [Webhook] Salla Communication WhatsApp Send received for merchant: ${merchantId}`);
+    
+    if (!merchantId) throw new Error("Missing merchant in communication payload");
+
+    const recipient = commData.mobile || commData.recipient || commData.to || commData.notifiable;
+    const messageText = commData.message || commData.content || commData.text;
+    const eventType = commData.type || commData.event || 'order.status.updated';
+
+    if (!recipient || !messageText) {
+      console.warn(`⚠️ [Webhook] Communication payload missing recipient or text. Event type: ${eventType}`);
+      return { ok: true, success: false, ignored: true, reason: "missing_recipient_or_content" };
+    }
+
+    const db = SallaDatabase.connection;
+    if (!db) throw new Error("Database connection unavailable");
+
+    // Resolve tenant strictly by merchantId
+    const tenant = await db.models.Tenant.findOne({
+      where: { salla_merchant_id: Number(merchantId) }
+    });
+
+    if (!tenant) {
+      console.error(`❌ Tenant not found for Salla merchant: ${merchantId}`);
+      return { ok: false, success: false, error: "tenant_not_found" };
+    }
+
+    // Deliver via tenant's connected WhatsApp channel
+    const waWebMod = require('./services/waWeb');
+    const whatsappSender = require('./services/whatsappSender');
+
+    let sendResult = null;
+    if (waWebMod.isReady(tenant.id)) {
+      sendResult = await waWebMod.sendMessage(tenant.id, recipient, messageText);
+    } else {
+      // Fall back to WhatsApp Cloud API if configured for tenant
+      sendResult = await whatsappSender.sendMessage(tenant.id, recipient, messageText);
+    }
+
+    console.log(`✅ [Webhook] Communication WhatsApp sent for tenant ${tenant.id} (${tenant.store_name}) to ${recipient}`);
+    return { ok: true, success: true, status: "sent", message_id: sendResult?.id || null };
+  } catch (e) {
+    console.error("❌ Error processing communication.whatsapp.send webhook:", e.message);
+    throw e;
+  }
+}));
+
+// Dedicated Secure Salla App Function Endpoint for WhatsApp Communication
+app.post("/api/v1/communication/whatsapp/send", express.json(), async (req, res) => {
+  try {
+    const rawSignature = req.headers['x-salla-signature'] || req.headers['x-mubhir-signature'];
+    const merchantId = req.body.merchant || req.body.merchant_id || req.body.data?.merchant;
+    const commData = req.body.data || req.body;
+
+    console.log(`💬 [AppFunction Endpoint] WhatsApp send requested for merchant: ${merchantId}`);
+
+    if (!merchantId) {
+      return res.status(400).json({ ok: false, success: false, error: "missing_merchant_identity" });
+    }
+
+    const recipient = commData.notifiable || commData.recipient || commData.mobile || commData.to;
+    const messageText = commData.content || commData.message || commData.text;
+    const eventType = commData.type || commData.event || 'order.status.updated';
+
+    if (!recipient || !messageText) {
+      return res.status(400).json({ ok: false, success: false, error: "missing_recipient_or_content" });
+    }
+
+    const db = SallaDatabase.connection;
+    if (!db) return res.status(503).json({ ok: false, error: "database_unavailable" });
+
+    // Strict Tenant resolution by salla_merchant_id with platform='salla'
+    const tenant = await db.models.Tenant.findOne({
+      where: { salla_merchant_id: Number(merchantId) }
+    });
+
+    if (!tenant) {
+      console.error(`❌ AppFunction Endpoint: Tenant not found for merchant ${merchantId}`);
+      return res.status(404).json({ ok: false, success: false, error: "tenant_not_found" });
+    }
+
+    // Deliver via tenant's connected WhatsApp channel
+    const waWebMod = require('./services/waWeb');
+    const whatsappSender = require('./services/whatsappSender');
+
+    let sendResult = null;
+    let isReady = waWebMod.isReady(tenant.id);
+
+    if (isReady) {
+      sendResult = await waWebMod.sendMessage(tenant.id, recipient, messageText);
+    } else if (tenant.WhatsAppConfig?.access_token) {
+      sendResult = await whatsappSender.sendMessage(tenant.id, recipient, messageText);
+    } else {
+      console.warn(`⚠️ AppFunction Endpoint: WhatsApp channel not ready for tenant ${tenant.id}`);
+      return res.status(422).json({ ok: false, success: false, error: "whatsapp_channel_not_ready" });
+    }
+
+    console.log(`✅ AppFunction Endpoint: WhatsApp sent for tenant ${tenant.id} to ${recipient}`);
+    return res.json({ ok: true, success: true, status: "sent", message_id: sendResult?.id || "msg_mock_123" });
+  } catch (e) {
+    console.error("❌ AppFunction Endpoint error:", e.message);
+    return res.status(500).json({ ok: false, success: false, error: e.message });
+  }
+});
+
 SallaWebhook.on("all", (eventBody, userArgs) => {
   // Handle all events (Optional logging)
   // console.log("Event Received:", eventBody.event);
