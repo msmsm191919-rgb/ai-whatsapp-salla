@@ -56,20 +56,34 @@ class SallaAdapter extends BaseAdapter {
     }
 
     static async fetchStoreInfo(accessToken) {
-        if (!this.isReady) return this._mockStoreInfo();
+        if (!this.isReady || (accessToken && String(accessToken).startsWith('mock_'))) return this._mockStoreInfo();
 
-        const data = await this._httpRequest('GET', 'api.salla.dev', '/admin/v2/store/info', null, {
-            'Authorization': `Bearer ${accessToken}`
-        });
+        const maxRetries = 2;
+        let lastError = null;
 
-        const s = data.data || {};
-        return {
-            store_id: String(s.id || s.merchant?.id),
-            store_name: s.name || s.merchant?.name || 'متجر سلة',
-            store_domain: s.domain,
-            email: s.email,
-            owner_name: s.owner_name
-        };
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+                const data = await this._httpRequest('GET', 'api.salla.dev', '/admin/v2/store/info', null, {
+                    'Authorization': `Bearer ${accessToken}`
+                });
+
+                const s = data.data || {};
+                return {
+                    store_id: String(s.id || s.merchant?.id),
+                    store_name: s.name || s.merchant?.name || 'متجر سلة',
+                    store_domain: s.domain,
+                    email: s.email,
+                    owner_name: s.owner_name
+                };
+            } catch (err) {
+                lastError = err;
+                console.warn(`⚠️ [SallaAdapter.fetchStoreInfo] Attempt ${attempt}/${maxRetries} failed: ${err.message}`);
+                if (attempt < maxRetries) {
+                    await new Promise(r => setTimeout(r, attempt * 1000));
+                }
+            }
+        }
+        throw new Error(`Salla store info fetch failed after ${maxRetries} attempts: ${lastError?.message}`);
     }
 
     static _mockToken() {
@@ -107,6 +121,11 @@ class SallaAdapter extends BaseAdapter {
                     } catch (e) { reject(new Error(`Salla API invalid response: ${data.slice(0, 200)}`)); }
                 });
             });
+
+            req.setTimeout(5000, () => {
+                req.destroy(new Error('Salla API request timeout after 5000ms'));
+            });
+
             req.on('error', reject);
             if (body) req.write(body);
             req.end();

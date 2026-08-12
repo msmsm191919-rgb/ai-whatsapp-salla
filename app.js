@@ -135,12 +135,33 @@ SallaWebhook.on("app.installed", (eventBody, userArgs) => {
 SallaWebhook.on("app.store.authorize", createWorker(async (data, next) => {
   try {
     const merchantId = data.merchant;
-    const tokenData = data.data; // contains access_token, refresh_token, expires
+    const tokenData = data.data || data; // canonical Salla payload.data object
     
     console.log(`🔑 [Webhook] Easy Mode app.store.authorize received for merchant: ${merchantId}`);
     
+    if (!merchantId) {
+      throw new Error("Missing merchant in authorize payload");
+    }
+
     if (!tokenData || !tokenData.access_token) {
       throw new Error("Missing access_token in authorize payload");
+    }
+
+    // Expiry validation: data.expires is Unix timestamp in seconds
+    const expiresNum = Number(tokenData.expires);
+    if (!Number.isFinite(expiresNum) || expiresNum <= 0) {
+      throw new Error("Malformed expires timestamp in authorize payload");
+    }
+
+    const expiresMs = expiresNum * 1000;
+    const expiresDate = new Date(expiresMs);
+    if (isNaN(expiresDate.getTime())) {
+      throw new Error("Invalid expires date in authorize payload");
+    }
+
+    // Plausibility check: timestamp must be after 2024-01-01 (1704067200000)
+    if (expiresMs < 1704067200000) {
+      throw new Error("Implausible expires timestamp in authorize payload");
     }
 
     const db = SallaDatabase.connection;
@@ -152,17 +173,16 @@ SallaWebhook.on("app.store.authorize", createWorker(async (data, next) => {
 
     const ConnectService = require('./services/ConnectService');
     
-    // 2. Create or update Tenant + Subscription + SallaOAuth (all handled by ConnectService.upsertTenantFromOAuth)
-    const expiresTimestamp = Number(tokenData.expires || 0);
-    const nowSecs = Math.floor(Date.now() / 1000);
-    const expires_in = expiresTimestamp > nowSecs ? (expiresTimestamp - nowSecs) : 86400;
-
+    // 2. Create or update Tenant + SallaOAuth credentials (without starting trial/subscription)
     const { tenant } = await ConnectService.upsertTenantFromOAuth({
       platform: 'salla',
+      skipSubscriptionTrial: true,
       tokenData: {
         access_token: tokenData.access_token,
         refresh_token: tokenData.refresh_token,
-        expires_in: expires_in,
+        expires_at: expiresDate,
+        scope: tokenData.scope || null,
+        token_type: tokenData.token_type || 'Bearer',
         store_id: String(merchantId),
         store_name: storeInfo.store_name,
         store_domain: storeInfo.store_domain,
@@ -182,6 +202,7 @@ SallaWebhook.on("app.store.authorize", createWorker(async (data, next) => {
     console.log(`✅ [Webhook] Easy Mode tenant ${tenant.id} (${tenant.store_name}) authorized/updated successfully.`);
   } catch (e) {
     console.error("❌ Error processing app.store.authorize webhook:", e.message);
+    throw e; // rethrow so WebhookInboxWorker can mark as failed/retry if transient
   }
 }));
 

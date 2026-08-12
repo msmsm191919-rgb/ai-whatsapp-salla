@@ -38,14 +38,14 @@ class ConnectService {
      * @param {Object} params.tokenData - من adapter.exchangeCodeForToken()
      * @returns {Promise<{tenant, created, platform}>}
      */
-    async upsertTenantFromOAuth({ platform, tokenData }) {
+    async upsertTenantFromOAuth({ platform, tokenData, skipSubscriptionTrial = false }) {
         if (platform === 'zid' || platform === 'shopify') {
             throw new Error(`Platform ${platform} is currently disabled. Connection denied.`);
         }
         if (!PlatformRegistry.has(platform)) throw new Error(`Unknown platform: ${platform}`);
 
         const {
-            access_token, refresh_token, expires_in,
+            access_token, refresh_token, expires_in, expires_at, scope, token_type,
             store_id, store_name, store_domain, email, owner_name, contact_phone,
             password, authorization // Zid extra
         } = tokenData;
@@ -61,9 +61,6 @@ class ConnectService {
         if (!tenant && platform === 'standalone') {
             if (email) {
                 tenant = await this.db.models.Tenant.findOne({ where: { email: email.trim().toLowerCase() } });
-            }
-            if (!tenant && store_name && store_name.trim().includes('محتوى بلس')) {
-                tenant = await this.db.models.Tenant.findByPk(41);
             }
         } else if (!tenant && platform === 'salla') {
             const numericId = Number(store_id);
@@ -140,21 +137,27 @@ class ConnectService {
 
         // 2. احفظ الـ token (SallaOAuth model — نستخدمها بشكل generic للأن)
         if (access_token && platform !== 'standalone') {
-            const tokenExpiresAt = expires_in ? new Date(Date.now() + expires_in * 1000) : null;
+            let tokenExpiresAt = null;
+            if (expires_at instanceof Date) {
+                tokenExpiresAt = expires_at;
+            } else if (expires_in) {
+                tokenExpiresAt = new Date(Date.now() + Number(expires_in) * 1000);
+            }
+
             const existing = await this.db.models.SallaOAuth.findOne({ where: { tenant_id: tenant.id } });
             const payload = {
                 tenant_id: tenant.id,
                 access_token,
                 refresh_token: refresh_token || null,
                 expires_at: tokenExpiresAt,
-                meta: { platform, authorization } // نخزن نوع المنصة في meta
+                meta: { platform, authorization, scope: scope || null, token_type: token_type || null }
             };
             if (existing) await existing.update(payload);
             else await this.db.models.SallaOAuth.create(payload);
         }
 
-        // 3. إذا tenant جديد، أنشئ Subscription تجريبي (Basic trial)
-        if (created) {
+        // 3. إذا tenant جديد، أنشئ Subscription تجريبي فقط إذا لم يتم تخطي ذلك صراحة
+        if (created && !skipSubscriptionTrial) {
             const basicPlan = await this.db.models.Plan.findOne({ where: { name: 'الأساسية' } });
             if (basicPlan) {
                 // Bridge: Standalone uses GLOBAL_TRIAL_DAYS (3 days), Salla respects Salla Portal trial duration (7 days)

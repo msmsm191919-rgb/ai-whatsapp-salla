@@ -82,7 +82,11 @@ module.exports = (sequelize, DataTypes) => {
                     return rawValue;
                 },
                 set(value) {
-                    this.setDataValue('settings', value);
+                    if (typeof value === 'object' && value !== null) {
+                        this.setDataValue('settings', JSON.stringify(value));
+                    } else {
+                        this.setDataValue('settings', value);
+                    }
                 }
             }
         },
