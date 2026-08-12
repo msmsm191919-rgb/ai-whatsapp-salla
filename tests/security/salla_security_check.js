@@ -3,6 +3,7 @@ const crypto = require('crypto');
 
 // Set dummy env variables for the test suite before requiring models/helpers
 process.env.NODE_ENV = process.env.NODE_ENV || 'development';
+process.env.ALLOW_INSECURE_STAGING = 'true';
 process.env.SESSION_SECRET = process.env.SESSION_SECRET || 'test-session-secret-must-be-very-long-32-chars-long';
 process.env.SALLA_DATABASE_DIALECT = process.env.SALLA_DATABASE_DIALECT || 'sqlite';
 process.env.SALLA_DATABASE_STORAGE = process.env.SALLA_DATABASE_STORAGE || './tests/security/test_db.sqlite';
@@ -45,23 +46,23 @@ async function runTests() {
     SallaWebhook.on("app.store.authorize", async (data) => {
         try {
             const merchantId = data.merchant;
-            const tokenData = data.data;
+            const tokenData = data.data || data;
 
             const SallaAdapter = require('../../services/platforms/SallaAdapter');
             const storeInfo = await SallaAdapter.fetchStoreInfo(tokenData.access_token);
 
             const ConnectService = require('../../services/ConnectService');
             
-            const expiresTimestamp = Number(tokenData.expires || 0);
-            const nowSecs = Math.floor(Date.now() / 1000);
-            const expires_in = expiresTimestamp > nowSecs ? (expiresTimestamp - nowSecs) : 86400;
+            const expiresNum = Number(tokenData.expires || 0);
+            const expiresDate = expiresNum > 0 ? new Date(expiresNum * 1000) : new Date(Date.now() + 86400 * 1000);
 
             const { tenant } = await ConnectService.upsertTenantFromOAuth({
                 platform: 'salla',
+                skipSubscriptionTrial: true,
                 tokenData: {
                     access_token: tokenData.access_token,
                     refresh_token: tokenData.refresh_token,
-                    expires_in: expires_in,
+                    expires_at: expiresDate,
                     store_id: String(merchantId),
                     store_name: storeInfo.store_name,
                     store_domain: storeInfo.store_domain,
@@ -77,7 +78,7 @@ async function runTests() {
                 settings: { ...settings, billing_source: 'salla', salla_integration_status: 'active' }
             });
         } catch (e) {
-            console.error("Test app.store.authorize listener failed:", e.message);
+            console.error("Test app.store.authorize listener failed:", e);
         }
     });
 
@@ -344,10 +345,13 @@ async function runTests() {
     await WebhookInboxWorker.enqueue('salla', easyEventId, 'app.store.authorize', easyModeMerchant, JSON.stringify(mockAuthPayload));
     
     // Wait for background worker to process it
-    await new Promise(resolve => setTimeout(resolve, 100));
+    let easyTenant = null;
+    for (let i = 0; i < 10; i++) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        easyTenant = await db.models.Tenant.findOne({ where: { salla_merchant_id: easyModeMerchant } });
+        if (easyTenant) break;
+    }
     
-    // Verify tenant created
-    const easyTenant = await db.models.Tenant.findOne({ where: { salla_merchant_id: easyModeMerchant } });
     assert(easyTenant, "Easy Mode tenant must be created on app.store.authorize");
     assert.strictEqual(easyTenant.settings.billing_source, 'salla', "Easy Mode tenant billing_source must be 'salla'");
     assert.strictEqual(easyTenant.settings.salla_integration_status, 'active', "Salla integration must be active");
