@@ -329,7 +329,29 @@ async function getFullPlanForTenant(tenantId) {
 // 🛡️ Middleware: حماية الـ routes
 // ═══════════════════════════════════════════════════════════════════
 
-/**
+async function resolveTenant(req) {
+    const db = SallaDatabase.connection;
+    if (!db || !db.models?.Tenant) return null;
+    const tenantId = req.user?.tenant_id || req.session?.tenantId;
+    if (tenantId) {
+        return await db.models.Tenant.findByPk(tenantId, {
+            include: [{ model: db.models.Subscription, include: [db.models.Plan] }]
+        });
+    }
+    const merchantId = req.user?.merchant?.id;
+    if (merchantId) {
+        return await db.models.Tenant.findOne({
+            where: {
+                [Op.or]: [
+                    { salla_merchant_id: merchantId },
+                    { platform_store_id: merchantId }
+                ]
+            },
+            include: [{ model: db.models.Subscription, include: [db.models.Plan] }]
+        });
+    }
+    return null;
+}/**
  * Middleware: تحقق إن الصفحة متاحة في باقة المتجر
  * استخدام: app.get('/campaigns', requirePage('campaigns'), handler)
  */
@@ -479,6 +501,7 @@ module.exports = {
     PLAN_SCENARIOS,
 
     // Lookups
+    resolveTenant,
     getPlanConfig,
     getTenantPlan,
     getFullPlanForTenant,

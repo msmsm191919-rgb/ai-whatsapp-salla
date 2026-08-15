@@ -1403,7 +1403,7 @@ app.get('/connect/:platform', (req, res) => {
 
     // إذا في mock mode، نمر مباشرة على الـ callback (نحاكي رجوع المنصة)
     if (!adapter.isReady) {
-      const mockCallback = platform === 'salla' ? '/oauth/callback' : `/oauth/${platform}/callback`;
+      const mockCallback = `/oauth/${platform}/callback`;
       return res.redirect(`${mockCallback}?code=mock_code&state=${state}${shopDomain ? '&shop=' + shopDomain : ''}`);
     }
 
@@ -2204,10 +2204,23 @@ const io = new Server(server);
 app.get("/logs", async (req, res) => {
   try {
     const db = SallaDatabase.connection;
-    const tenant = await db.models.Tenant.findOne({
-      where: { salla_merchant_id: req.user.merchant.id },
-      include: [{ model: db.models.Subscription, include: [db.models.Plan] }]
-    });
+    const tenantId = req.user?.tenant_id || req.session?.tenantId;
+    let tenant = null;
+    if (tenantId) {
+      tenant = await db.models.Tenant.findByPk(tenantId, {
+        include: [{ model: db.models.Subscription, include: [db.models.Plan] }]
+      });
+    } else if (req.user?.merchant?.id) {
+      tenant = await db.models.Tenant.findOne({
+        where: {
+          [require('sequelize').Op.or]: [
+            { salla_merchant_id: req.user.merchant.id },
+            { platform_store_id: req.user.merchant.id }
+          ]
+        },
+        include: [{ model: db.models.Subscription, include: [db.models.Plan] }]
+      });
+    }
 
     const plan = tenant?.Subscription?.Plan;
 
@@ -2498,10 +2511,23 @@ app.post("/settings/generate-api-key", async (req, res) => {
     const db = SallaDatabase.connection;
     const crypto = require('crypto');
 
-    const tenant = await db.models.Tenant.findOne({
-      where: { salla_merchant_id: req.user.merchant.id },
-      include: [{ model: db.models.Subscription, include: [db.models.Plan] }]
-    });
+    const tenantId = req.user?.tenant_id || req.session?.tenantId;
+    let tenant = null;
+    if (tenantId) {
+      tenant = await db.models.Tenant.findByPk(tenantId, {
+        include: [{ model: db.models.Subscription, include: [db.models.Plan] }]
+      });
+    } else if (req.user?.merchant?.id) {
+      tenant = await db.models.Tenant.findOne({
+        where: {
+          [require('sequelize').Op.or]: [
+            { salla_merchant_id: req.user.merchant.id },
+            { platform_store_id: req.user.merchant.id }
+          ]
+        },
+        include: [{ model: db.models.Subscription, include: [db.models.Plan] }]
+      });
+    }
 
     if (!tenant) return res.status(404).json({ success: false, error: "Tenant not found" });
 
@@ -2691,10 +2717,23 @@ app.post('/billing/checkout', async (req, res) => {
     const { plan_name } = req.body; // plan_name still parsed, but we redirect to Salla App Store generally
 
     const db = SallaDatabase.connection;
-    const tenant = await db.models.Tenant.findOne({
-      where: { salla_merchant_id: req.user.merchant.id },
-      include: [{ model: db.models.Subscription, include: [db.models.Plan] }]
-    });
+    const tenantId = req.user?.tenant_id || req.session?.tenantId;
+    let tenant = null;
+    if (tenantId) {
+      tenant = await db.models.Tenant.findByPk(tenantId, {
+        include: [{ model: db.models.Subscription, include: [db.models.Plan] }]
+      });
+    } else if (req.user?.merchant?.id) {
+      tenant = await db.models.Tenant.findOne({
+        where: {
+          [require('sequelize').Op.or]: [
+            { salla_merchant_id: req.user.merchant.id },
+            { platform_store_id: req.user.merchant.id }
+          ]
+        },
+        include: [{ model: db.models.Subscription, include: [db.models.Plan] }]
+      });
+    }
     if (!tenant) return res.status(404).json({ ok: false, error: 'Tenant not found' });
 
     if (tenant.platform === 'standalone') {
@@ -2804,17 +2843,30 @@ app.get('/billing', async (req, res) => {
   try {
     if (!req.user) req.user = { merchant: { id: 123456789, name: 'Demo Merchant' } };
     const db = SallaDatabase.connection;
-    const tenant = await db.models.Tenant.findOne({
-      where: { salla_merchant_id: req.user.merchant.id },
-      include: [{ model: db.models.Subscription, include: [db.models.Plan] }]
-    });
+    const tenantId = req.user?.tenant_id || req.session?.tenantId;
+    let tenant = null;
+    if (tenantId) {
+      tenant = await db.models.Tenant.findByPk(tenantId, {
+        include: [{ model: db.models.Subscription, include: [db.models.Plan] }]
+      });
+    } else if (req.user?.merchant?.id) {
+      tenant = await db.models.Tenant.findOne({
+        where: {
+          [require('sequelize').Op.or]: [
+            { salla_merchant_id: req.user.merchant.id },
+            { platform_store_id: req.user.merchant.id }
+          ]
+        },
+        include: [{ model: db.models.Subscription, include: [db.models.Plan] }]
+      });
+    }
 
-    const payments = await db.models.Payment.findAll({
-      where: { tenant_id: tenant?.id },
+    const payments = (tenant && tenant.id) ? await db.models.Payment.findAll({
+      where: { tenant_id: tenant.id },
       include: [db.models.Plan],
       order: [['created_at', 'DESC']],
       limit: 50
-    });
+    }) : [];
 
     const sub = tenant?.Subscription;
     const plan = sub?.Plan;
@@ -3137,10 +3189,23 @@ app.get("/customers", async (req, res) => {
     const db = SallaDatabase.connection;
     const { Op } = require('sequelize');
 
-    const tenant = await db.models.Tenant.findOne({
-      where: { salla_merchant_id: req.user.merchant.id },
-      include: [{ model: db.models.Subscription, include: [db.models.Plan] }]
-    });
+    const tenantId = req.user?.tenant_id || req.session?.tenantId;
+    let tenant = null;
+    if (tenantId) {
+      tenant = await db.models.Tenant.findByPk(tenantId, {
+        include: [{ model: db.models.Subscription, include: [db.models.Plan] }]
+      });
+    } else if (req.user?.merchant?.id) {
+      tenant = await db.models.Tenant.findOne({
+        where: {
+          [require('sequelize').Op.or]: [
+            { salla_merchant_id: req.user.merchant.id },
+            { platform_store_id: req.user.merchant.id }
+          ]
+        },
+        include: [{ model: db.models.Subscription, include: [db.models.Plan] }]
+      });
+    }
 
     const plan = tenant?.Subscription?.Plan;
 
@@ -3620,10 +3685,23 @@ app.get("/ai-settings", async (req, res) => {
   try {
     if (!req.user) req.user = { merchant: { id: 123456789, name: 'Demo Merchant' } };
     const db = SallaDatabase.connection;
-    const tenant = await db.models.Tenant.findOne({
-      where: { salla_merchant_id: req.user.merchant.id },
-      include: [{ model: db.models.Subscription, include: [db.models.Plan] }]
-    });
+    const tenantId = req.user?.tenant_id || req.session?.tenantId;
+    let tenant = null;
+    if (tenantId) {
+      tenant = await db.models.Tenant.findByPk(tenantId, {
+        include: [{ model: db.models.Subscription, include: [db.models.Plan] }]
+      });
+    } else if (req.user?.merchant?.id) {
+      tenant = await db.models.Tenant.findOne({
+        where: {
+          [require('sequelize').Op.or]: [
+            { salla_merchant_id: req.user.merchant.id },
+            { platform_store_id: req.user.merchant.id }
+          ]
+        },
+        include: [{ model: db.models.Subscription, include: [db.models.Plan] }]
+      });
+    }
 
     const plan = tenant?.Subscription?.Plan;
     const aiConfig = (tenant && tenant.settings && tenant.settings.ai_config) ? tenant.settings.ai_config : {};

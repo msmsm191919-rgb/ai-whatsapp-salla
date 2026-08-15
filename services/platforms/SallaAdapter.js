@@ -21,7 +21,7 @@ class SallaAdapter extends BaseAdapter {
     }
 
     static get isReady() {
-        return !!(process.env.SALLA_OAUTH_CLIENT_ID && process.env.SALLA_OAUTH_CLIENT_SECRET);
+        return !!(process.env.SALLA_OAUTH_CLIENT_ID && process.env.SALLA_OAUTH_CLIENT_SECRET && !process.env.SALLA_OAUTH_CLIENT_ID.startsWith('mock_'));
     }
 
     static getAuthorizationUrl(state, redirectUri) {
@@ -98,11 +98,11 @@ class SallaAdapter extends BaseAdapter {
 
     static _mockStoreInfo(storeId = `salla_mock_${Date.now()}`) {
         return {
-            store_id: storeId,
-            store_name: 'متجر سلة تجريبي',
-            store_domain: `${storeId}.salla.sa`,
-            email: 'demo@salla-mock.test',
-            owner_name: 'تاجر سلة'
+            store_id: '99887766',
+            store_name: 'متجر الأناقة السعودية',
+            store_domain: 'elegance-sa.salla.sa',
+            email: 'salla-merchant@mubhir-preview.test',
+            owner_name: 'سلطان القحطاني'
         };
     }
 
