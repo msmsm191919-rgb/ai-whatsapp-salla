@@ -1,0 +1,245 @@
+﻿<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>بوابة تاجر سلة | مبهر AI</title>
+  <meta name="description" content="تسجيل الدخول والربط المباشر لتجار منصة سلة مع مبهر AI">
+  <script src="/js/tailwind.js"></script>
+  <link href="/css/all.min.css" rel="stylesheet">
+  <link href="/css/fonts.css" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #0d9488;
+      --primary-hover: #0f766e;
+      --salla-green: #004D40;
+      --salla-lime: #B2FF59;
+    }
+    body {
+      font-family: 'Cairo', sans-serif;
+      background-color: #F8FAFC;
+      color: #1E293B;
+      -webkit-font-smoothing: antialiased;
+    }
+    .num { font-family: 'Inter', sans-serif; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between bg-slate-50">
+
+  <!-- Header -->
+  <header class="w-full bg-white border-b border-slate-200 py-4 px-6 sm:px-12">
+    <div class="max-w-7xl mx-auto flex items-center justify-between">
+      <a href="/" class="flex items-center gap-3 group">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-teal-600 to-emerald-500 flex items-center justify-center text-white shadow-md shadow-teal-500/20">
+          <i class="fas fa-robot text-lg"></i>
+        </div>
+        <div class="flex flex-col">
+          <span class="text-xl font-black text-slate-900 tracking-tight">مبهر <span class="text-teal-600">AI</span></span>
+          <span class="text-xs text-slate-400 font-medium -mt-1">المساعد الذكي لمتاجر سلة</span>
+        </div>
+      </a>
+      <a href="/" class="text-sm font-semibold text-slate-600 hover:text-teal-600 flex items-center gap-2 transition-colors">
+        <span>العودة للرئيسية</span>
+        <i class="fas fa-arrow-left text-xs"></i>
+      </a>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="flex-1 flex items-center justify-center p-4 sm:p-8">
+    <div class="w-full max-w-md">
+      
+      <!-- Card -->
+      <div class="bg-white rounded-2xl shadow-xl shadow-slate-200/60 border border-slate-200/80 p-6 sm:p-8">
+        
+        <!-- Header Info -->
+        <div class="text-center mb-6">
+          <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-emerald-50 border border-emerald-100 text-emerald-600 mb-3 shadow-inner">
+            <i class="fas fa-store text-2xl"></i>
+          </div>
+          <h1 class="text-2xl font-black text-slate-900">بوابة تاجر سلة</h1>
+          <p class="text-xs sm:text-sm text-slate-500 mt-1">الدخول السريع والمزامنة التلقائية لمتجرك على سلة</p>
+        </div>
+
+        <!-- Section 1: Direct Salla OAuth / Easy Mode (Recommended) -->
+        <div class="mb-6">
+          <a href="/connect/salla" id="btn-salla-connect" class="w-full flex items-center justify-center gap-3 py-3.5 px-4 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl font-bold shadow-lg shadow-emerald-700/20 transition-all hover:scale-[1.01] active:scale-[0.99] text-base group">
+            <i class="fas fa-bolt text-amber-300 text-lg group-hover:rotate-12 transition-transform"></i>
+            <span>دخول سريع ومباشر عبر سلة</span>
+          </a>
+          <p class="text-center text-xs text-slate-400 mt-2">
+            <i class="fas fa-shield-alt text-teal-600 ml-1"></i> ربط رسمي معتمد عبر OAuth ومزامنة فورية للطلبات والمنتجات
+          </p>
+        </div>
+
+        <!-- Divider -->
+        <div class="relative flex items-center justify-center my-6">
+          <div class="border-t border-slate-200 w-full"></div>
+          <span class="bg-white px-3 text-xs font-semibold text-slate-400 absolute">أو الدخول بحساب مبهر للتاجر</span>
+        </div>
+
+        <!-- Notification Banner -->
+        <div id="alert-box" class="hidden mb-4 p-3.5 rounded-xl text-xs sm:text-sm font-medium"></div>
+
+        <!-- Form 1: Returning Salla Merchant Email/Password Login -->
+        <div id="login-view">
+          <form id="form-login" class="space-y-4">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1.5">البريد الإلكتروني للمتجر</label>
+              <div class="relative">
+                <input type="email" id="login-email" required placeholder="name@yourstore.com" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-600 transition-all text-left" dir="ltr">
+                <i class="fas fa-envelope text-slate-400 absolute left-3 top-3 text-sm"></i>
+              </div>
+            </div>
+
+            <div>
+              <div class="flex items-center justify-between mb-1.5">
+                <label class="block text-xs font-bold text-slate-700">كلمة المرور</label>
+                <button type="button" onclick="switchView('forgot')" class="text-xs font-semibold text-teal-600 hover:text-teal-700 transition-colors">نسيت كلمة المرور؟</button>
+              </div>
+              <div class="relative">
+                <input type="password" id="login-password" required placeholder="••••••••" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-600 transition-all text-left" dir="ltr">
+                <i class="fas fa-lock text-slate-400 absolute left-3 top-3 text-sm"></i>
+              </div>
+            </div>
+
+            <button type="submit" id="btn-login-submit" class="w-full py-3 px-4 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold text-sm shadow-md transition-all flex items-center justify-center gap-2">
+              <span>تسجيل الدخول</span>
+              <i class="fas fa-arrow-left text-xs"></i>
+            </button>
+          </form>
+
+          <div class="mt-4 pt-4 border-t border-slate-100 text-center">
+            <p class="text-xs text-slate-500">
+              متجر جديد على سلة؟ 
+              <a href="/connect/salla" class="font-bold text-teal-600 hover:text-teal-700">اربط متجرك مباشرة بنقرة واحدة</a>
+            </p>
+          </div>
+        </div>
+
+        <!-- Form 2: Forgot Password -->
+        <div id="forgot-view" class="hidden">
+          <form id="form-forgot" class="space-y-4">
+            <p class="text-xs text-slate-500 leading-relaxed">
+              أدخل البريد الإلكتروني المسجل في حساب متجرك، وسنرسل لك رابطاً آمناً لإعادة تعيين كلمة المرور:
+            </p>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1.5">البريد الإلكتروني</label>
+              <div class="relative">
+                <input type="email" id="forgot-email" required placeholder="name@yourstore.com" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-600 transition-all text-left" dir="ltr">
+                <i class="fas fa-envelope text-slate-400 absolute left-3 top-3 text-sm"></i>
+              </div>
+            </div>
+
+            <button type="submit" id="btn-forgot-submit" class="w-full py-3 px-4 bg-teal-600 hover:bg-teal-700 text-white rounded-xl font-bold text-sm shadow-md transition-all flex items-center justify-center gap-2">
+              <span>إرسال رابط الاستعادة</span>
+              <i class="fas fa-paper-plane text-xs"></i>
+            </button>
+
+            <button type="button" onclick="switchView('login')" class="w-full py-2 text-xs font-bold text-slate-600 hover:text-slate-900 transition-colors">
+              الرجوع لتسجيل الدخول
+            </button>
+          </form>
+        </div>
+
+      </div>
+
+      <!-- Trust Note -->
+      <div class="text-center mt-6">
+        <p class="text-xs text-slate-400">
+          هل تواجه مشكلة في الدخول؟ <a href="/#faq" class="text-teal-600 hover:underline">الأسئلة الشائعة</a> أو تواصل مع الدعم الفني
+        </p>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="w-full py-4 text-center text-xs text-slate-400 border-t border-slate-200 bg-white">
+    <p>© 2026 مبهر AI — جميع الحقوق محفوظة للمتاجر الإلكترونية</p>
+  </footer>
+
+  <script>
+    function switchView(view) {
+      document.getElementById('login-view').classList.toggle('hidden', view !== 'login');
+      document.getElementById('forgot-view').classList.toggle('hidden', view !== 'forgot');
+      hideAlert();
+    }
+
+    function showAlert(msg, isSuccess = false) {
+      const box = document.getElementById('alert-box');
+      box.className = isSuccess 
+        ? 'mb-4 p-3.5 rounded-xl text-xs sm:text-sm font-medium bg-emerald-50 text-emerald-800 border border-emerald-200'
+        : 'mb-4 p-3.5 rounded-xl text-xs sm:text-sm font-medium bg-rose-50 text-rose-800 border border-rose-200';
+      box.innerHTML = (isSuccess ? '<i class="fas fa-check-circle ml-1.5"></i> ' : '<i class="fas fa-exclamation-circle ml-1.5"></i> ') + msg;
+      box.classList.remove('hidden');
+    }
+
+    function hideAlert() {
+      document.getElementById('alert-box').classList.add('hidden');
+    }
+
+    // Handle Login
+    document.getElementById('form-login').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      hideAlert();
+      const btn = document.getElementById('btn-login-submit');
+      const email = document.getElementById('login-email').value.trim();
+      const password = document.getElementById('login-password').value;
+
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> جاري التحقق...';
+
+      try {
+        const res = await fetch('/auth/standalone/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+        const data = await res.json();
+        if (data.ok) {
+          showAlert('تم تسجيل الدخول بنجاح! جاري تحويلك لوحة التحكم...', true);
+          setTimeout(() => {
+            window.location.href = data.redirect || '/dashboard';
+          }, 600);
+        } else {
+          showAlert(data.error || 'بيانات الدخول غير صحيحة');
+          btn.disabled = false;
+          btn.innerHTML = '<span>تسجيل الدخول</span> <i class="fas fa-arrow-left text-xs"></i>';
+        }
+      } catch (err) {
+        showAlert('تعذر الاتصال بالخادم، يرجى المحاولة لاحقاً');
+        btn.disabled = false;
+        btn.innerHTML = '<span>تسجيل الدخول</span> <i class="fas fa-arrow-left text-xs"></i>';
+      }
+    });
+
+    // Handle Forgot Password
+    document.getElementById('form-forgot').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      hideAlert();
+      const btn = document.getElementById('btn-forgot-submit');
+      const email = document.getElementById('forgot-email').value.trim();
+
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> جاري الإرسال...';
+
+      try {
+        const res = await fetch('/auth/standalone/forgot-password', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email })
+        });
+        const data = await res.json();
+        showAlert(data.message || 'إذا كان البريد مسجلاً، فقد تم إرسال رابط الاستعادة.', true);
+        btn.disabled = false;
+        btn.innerHTML = '<span>إرسال رابط الاستعادة</span> <i class="fas fa-paper-plane text-xs"></i>';
+      } catch (err) {
+        showAlert('فشل إرسال الطلب، يرجى المحاولة لاحقاً');
+        btn.disabled = false;
+        btn.innerHTML = '<span>إرسال رابط الاستعادة</span> <i class="fas fa-paper-plane text-xs"></i>';
+      }
+    });
+  </script>
+</body>
+</html>

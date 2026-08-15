@@ -1328,7 +1328,13 @@ function validateOAuthState(req, res, next) {
   next();
 }
 
-app.get(["/oauth/redirect", "/login"], passport.authenticate("salla"));
+app.get("/oauth/redirect", passport.authenticate("salla"));
+app.get("/login", (req, res) => {
+  if (req.isAuthenticated() || (req.user && req.user.merchant && req.user.merchant.id)) {
+    return res.redirect('/dashboard');
+  }
+  res.redirect('/#start');
+});
 
 app.get(
   "/oauth/callback",
@@ -1345,17 +1351,34 @@ app.get(
 const PlatformRegistry = require('./services/platforms');
 const ConnectService = require('./services/ConnectService');
 
-// GET /connect — صفحة اختيار المنصة
+// GET /auth/salla — صفحة تسجيل ودخول تاجر سلة المخصصة
+app.get('/auth/salla', (req, res) => {
+  if (req.isAuthenticated() || (req.user && req.user.merchant && req.user.merchant.id)) {
+    return res.redirect('/dashboard');
+  }
+  res.render('auth_salla.html', {
+    user: req.user || null,
+    support_whatsapp: process.env.SUPPORT_WHATSAPP_NUMBER || ''
+  });
+});
+
+// GET /auth/standalone — صفحة تسجيل ودخول التاجر المستقل المخصصة
+app.get('/auth/standalone', (req, res) => {
+  if (req.isAuthenticated() || (req.user && req.user.merchant && req.user.merchant.id)) {
+    return res.redirect('/dashboard');
+  }
+  res.render('auth_standalone.html', {
+    user: req.user || null,
+    support_whatsapp: process.env.SUPPORT_WHATSAPP_NUMBER || ''
+  });
+});
+
+// GET /connect — توجيه لقسم اختيار التاجر بالرئيسية
 app.get('/connect', (req, res) => {
   if (req.isAuthenticated() || (req.user && req.user.merchant && req.user.merchant.id)) {
     return res.redirect('/dashboard');
   }
-  const platforms = PlatformRegistry.list();
-  res.render('connect.html', {
-    activePage: 'connect',
-    platforms,
-    user: req.user || null
-  });
+  res.redirect('/#start');
 });
 
 // GET /connect/:platform — يبدأ OAuth flow للمنصة المختارة
