@@ -490,6 +490,139 @@ SallaAPI.onAuth(async (accessToken, refreshToken, expires_in, data) => {
     });
 });
 
+// Helper: Derive per-merchant communication authentication secret
+function deriveMerchantCommunicationSecret(masterSecret, merchantId) {
+  if (!masterSecret || !merchantId) return null;
+  const contextString = `salla-communication-v1:${Number(merchantId)}`;
+  return crypto.createHmac('sha256', masterSecret)
+    .update(contextString)
+    .digest('hex');
+}
+
+// In-Memory Idempotency Cache for Salla Communication Events (24-Hour TTL)
+const communicationIdempotencyCache = new Map();
+function getCommunicationIdempotency(key) {
+  if (!key) return null;
+  const cached = communicationIdempotencyCache.get(key);
+  if (!cached) return null;
+  if (Date.now() > cached.expiresAt) {
+    communicationIdempotencyCache.delete(key);
+    return null;
+  }
+  return cached.response;
+}
+function setCommunicationIdempotency(key, response, ttlMs = 86400000) {
+  if (!key) return;
+  communicationIdempotencyCache.set(key, {
+    response,
+    expiresAt: Date.now() + ttlMs
+  });
+}
+
+// Salla Communication App Event Endpoint: WhatsApp Send
+app.post("/api/v1/communication/whatsapp/send", express.raw({ type: '*/*' }), async (req, res) => {
+  try {
+    const rawBodyBuffer = req.body;
+    const rawBodyString = Buffer.isBuffer(rawBodyBuffer) ? rawBodyBuffer.toString('utf8') : JSON.stringify(req.body);
+
+    let payload = {};
+    try {
+      payload = JSON.parse(rawBodyString);
+    } catch (e) {
+      return res.status(400).json({ ok: false, success: false, error: "malformed_json_body" });
+    }
+
+    const merchantId = payload.merchant || payload.data?.merchant;
+    if (!merchantId) {
+      return res.status(400).json({ ok: false, success: false, error: "missing_salla_merchant_id" });
+    }
+
+    const masterSecret = process.env.SALLA_WEBHOOK_SECRET;
+    if (!masterSecret) {
+      console.error("❌ [WhatsApp Endpoint] SALLA_WEBHOOK_SECRET is not configured");
+      return res.status(500).json({ ok: false, success: false, error: "server_configuration_error" });
+    }
+
+    const expectedMerchantSecret = deriveMerchantCommunicationSecret(masterSecret, merchantId);
+    const signatureHeader = req.headers['x-mubhir-signature'] || req.headers['x-salla-signature'];
+
+    if (!signatureHeader || typeof signatureHeader !== 'string') {
+      return res.status(401).json({ ok: false, success: false, error: "missing_signature_header" });
+    }
+
+    const expectedSignature = crypto.createHmac('sha256', expectedMerchantSecret)
+      .update(rawBodyString)
+      .digest('hex');
+
+    const sigBuf = Buffer.from(signatureHeader.trim().toLowerCase());
+    const expBuf = Buffer.from(expectedSignature.toLowerCase());
+
+    if (sigBuf.length !== expBuf.length || !crypto.timingSafeEqual(sigBuf, expBuf)) {
+      console.warn(`⚠️ [WhatsApp Endpoint] Signature verification failed for merchant ${merchantId}`);
+      return res.status(401).json({ ok: false, success: false, error: "invalid_signature" });
+    }
+
+    const eventData = payload.data || {};
+    const eventType = eventData.type || payload.event;
+    const notifiable = eventData.notifiable;
+    const messageContent = eventData.content;
+
+    if (!notifiable || (Array.isArray(notifiable) && notifiable.length === 0)) {
+      return res.status(400).json({ ok: false, success: false, error: "missing_recipient_notifiable" });
+    }
+
+    const recipient = Array.isArray(notifiable) ? notifiable[0] : String(notifiable);
+    if (!recipient || typeof recipient !== 'string') {
+      return res.status(400).json({ ok: false, success: false, error: "invalid_recipient_format" });
+    }
+
+    const idempotencyKey = req.headers['x-salla-event-id'] || payload.event_id || `${merchantId}_${eventType}_${recipient}_${crypto.createHash('md5').update(messageContent || '').digest('hex')}`;
+    const cachedResponse = getCommunicationIdempotency(idempotencyKey);
+    if (cachedResponse) {
+      console.log(`ℹ️ [WhatsApp Endpoint] Idempotent cache hit for key ${idempotencyKey}`);
+      return res.json(cachedResponse);
+    }
+
+    const db = SallaDatabase.connection;
+    if (!db) return res.status(503).json({ ok: false, error: "database_unavailable" });
+
+    const tenant = await db.models.Tenant.findOne({
+      where: { salla_merchant_id: Number(merchantId) }
+    });
+
+    if (!tenant) {
+      console.error(`❌ [WhatsApp Endpoint] Tenant not found for merchant ${merchantId}`);
+      return res.status(404).json({ ok: false, success: false, error: "tenant_not_found" });
+    }
+
+    const messageText = String(messageContent || '').trim();
+    if (!messageText) {
+      return res.status(400).json({ ok: false, success: false, error: "empty_message_content" });
+    }
+
+    const isReady = waWebMod.isReady ? waWebMod.isReady(tenant.id) : false;
+    let sendResult = null;
+
+    if (isReady) {
+      sendResult = await waWebMod.sendMessage(tenant.id, recipient, messageText);
+    } else if (tenant.WhatsAppConfig?.access_token) {
+      sendResult = await whatsappSender.sendMessage(tenant.id, recipient, messageText);
+    } else {
+      console.warn(`⚠️ [WhatsApp Endpoint] WhatsApp channel not ready for tenant ${tenant.id}`);
+      return res.status(422).json({ ok: false, success: false, error: "whatsapp_channel_not_ready" });
+    }
+
+    const responsePayload = { ok: true, success: true, status: "sent", message_id: sendResult?.id || "msg_mock_123" };
+    setCommunicationIdempotency(idempotencyKey, responsePayload);
+
+    console.log(`✅ [WhatsApp Endpoint] Sent for tenant ${tenant.id} to ${recipient}`);
+    return res.json(responsePayload);
+  } catch (e) {
+    console.error("❌ WhatsApp Endpoint error:", e.message);
+    return res.status(500).json({ ok: false, success: false, error: e.message });
+  }
+});
+
 // Passport session setup
 passport.serializeUser(function (user, done) {
   done(null, user);
