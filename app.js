@@ -1333,7 +1333,10 @@ app.get("/login", (req, res) => {
   if (req.isAuthenticated() || (req.user && req.user.merchant && req.user.merchant.id)) {
     return res.redirect('/dashboard');
   }
-  res.redirect('/#start');
+  if (req.query.platform === 'standalone') {
+    return res.redirect('/auth/standalone');
+  }
+  res.redirect('/auth/salla');
 });
 
 app.get(
@@ -1373,10 +1376,16 @@ app.get('/auth/standalone', (req, res) => {
   });
 });
 
-// GET /connect — توجيه لقسم اختيار التاجر بالرئيسية
+// GET /connect — توجيه ذكي حسب المنصة أو لقسم اختيار التاجر بالرئيسية
 app.get('/connect', (req, res) => {
   if (req.isAuthenticated() || (req.user && req.user.merchant && req.user.merchant.id)) {
     return res.redirect('/dashboard');
+  }
+  if (req.query.platform === 'standalone') {
+    return res.redirect('/auth/standalone');
+  }
+  if (req.query.platform === 'salla') {
+    return res.redirect('/auth/salla');
   }
   res.redirect('/#start');
 });
@@ -1927,14 +1936,14 @@ function ensureAuthenticated(req, res, next) {
   if (req.originalUrl.startsWith('/standalone')) {
     req.session = req.session || {};
     req.session.returnTo = req.originalUrl;
-    console.log(`- Action: Standalone route detected. Redirecting to /connect?platform=standalone`);
+    console.log(`- Action: Standalone route detected. Redirecting to /auth/standalone`);
     console.log(`============================================================\n`);
-    return res.redirect('/connect?platform=standalone');
+    return res.redirect('/auth/standalone');
   }
 
-  console.log(`- Action: Redirecting to /login`);
+  console.log(`- Action: Redirecting to /auth/salla`);
   console.log(`============================================================\n`);
-  res.redirect('/login');
+  res.redirect('/auth/salla');
 }
 
 async function ensureStandaloneAuthenticated(req, res, next) {
@@ -1957,7 +1966,7 @@ async function ensureStandaloneAuthenticated(req, res, next) {
 
   req.session = req.session || {};
   req.session.returnTo = req.originalUrl;
-  return res.redirect('/connect?platform=standalone');
+  return res.redirect('/auth/standalone');
 }
 
 // 🌐 STANDALONE NAMESPACE ROUTES

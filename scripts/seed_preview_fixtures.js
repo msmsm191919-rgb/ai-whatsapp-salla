@@ -90,6 +90,7 @@ async function seedFixtures() {
   const [standaloneTenant, standaloneCreated] = await Tenant.findOrCreate({
     where: { email: 'standalone@mubhir-preview.test' },
     defaults: {
+      platform: 'standalone',
       platform_store_id: 'standalone_preview_merchant_01',
       store_name: 'متجر المذاق الرفيع',
       email: 'standalone@mubhir-preview.test',
@@ -99,6 +100,10 @@ async function seedFixtures() {
       is_active: true
     }
   });
+
+  if (standaloneTenant.platform !== 'standalone') {
+    await standaloneTenant.update({ platform: 'standalone' });
+  }
 
   // Ensure Standalone Subscription
   await Subscription.findOrCreate({
