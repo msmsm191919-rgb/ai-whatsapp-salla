@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
@@ -9,134 +9,185 @@
   <link href="/css/all.min.css" rel="stylesheet">
   <link href="/css/fonts.css" rel="stylesheet">
   <style>
-    :root {
-      --primary: #0d9488;
-      --primary-hover: #0f766e;
-      --salla-green: #004D40;
-      --salla-lime: #B2FF59;
+    :root{--c1:#06d6a0;--c2:#118ab2;--c3:#7b2ff7;--dark:#030712;--card:rgba(255,255,255,.03);--border:rgba(255,255,255,.08)}
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    html{scroll-behavior:smooth;overflow-x:hidden}
+
+    body{
+      font-family:'Cairo',sans-serif;
+      background:var(--dark);color:#fff;
+      overflow-x:hidden;
+      -webkit-font-smoothing:antialiased;
+      font-size:14px;
+      line-height:1.6;
     }
-    body {
-      font-family: 'Cairo', sans-serif;
-      background-color: #F8FAFC;
-      color: #1E293B;
-      -webkit-font-smoothing: antialiased;
+
+    h1,h2,h3,h4,h5,h6{font-family:'Cairo',sans-serif;font-weight:900;}
+    .num,.ltr,[dir="ltr"],time,code{font-family:'Inter',sans-serif;}
+
+    .glass{background:var(--card);border:1px solid var(--border);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+    .gt{background:linear-gradient(135deg,var(--c1),var(--c2),var(--c3));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+
+    .glow-btn{
+      background:linear-gradient(135deg,var(--c1),var(--c2));
+      position:relative;overflow:hidden;transition:all .25s;
+      font-weight:800;
     }
-    .num { font-family: 'Inter', sans-serif; }
+    .glow-btn::before{content:'';position:absolute;inset:-2px;background:linear-gradient(135deg,var(--c1),var(--c2));filter:blur(15px);opacity:0;transition:opacity .25s;z-index:-1}
+    .glow-btn:hover::before{opacity:.5}
+    .glow-btn:hover{transform:translateY(-2px);box-shadow:0 12px 28px rgba(6,214,160,.25)}
+
+    .glow-btn-salla{
+      background:linear-gradient(135deg, #00d5a7, #008f75);
+      position:relative;overflow:hidden;transition:all .25s;
+      font-weight:800;
+      color: #031518;
+    }
+    .glow-btn-salla:hover{
+      transform:translateY(-2px);
+      box-shadow:0 12px 28px rgba(0,213,167,.3);
+    }
+
+    @keyframes morph{0%,100%{border-radius:60% 40% 30% 70%/60% 30% 70% 40%}50%{border-radius:30% 60% 70% 40%/50% 60% 30% 60%}}
+    .morph-blob{animation:morph 8s ease-in-out infinite;}
+    .grid-bg{background-image:linear-gradient(rgba(255,255,255,.015) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.015) 1px,transparent 1px);background-size:60px 60px;-webkit-mask-image:radial-gradient(ellipse at center,black 20%,transparent 70%);mask-image:radial-gradient(ellipse at center,black 20%,transparent 70%)}
   </style>
 </head>
-<body class="min-h-screen flex flex-col justify-between bg-slate-50">
+<body class="min-h-screen flex flex-col justify-between relative">
+
+  <!-- Background Ambience -->
+  <div class="fixed inset-0 pointer-events-none z-0">
+    <div class="absolute top-[-10%] right-[-5%] w-[500px] h-[500px] morph-blob opacity-20" style="background:radial-gradient(circle,rgba(0,213,167,.4),transparent 70%);filter:blur(80px)"></div>
+    <div class="absolute bottom-[-10%] left-[-5%] w-[450px] h-[450px] morph-blob opacity-15" style="background:radial-gradient(circle,rgba(17,138,178,.3),transparent 70%);filter:blur(80px)"></div>
+    <div class="absolute inset-0 grid-bg"></div>
+  </div>
 
   <!-- Header -->
-  <header class="w-full bg-white border-b border-slate-200 py-4 px-6 sm:px-12">
-    <div class="max-w-7xl mx-auto flex items-center justify-between">
-      <a href="/" class="flex items-center gap-3 group">
-        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-teal-600 to-emerald-500 flex items-center justify-center text-white shadow-md shadow-teal-500/20">
-          <i class="fas fa-robot text-lg"></i>
-        </div>
-        <div class="flex flex-col">
-          <span class="text-xl font-black text-slate-900 tracking-tight">مبهر <span class="text-teal-600">AI</span></span>
-          <span class="text-xs text-slate-400 font-medium -mt-1">المساعد الذكي لمتاجر سلة</span>
-        </div>
-      </a>
-      <a href="/" class="text-sm font-semibold text-slate-600 hover:text-teal-600 flex items-center gap-2 transition-colors">
-        <span>العودة للرئيسية</span>
-        <i class="fas fa-arrow-left text-xs"></i>
-      </a>
+  <header class="w-full z-20 pt-4 px-4">
+    <div class="max-w-6xl mx-auto">
+      <div class="glass rounded-2xl px-5 py-2.5 flex items-center justify-between shadow-xl">
+        <a href="/" class="flex items-center gap-0 group">
+          <div class="relative">
+            <div class="absolute inset-0 bg-[var(--c1)]/20 rounded-xl blur-md group-hover:bg-[var(--c1)]/30 transition"></div>
+            <div class="relative w-11 h-11 flex items-center justify-center">
+              <img src="/salla-assets/salla_app_icon_512_transparent_white.png" alt="مبهر AI" class="w-full h-full object-contain">
+            </div>
+          </div>
+          <span class="text-lg font-black tracking-tight text-white -mr-1">مبهر <span class="gt">AI</span></span>
+        </a>
+        <a href="/" class="text-xs font-bold text-gray-400 hover:text-white flex items-center gap-2 transition px-3 py-1.5 rounded-xl hover:bg-white/5 border border-transparent hover:border-white/10">
+          <span>العودة للرئيسية</span>
+          <i class="fas fa-arrow-left text-[10px]"></i>
+        </a>
+      </div>
     </div>
   </header>
 
-  <!-- Main Container -->
-  <main class="flex-1 flex items-center justify-center p-4 sm:p-8">
+  <!-- Main Content -->
+  <main class="flex-1 flex items-center justify-center p-4 sm:p-6 z-10 my-4">
     <div class="w-full max-w-md">
       
       <!-- Card -->
-      <div class="bg-white rounded-2xl shadow-xl shadow-slate-200/60 border border-slate-200/80 p-6 sm:p-8">
-        
-        <!-- Header Info -->
-        <div class="text-center mb-6">
-          <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-emerald-50 border border-emerald-100 text-emerald-600 mb-3 shadow-inner">
-            <i class="fas fa-store text-2xl"></i>
+      <div class="glass rounded-3xl p-6 sm:p-8 border border-white/10 shadow-2xl relative overflow-hidden" style="background: rgba(10, 22, 40, 0.95);">
+        <!-- Card Glow -->
+        <div class="absolute -top-20 -right-20 w-48 h-48 bg-[#00d5a7]/10 rounded-full blur-3xl pointer-events-none"></div>
+
+        <!-- Header Info with Salla Official Logo -->
+        <div class="text-center mb-6 relative z-10">
+          <div class="w-16 h-16 rounded-2xl bg-[#004956] border border-[#00d5a7]/50 flex items-center justify-center p-3 text-[#00d5a7] mx-auto mb-3 shadow-lg shadow-[#004956]/30">
+            <svg viewBox="0 0 100 100" class="w-full h-full" fill="none">
+              <rect x="8" y="8" width="84" height="84" rx="26" stroke="currentColor" stroke-width="10" stroke-linejoin="round"/>
+              <path d="M28 52 C38 68, 62 68, 72 52" stroke="currentColor" stroke-width="10" stroke-linecap="round"/>
+            </svg>
           </div>
-          <h1 class="text-2xl font-black text-slate-900">بوابة تاجر سلة</h1>
-          <p class="text-xs sm:text-sm text-slate-500 mt-1">الدخول السريع والمزامنة التلقائية لمتجرك على سلة</p>
+          <div class="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-[#004956]/80 text-[#00d5a7] border border-[#00d5a7]/40 text-[11px] font-black mb-2">
+            منصة سلة | Salla Partner
+          </div>
+          <h1 class="text-2xl font-black text-white mb-1">بوابة تاجر سلة</h1>
+          <p class="text-xs text-gray-400">الدخول السريع والمزامنة التلقائية لمتجرك على سلة</p>
         </div>
 
-        <!-- Section 1: Direct Salla OAuth / Easy Mode (Recommended) -->
-        <div class="mb-6">
-          <a href="/connect/salla" id="btn-salla-connect" class="w-full flex items-center justify-center gap-3 py-3.5 px-4 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl font-bold shadow-lg shadow-emerald-700/20 transition-all hover:scale-[1.01] active:scale-[0.99] text-base group">
-            <i class="fas fa-bolt text-amber-300 text-lg group-hover:rotate-12 transition-transform"></i>
-            <span>دخول سريع ومباشر عبر سلة</span>
+        <!-- Section 1: Direct Salla OAuth Connect (Recommended) -->
+        <div class="mb-6 relative z-10">
+          <a href="/connect/salla" id="btn-salla-connect" class="glow-btn-salla w-full flex items-center justify-center gap-3 py-3.5 px-4 rounded-xl text-sm shadow-xl flex items-center justify-center group">
+            <div class="w-6 h-6 text-[#031518]">
+              <svg viewBox="0 0 100 100" class="w-full h-full" fill="none">
+                <rect x="8" y="8" width="84" height="84" rx="26" stroke="currentColor" stroke-width="12" stroke-linejoin="round"/>
+                <path d="M28 52 C38 68, 62 68, 72 52" stroke="currentColor" stroke-width="12" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <span>دخول سريع ومباشر عبر سلة (OAuth)</span>
           </a>
-          <p class="text-center text-xs text-slate-400 mt-2">
-            <i class="fas fa-shield-alt text-teal-600 ml-1"></i> ربط رسمي معتمد عبر OAuth ومزامنة فورية للطلبات والمنتجات
+          <p class="text-center text-[11px] text-gray-400 mt-2 font-medium">
+            <i class="fas fa-shield-alt text-emerald-400 ml-1"></i> ربط رسمي معتمد ومزامنة فورية للطلبات والمنتجات
           </p>
         </div>
 
         <!-- Divider -->
-        <div class="relative flex items-center justify-center my-6">
-          <div class="border-t border-slate-200 w-full"></div>
-          <span class="bg-white px-3 text-xs font-semibold text-slate-400 absolute">أو الدخول بحساب مبهر للتاجر</span>
+        <div class="relative flex items-center justify-center my-6 z-10">
+          <div class="border-t border-white/10 w-full"></div>
+          <span class="bg-[#0b1626] px-3 text-xs font-bold text-gray-400 absolute rounded-full border border-white/5">أو الدخول بحساب المتجر</span>
         </div>
 
-        <!-- Notification Banner -->
-        <div id="alert-box" class="hidden mb-4 p-3.5 rounded-xl text-xs sm:text-sm font-medium"></div>
+        <!-- Alert Banner -->
+        <div id="alert-box" class="hidden mb-4 p-3 rounded-xl text-xs font-medium z-10 relative"></div>
 
-        <!-- Form 1: Returning Salla Merchant Email/Password Login -->
-        <div id="login-view">
+        <!-- Form 1: Login View -->
+        <div id="login-view" class="relative z-10">
           <form id="form-login" class="space-y-4">
             <div>
-              <label class="block text-xs font-bold text-slate-700 mb-1.5">البريد الإلكتروني للمتجر</label>
+              <label class="block text-xs font-bold text-gray-300 mb-1.5">البريد الإلكتروني للمتجر</label>
               <div class="relative">
-                <input type="email" id="login-email" required placeholder="name@yourstore.com" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-600 transition-all text-left" dir="ltr">
-                <i class="fas fa-envelope text-slate-400 absolute left-3 top-3 text-sm"></i>
+                <input type="email" id="login-email" required placeholder="name@yourstore.com" class="w-full px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 text-xs focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 transition-all text-left" dir="ltr">
+                <i class="fas fa-envelope text-gray-500 absolute left-3 top-3 text-xs"></i>
               </div>
             </div>
 
             <div>
               <div class="flex items-center justify-between mb-1.5">
-                <label class="block text-xs font-bold text-slate-700">كلمة المرور</label>
-                <button type="button" onclick="switchView('forgot')" class="text-xs font-semibold text-teal-600 hover:text-teal-700 transition-colors">نسيت كلمة المرور؟</button>
+                <label class="block text-xs font-bold text-gray-300">كلمة المرور</label>
+                <button type="button" onclick="switchView('forgot')" class="text-xs font-semibold text-emerald-400 hover:text-emerald-300 transition-colors">نسيت كلمة المرور؟</button>
               </div>
               <div class="relative">
-                <input type="password" id="login-password" required placeholder="••••••••" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-600 transition-all text-left" dir="ltr">
-                <i class="fas fa-lock text-slate-400 absolute left-3 top-3 text-sm"></i>
+                <input type="password" id="login-password" required placeholder="••••••••" class="w-full px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 text-xs focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 transition-all text-left" dir="ltr">
+                <i class="fas fa-lock text-gray-500 absolute left-3 top-3 text-xs"></i>
               </div>
             </div>
 
-            <button type="submit" id="btn-login-submit" class="w-full py-3 px-4 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold text-sm shadow-md transition-all flex items-center justify-center gap-2">
+            <button type="submit" id="btn-login-submit" class="glow-btn w-full py-3 px-4 text-white rounded-xl text-xs font-bold shadow-md transition-all flex items-center justify-center gap-2">
               <span>تسجيل الدخول</span>
-              <i class="fas fa-arrow-left text-xs"></i>
+              <i class="fas fa-arrow-left text-[10px]"></i>
             </button>
           </form>
 
-          <div class="mt-4 pt-4 border-t border-slate-100 text-center">
-            <p class="text-xs text-slate-500">
+          <div class="mt-4 pt-4 border-t border-white/5 text-center">
+            <p class="text-xs text-gray-400">
               متجر جديد على سلة؟ 
-              <a href="/connect/salla" class="font-bold text-teal-600 hover:text-teal-700">اربط متجرك مباشرة بنقرة واحدة</a>
+              <a href="/connect/salla" class="font-bold text-emerald-400 hover:text-emerald-300">اربط متجرك مباشرة بنقرة واحدة</a>
             </p>
           </div>
         </div>
 
         <!-- Form 2: Forgot Password -->
-        <div id="forgot-view" class="hidden">
+        <div id="forgot-view" class="hidden relative z-10">
           <form id="form-forgot" class="space-y-4">
-            <p class="text-xs text-slate-500 leading-relaxed">
-              أدخل البريد الإلكتروني المسجل في حساب متجرك، وسنرسل لك رابطاً آمناً لإعادة تعيين كلمة المرور:
+            <p class="text-xs text-gray-400 leading-relaxed">
+              أدخل البريد الإلكتروني المسجل لحساب متجرك، وسنرسل لك رابطاً آمناً لإعادة تعيين كلمة المرور:
             </p>
             <div>
-              <label class="block text-xs font-bold text-slate-700 mb-1.5">البريد الإلكتروني</label>
+              <label class="block text-xs font-bold text-gray-300 mb-1.5">البريد الإلكتروني</label>
               <div class="relative">
-                <input type="email" id="forgot-email" required placeholder="name@yourstore.com" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-600 transition-all text-left" dir="ltr">
-                <i class="fas fa-envelope text-slate-400 absolute left-3 top-3 text-sm"></i>
+                <input type="email" id="forgot-email" required placeholder="name@yourstore.com" class="w-full px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 text-xs focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 transition-all text-left" dir="ltr">
+                <i class="fas fa-envelope text-gray-500 absolute left-3 top-3 text-xs"></i>
               </div>
             </div>
 
-            <button type="submit" id="btn-forgot-submit" class="w-full py-3 px-4 bg-teal-600 hover:bg-teal-700 text-white rounded-xl font-bold text-sm shadow-md transition-all flex items-center justify-center gap-2">
+            <button type="submit" id="btn-forgot-submit" class="glow-btn w-full py-3 px-4 text-white rounded-xl text-xs font-bold shadow-md transition-all flex items-center justify-center gap-2">
               <span>إرسال رابط الاستعادة</span>
-              <i class="fas fa-paper-plane text-xs"></i>
+              <i class="fas fa-paper-plane text-[10px]"></i>
             </button>
 
-            <button type="button" onclick="switchView('login')" class="w-full py-2 text-xs font-bold text-slate-600 hover:text-slate-900 transition-colors">
+            <button type="button" onclick="switchView('login')" class="w-full py-2 text-xs font-bold text-gray-400 hover:text-white transition-colors">
               الرجوع لتسجيل الدخول
             </button>
           </form>
@@ -145,9 +196,9 @@
       </div>
 
       <!-- Trust Note -->
-      <div class="text-center mt-6">
-        <p class="text-xs text-slate-400">
-          هل تواجه مشكلة في الدخول؟ <a href="/#faq" class="text-teal-600 hover:underline">الأسئلة الشائعة</a> أو تواصل مع الدعم الفني
+      <div class="text-center mt-4">
+        <p class="text-xs text-gray-500">
+          متجرك مستقل؟ <a href="/auth/standalone" class="text-emerald-400 font-bold hover:underline">انتقل لبوابة التاجر المستقل</a>
         </p>
       </div>
 
@@ -155,7 +206,7 @@
   </main>
 
   <!-- Footer -->
-  <footer class="w-full py-4 text-center text-xs text-slate-400 border-t border-slate-200 bg-white">
+  <footer class="w-full py-4 text-center text-xs text-gray-500 border-t border-white/5">
     <p>© 2026 مبهر AI — جميع الحقوق محفوظة للمتاجر الإلكترونية</p>
   </footer>
 
@@ -169,8 +220,8 @@
     function showAlert(msg, isSuccess = false) {
       const box = document.getElementById('alert-box');
       box.className = isSuccess 
-        ? 'mb-4 p-3.5 rounded-xl text-xs sm:text-sm font-medium bg-emerald-50 text-emerald-800 border border-emerald-200'
-        : 'mb-4 p-3.5 rounded-xl text-xs sm:text-sm font-medium bg-rose-50 text-rose-800 border border-rose-200';
+        ? 'mb-4 p-3 rounded-xl text-xs font-medium bg-emerald-500/10 text-emerald-300 border border-emerald-500/30'
+        : 'mb-4 p-3 rounded-xl text-xs font-medium bg-rose-500/10 text-rose-300 border border-rose-500/30';
       box.innerHTML = (isSuccess ? '<i class="fas fa-check-circle ml-1.5"></i> ' : '<i class="fas fa-exclamation-circle ml-1.5"></i> ') + msg;
       box.classList.remove('hidden');
     }
@@ -198,19 +249,19 @@
         });
         const data = await res.json();
         if (data.ok) {
-          showAlert('تم تسجيل الدخول بنجاح! جاري تحويلك لوحة التحكم...', true);
+          showAlert('تم تسجيل الدخول بنجاح! جاري تحويلك للوحة التحكم...', true);
           setTimeout(() => {
             window.location.href = data.redirect || '/dashboard';
           }, 600);
         } else {
           showAlert(data.error || 'بيانات الدخول غير صحيحة');
           btn.disabled = false;
-          btn.innerHTML = '<span>تسجيل الدخول</span> <i class="fas fa-arrow-left text-xs"></i>';
+          btn.innerHTML = '<span>تسجيل الدخول</span> <i class="fas fa-arrow-left text-[10px]"></i>';
         }
       } catch (err) {
         showAlert('تعذر الاتصال بالخادم، يرجى المحاولة لاحقاً');
         btn.disabled = false;
-        btn.innerHTML = '<span>تسجيل الدخول</span> <i class="fas fa-arrow-left text-xs"></i>';
+        btn.innerHTML = '<span>تسجيل الدخول</span> <i class="fas fa-arrow-left text-[10px]"></i>';
       }
     });
 
@@ -233,11 +284,11 @@
         const data = await res.json();
         showAlert(data.message || 'إذا كان البريد مسجلاً، فقد تم إرسال رابط الاستعادة.', true);
         btn.disabled = false;
-        btn.innerHTML = '<span>إرسال رابط الاستعادة</span> <i class="fas fa-paper-plane text-xs"></i>';
+        btn.innerHTML = '<span>إرسال رابط الاستعادة</span> <i class="fas fa-paper-plane text-[10px]"></i>';
       } catch (err) {
         showAlert('فشل إرسال الطلب، يرجى المحاولة لاحقاً');
         btn.disabled = false;
-        btn.innerHTML = '<span>إرسال رابط الاستعادة</span> <i class="fas fa-paper-plane text-xs"></i>';
+        btn.innerHTML = '<span>إرسال رابط الاستعادة</span> <i class="fas fa-paper-plane text-[10px]"></i>';
       }
     });
   </script>
