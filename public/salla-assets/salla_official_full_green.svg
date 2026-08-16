@@ -3,14 +3,14 @@
   <g transform="translate(180, 10)">
     <!-- Outer Rounded Cart Shape -->
     <path d="M 28 14 C 32 10, 38 8, 46 8 L 84 8 C 92 8, 98 10, 102 14 L 116 84 C 120 96, 110 108, 96 108 L 34 108 C 20 108, 10 96, 14 84 Z" 
-          stroke="#a6f4e6" stroke-width="14" stroke-linejoin="round" stroke-linecap="round" fill="none"/>
+          stroke="#00d5a7" stroke-width="14" stroke-linejoin="round" stroke-linecap="round" fill="none"/>
     <!-- Inner Smile Curve -->
     <path d="M 38 60 C 50 80, 80 80, 92 60" 
-          stroke="#a6f4e6" stroke-width="14" stroke-linecap="round" fill="none"/>
+          stroke="#00d5a7" stroke-width="14" stroke-linecap="round" fill="none"/>
   </g>
 
   <!-- Left Side: Salla Typography in Arabic & English -->
-  <g fill="#a6f4e6">
+  <g fill="#00d5a7">
     <!-- Two Dots for Ta Marbuta (ة) -->
     <circle cx="56" cy="24" r="5.5" />
     <circle cx="70" cy="24" r="5.5" />
