@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>بوابة تاجر سلة | مبهر AI</title>
+  <title>بوابة تجار سلة | مبهر AI</title>
   <meta name="description" content="تسجيل الدخول والربط المباشر لتجار منصة سلة مع مبهر AI">
   <script src="/js/tailwind.js"></script>
   <link href="/css/all.min.css" rel="stylesheet">
@@ -38,14 +38,14 @@
     .glow-btn:hover{transform:translateY(-2px);box-shadow:0 12px 28px rgba(6,214,160,.25)}
 
     .glow-btn-salla{
-      background:linear-gradient(135deg, #00d5a7, #008f75);
+      background:linear-gradient(135deg, #BAF3E6, #00d5a7);
       position:relative;overflow:hidden;transition:all .25s;
-      font-weight:800;
-      color: #031518;
+      font-weight:900;
+      color: #004956;
     }
     .glow-btn-salla:hover{
       transform:translateY(-2px);
-      box-shadow:0 12px 28px rgba(0,213,167,.3);
+      box-shadow:0 12px 28px rgba(0,213,167,.35);
     }
 
     @keyframes morph{0%,100%{border-radius:60% 40% 30% 70%/60% 30% 70% 40%}50%{border-radius:30% 60% 70% 40%/50% 60% 30% 60%}}
@@ -57,8 +57,8 @@
 
   <!-- Background Ambience -->
   <div class="fixed inset-0 pointer-events-none z-0">
-    <div class="absolute top-[-10%] right-[-5%] w-[500px] h-[500px] morph-blob opacity-20" style="background:radial-gradient(circle,rgba(0,213,167,.4),transparent 70%);filter:blur(80px)"></div>
-    <div class="absolute bottom-[-10%] left-[-5%] w-[450px] h-[450px] morph-blob opacity-15" style="background:radial-gradient(circle,rgba(17,138,178,.3),transparent 70%);filter:blur(80px)"></div>
+    <div class="absolute top-[-10%] right-[-5%] w-[500px] h-[500px] morph-blob opacity-20" style="background:radial-gradient(circle,rgba(0,73,86,.8),transparent 70%);filter:blur(80px)"></div>
+    <div class="absolute bottom-[-10%] left-[-5%] w-[450px] h-[450px] morph-blob opacity-15" style="background:radial-gradient(circle,rgba(186,243,230,.2),transparent 70%);filter:blur(80px)"></div>
     <div class="absolute inset-0 grid-bg"></div>
   </div>
 
@@ -66,7 +66,7 @@
   <header class="w-full z-20 pt-4 px-4">
     <div class="max-w-6xl mx-auto">
       <div class="glass rounded-2xl px-5 py-2.5 flex items-center justify-between shadow-xl">
-        <a href="/" class="flex items-center gap-0 group">
+        <a href="/" class="flex items-center gap-0 group text-decoration-none">
           <div class="relative">
             <div class="absolute inset-0 bg-[var(--c1)]/20 rounded-xl blur-md group-hover:bg-[var(--c1)]/30 transition"></div>
             <div class="relative w-11 h-11 flex items-center justify-center">
@@ -75,7 +75,7 @@
           </div>
           <span class="text-lg font-black tracking-tight text-white -mr-1">مبهر <span class="gt">AI</span></span>
         </a>
-        <a href="/" class="text-xs font-bold text-gray-400 hover:text-white flex items-center gap-2 transition px-3 py-1.5 rounded-xl hover:bg-white/5 border border-transparent hover:border-white/10">
+        <a href="/" class="text-xs font-bold text-gray-400 hover:text-white flex items-center gap-2 transition px-3 py-1.5 rounded-xl hover:bg-white/5 border border-transparent hover:border-white/10 text-decoration-none">
           <span>العودة للرئيسية</span>
           <i class="fas fa-arrow-left text-[10px]"></i>
         </a>
@@ -90,98 +90,134 @@
       <!-- Card -->
       <div class="glass rounded-3xl p-6 sm:p-8 border border-white/10 shadow-2xl relative overflow-hidden" style="background: rgba(10, 22, 40, 0.95);">
         <!-- Card Glow -->
-        <div class="absolute -top-20 -right-20 w-48 h-48 bg-[#00d5a7]/10 rounded-full blur-3xl pointer-events-none"></div>
+        <div class="absolute -top-20 -right-20 w-48 h-48 bg-[#004956]/40 rounded-full blur-3xl pointer-events-none"></div>
 
         <!-- Header Info with Salla Official Logo -->
         <div class="text-center mb-6 relative z-10">
           <div class="flex items-center justify-center mb-3">
-            <div class="h-16 px-5 py-2.5 rounded-2xl bg-[#004956] border border-[#00d5a7]/60 flex items-center justify-center shadow-xl shadow-[#004956]/40 hover:scale-105 transition-transform">
-              <img src="/salla-assets/salla_official_full_mint.svg" alt="سلة | Salla" class="h-full object-contain">
+            <div class="w-16 h-16 rounded-2xl bg-[#004956] border border-[#BAF3E6]/40 flex items-center justify-center shadow-xl shadow-[#004956]/40 hover:scale-105 transition-transform">
+              <img src="/images/platforms/salla.svg" alt="سلة | Salla" class="w-9 h-9 object-contain drop-shadow">
             </div>
           </div>
-          <div class="inline-flex items-center gap-1.5 px-3.5 py-0.5 rounded-full bg-[#004956]/90 text-[#a6f4e6] border border-[#00d5a7]/40 text-[11px] font-black mb-2">
-            منصة سلة | Salla Partner
+          <div class="inline-flex items-center gap-1.5 px-3.5 py-0.5 rounded-full bg-[#004956]/90 text-[#BAF3E6] border border-[#00B4D8]/40 text-[11px] font-black mb-2">
+            بوابة تجار سلة
           </div>
-          <h1 class="text-2xl font-black text-white mb-1">بوابة تاجر سلة</h1>
-          <p class="text-xs text-gray-400">الدخول السريع والمزامنة التلقائية لمتجرك على سلة</p>
+          <h1 class="text-2xl font-black text-white mb-1">حساب متجر سلة</h1>
+          <p class="text-xs text-gray-400">الدخول وإدارة المساعد الذكي لمتجرك على منصة سلة</p>
         </div>
 
-        <!-- Section 1: Direct Salla OAuth Connect (Recommended) -->
-        <div class="mb-6 relative z-10">
-          <a href="/connect/salla" id="btn-salla-connect" class="glow-btn-salla w-full flex items-center justify-center gap-2.5 py-3.5 px-4 rounded-xl text-sm shadow-xl group">
-            <img src="/salla-assets/salla_official_icon_dark.svg" alt="Salla" class="w-6 h-6 object-contain">
-            <span class="font-black text-[#004956]">دخول سريع ومباشر عبر سلة (OAuth)</span>
-          </a>
-          <p class="text-center text-[11px] text-gray-400 mt-2 font-medium">
-            <i class="fas fa-shield-alt text-emerald-400 ml-1"></i> ربط رسمي معتمد ومزامنة فورية للطلبات والمنتجات
-          </p>
-        </div>
-
-        <!-- Divider -->
-        <div class="relative flex items-center justify-center my-6 z-10">
-          <div class="border-t border-white/10 w-full"></div>
-          <span class="bg-[#0b1626] px-3 text-xs font-bold text-gray-400 absolute rounded-full border border-white/5">أو الدخول بحساب المتجر</span>
+        <!-- Navigation Tabs -->
+        <div class="flex bg-white/5 p-1 rounded-xl mb-6 border border-white/10 relative z-10">
+          <button type="button" id="tab-login" onclick="switchSallaMode('login')" class="flex-1 py-2 text-xs font-bold rounded-lg transition-all bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 shadow-sm cursor-pointer">
+            تسجيل الدخول
+          </button>
+          <button type="button" id="tab-new" onclick="switchSallaMode('new')" class="flex-1 py-2 text-xs font-bold rounded-lg transition-all text-gray-400 hover:text-white border border-transparent cursor-pointer">
+            تاجر جديد
+          </button>
         </div>
 
         <!-- Alert Banner -->
         <div id="alert-box" class="hidden mb-4 p-3 rounded-xl text-xs font-medium z-10 relative"></div>
 
-        <!-- Form 1: Login View -->
-        <div id="login-view" class="relative z-10">
-          <form id="form-login" class="space-y-4">
+        <!-- TAB 1: RETURNING SALLA MERCHANT (تسجيل الدخول) -->
+        <div id="view-login" class="relative z-10">
+          <form id="form-salla-login" class="space-y-4">
             <div>
-              <label class="block text-xs font-bold text-gray-300 mb-1.5">البريد الإلكتروني للمتجر</label>
+              <label class="block text-xs font-bold text-gray-300 mb-1.5 text-right">البريد الإلكتروني للمتجر</label>
               <div class="relative">
-                <input type="email" id="login-email" required placeholder="name@yourstore.com" class="w-full px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 text-xs focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 transition-all text-left" dir="ltr">
-                <i class="fas fa-envelope text-gray-500 absolute left-3 top-3 text-xs"></i>
+                <input type="email" id="login-email" required placeholder="name@yourstore.com" class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 text-xs focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 transition-all text-left" dir="ltr">
+                <i class="fas fa-envelope text-gray-500 absolute left-3 top-3 text-xs pointer-events-none"></i>
               </div>
             </div>
 
             <div>
               <div class="flex items-center justify-between mb-1.5">
                 <label class="block text-xs font-bold text-gray-300">كلمة المرور</label>
-                <button type="button" onclick="switchView('forgot')" class="text-xs font-semibold text-emerald-400 hover:text-emerald-300 transition-colors">نسيت كلمة المرور؟</button>
+                <button type="button" onclick="switchSallaMode('forgot')" class="text-xs font-semibold text-emerald-400 hover:text-emerald-300 transition-colors bg-transparent border-0 cursor-pointer">نسيت كلمة المرور؟</button>
               </div>
               <div class="relative">
-                <input type="password" id="login-password" required placeholder="••••••••" class="w-full px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 text-xs focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 transition-all text-left" dir="ltr">
-                <i class="fas fa-lock text-gray-500 absolute left-3 top-3 text-xs"></i>
+                <input type="password" id="login-password" required placeholder="••••••••" class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 text-xs focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 transition-all text-left" dir="ltr">
+                <i class="fas fa-lock text-gray-500 absolute left-3 top-3 text-xs pointer-events-none"></i>
               </div>
             </div>
 
-            <button type="submit" id="btn-login-submit" class="glow-btn w-full py-3 px-4 text-white rounded-xl text-xs font-bold shadow-md transition-all flex items-center justify-center gap-2">
+            <!-- Primary Action: Email + Password Login -->
+            <button type="submit" id="btn-login-submit" class="glow-btn w-full py-3 px-4 text-white rounded-xl text-xs font-bold shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer border-0">
               <span>تسجيل الدخول</span>
               <i class="fas fa-arrow-left text-[10px]"></i>
             </button>
           </form>
 
-          <div class="mt-4 pt-4 border-t border-white/5 text-center">
-            <p class="text-xs text-gray-400">
-              متجر جديد على سلة؟ 
-              <a href="/connect/salla" class="font-bold text-emerald-400 hover:text-emerald-300">اربط متجرك مباشرة بنقرة واحدة</a>
-            </p>
+          <!-- Divider -->
+          <div class="relative flex items-center justify-center my-6 z-10">
+            <div class="border-t border-white/10 w-full"></div>
+            <span class="bg-[#0b1626] px-3 text-[11px] font-bold text-gray-400 absolute rounded-full border border-white/5">أو</span>
+          </div>
+
+          <!-- Secondary Action: Direct Salla OAuth (Muted Style) -->
+          <div class="relative z-10">
+            <a href="/connect/salla" id="btn-salla-direct" class="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-bold bg-[#004956]/40 hover:bg-[#004956]/70 border border-[#BAF3E6]/30 text-[#BAF3E6] transition-all shadow-sm group text-decoration-none">
+              <img src="/images/platforms/salla.svg" alt="سلة" class="w-4 h-4 object-contain">
+              <span>الدخول عبر سلة</span>
+            </a>
           </div>
         </div>
 
-        <!-- Form 2: Forgot Password -->
-        <div id="forgot-view" class="hidden relative z-10">
-          <form id="form-forgot" class="space-y-4">
-            <p class="text-xs text-gray-400 leading-relaxed">
-              أدخل البريد الإلكتروني المسجل لحساب متجرك، وسنرسل لك رابطاً آمناً لإعادة تعيين كلمة المرور:
-            </p>
-            <div>
-              <label class="block text-xs font-bold text-gray-300 mb-1.5">البريد الإلكتروني</label>
-              <div class="relative">
-                <input type="email" id="forgot-email" required placeholder="name@yourstore.com" class="w-full px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 text-xs focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 transition-all text-left" dir="ltr">
-                <i class="fas fa-envelope text-gray-500 absolute left-3 top-3 text-xs"></i>
+        <!-- TAB 2: NEW SALLA MERCHANT (تاجر جديد) -->
+        <div id="view-new" class="hidden relative z-10">
+          <div class="space-y-4 text-right">
+            <div class="p-4 rounded-2xl bg-[#004956]/40 border border-[#BAF3E6]/20 text-right">
+              <h3 class="text-sm font-black text-[#BAF3E6] mb-1 flex items-center gap-2">
+                <i class="fas fa-store text-xs"></i>
+                اربط متجر سلة لبدء حسابك في مبهر
+              </h3>
+              <p class="text-xs text-gray-300 leading-relaxed">
+                اضغط على الزر أدناه للمتابعة عبر سلة وتخويل التطبيق. سيتم إنشاء حساب متجرك تلقائياً وتفعيل المساعد الذكي.
+              </p>
+            </div>
+
+            <div class="space-y-2 py-1 text-xs text-gray-300">
+              <div class="flex items-center gap-2">
+                <i class="fas fa-check-circle text-emerald-400 text-xs"></i>
+                <span>ربط فوري ومزامنة تلقائية للطلبات والمنتجات</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <i class="fas fa-check-circle text-emerald-400 text-xs"></i>
+                <span>تجربة مجانية لمدة 3 أيام</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <i class="fas fa-check-circle text-emerald-400 text-xs"></i>
+                <span>حساب موحد ومستقل لمتجرك</span>
               </div>
             </div>
 
-            <button type="submit" id="btn-forgot-submit" class="glow-btn w-full py-3 px-4 text-white rounded-xl text-xs font-bold shadow-md transition-all flex items-center justify-center gap-2">
+            <a href="/connect/salla" id="btn-salla-new-connect" class="glow-btn-salla w-full flex items-center justify-center gap-2.5 py-3.5 px-4 rounded-xl text-sm shadow-xl group text-decoration-none mt-2">
+              <img src="/images/platforms/salla.svg" alt="سلة" class="w-6 h-6 object-contain">
+              <span class="font-black text-[#004956]">ربط متجري مع سلة والبدء ←</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- SUB-VIEW: FORGOT PASSWORD -->
+        <div id="view-forgot" class="hidden relative z-10">
+          <form id="form-salla-forgot" class="space-y-4">
+            <p class="text-xs text-gray-400 leading-relaxed text-right">
+              أدخل البريد الإلكتروني المسجل لمتجرك، وسنرسل لك رابطاً آمناً لإعادة تعيين كلمة المرور:
+            </p>
+            <div>
+              <label class="block text-xs font-bold text-gray-300 mb-1.5 text-right">البريد الإلكتروني</label>
+              <div class="relative">
+                <input type="email" id="forgot-email" required placeholder="name@yourstore.com" class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 text-xs focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 transition-all text-left" dir="ltr">
+                <i class="fas fa-envelope text-gray-500 absolute left-3 top-3 text-xs pointer-events-none"></i>
+              </div>
+            </div>
+
+            <button type="submit" id="btn-forgot-submit" class="glow-btn w-full py-3 px-4 text-white rounded-xl text-xs font-bold shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer border-0">
               <span>إرسال رابط الاستعادة</span>
               <i class="fas fa-paper-plane text-[10px]"></i>
             </button>
 
-            <button type="button" onclick="switchView('login')" class="w-full py-2 text-xs font-bold text-gray-400 hover:text-white transition-colors">
+            <button type="button" onclick="switchSallaMode('login')" class="w-full py-2 text-xs font-bold text-gray-400 hover:text-white transition-colors bg-transparent border-0 cursor-pointer">
               الرجوع لتسجيل الدخول
             </button>
           </form>
@@ -189,7 +225,7 @@
 
       </div>
 
-      <!-- Trust Note -->
+      <!-- Footer Switcher Link -->
       <div class="text-center mt-4">
         <p class="text-xs text-gray-500">
           متجرك مستقل؟ <a href="/auth/standalone" class="text-emerald-400 font-bold hover:underline">انتقل لبوابة التاجر المستقل</a>
@@ -199,23 +235,59 @@
     </div>
   </main>
 
+  <!-- Wrong Platform Modal -->
+  <div id="wrong-platform-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+    <div class="glass rounded-3xl p-6 max-w-sm w-full text-center border border-amber-500/30 shadow-2xl relative">
+      <div class="w-12 h-12 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center mx-auto mb-3 text-xl">
+        <i class="fas fa-info-circle"></i>
+      </div>
+      <h3 class="text-base font-black text-white mb-2">هذا الحساب مسجل كتاجر مستقل</h3>
+      <p class="text-xs text-gray-300 leading-relaxed mb-5">استخدم بوابة التاجر المستقل لتسجيل الدخول إلى حسابك.</p>
+      <a href="/auth/standalone" class="glow-btn w-full py-2.5 px-4 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 text-decoration-none">
+        <span>الانتقال إلى بوابة التاجر المستقل</span>
+        <i class="fas fa-arrow-left text-[10px]"></i>
+      </a>
+    </div>
+  </div>
+
   <!-- Footer -->
   <footer class="w-full py-4 text-center text-xs text-gray-500 border-t border-white/5">
-    <p>© 2026 مبهر AI — جميع الحقوق محفوظة للمتاجر الإلكترونية</p>
+    <p>© 2026 مبهر AI — جميع الحقوق محفوظة</p>
   </footer>
 
   <script>
-    function switchView(view) {
-      document.getElementById('login-view').classList.toggle('hidden', view !== 'login');
-      document.getElementById('forgot-view').classList.toggle('hidden', view !== 'forgot');
+    function switchSallaMode(mode) {
       hideAlert();
+      const isLogin = mode === 'login';
+      const isNew = mode === 'new';
+      const isForgot = mode === 'forgot';
+
+      document.getElementById('view-login').classList.toggle('hidden', !isLogin);
+      document.getElementById('view-new').classList.toggle('hidden', !isNew);
+      document.getElementById('view-forgot').classList.toggle('hidden', !isForgot);
+
+      const tabLogin = document.getElementById('tab-login');
+      const tabNew = document.getElementById('tab-new');
+
+      if (tabLogin && tabNew) {
+        if (isLogin) {
+          tabLogin.className = 'flex-1 py-2 text-xs font-bold rounded-lg transition-all bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 shadow-sm cursor-pointer';
+          tabNew.className = 'flex-1 py-2 text-xs font-bold rounded-lg transition-all text-gray-400 hover:text-white border border-transparent cursor-pointer';
+        } else if (isNew) {
+          tabNew.className = 'flex-1 py-2 text-xs font-bold rounded-lg transition-all bg-[#004956] text-[#BAF3E6] border border-[#BAF3E6]/40 shadow-sm cursor-pointer';
+          tabLogin.className = 'flex-1 py-2 text-xs font-bold rounded-lg transition-all text-gray-400 hover:text-white border border-transparent cursor-pointer';
+        } else {
+          tabLogin.className = 'flex-1 py-2 text-xs font-bold rounded-lg transition-all text-gray-400 hover:text-white border border-transparent cursor-pointer';
+          tabNew.className = 'flex-1 py-2 text-xs font-bold rounded-lg transition-all text-gray-400 hover:text-white border border-transparent cursor-pointer';
+        }
+      }
     }
 
     function showAlert(msg, isSuccess = false) {
       const box = document.getElementById('alert-box');
       box.className = isSuccess 
-        ? 'mb-4 p-3 rounded-xl text-xs font-medium bg-emerald-500/10 text-emerald-300 border border-emerald-500/30'
-        : 'mb-4 p-3 rounded-xl text-xs font-medium bg-rose-500/10 text-rose-300 border border-rose-500/30';
+        ? 'mb-4 p-3 rounded-xl text-xs font-medium bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 text-right'
+        : 'mb-4 p-3 rounded-xl text-xs font-medium bg-rose-500/10 text-rose-300 border border-rose-500/30 text-right';
       box.innerHTML = (isSuccess ? '<i class="fas fa-check-circle ml-1.5"></i> ' : '<i class="fas fa-exclamation-circle ml-1.5"></i> ') + msg;
       box.classList.remove('hidden');
     }
@@ -224,8 +296,25 @@
       document.getElementById('alert-box').classList.add('hidden');
     }
 
+    function showWrongPlatformModal() {
+      const modal = document.getElementById('wrong-platform-modal');
+      if (modal) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+      }
+    }
+
+    // Check URL parameters (e.g. wrong_platform preview)
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('wrong_platform') === '1') {
+      showWrongPlatformModal();
+    }
+    if (urlParams.get('mode') === 'new') {
+      switchSallaMode('new');
+    }
+
     // Handle Login
-    document.getElementById('form-login').addEventListener('submit', async function(e) {
+    document.getElementById('form-salla-login').addEventListener('submit', async function(e) {
       e.preventDefault();
       hideAlert();
       const btn = document.getElementById('btn-login-submit');
@@ -236,7 +325,7 @@
       btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> جاري التحقق...';
 
       try {
-        const res = await fetch('/auth/standalone/login', {
+        const res = await fetch('/auth/salla/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, password })
@@ -248,9 +337,13 @@
             window.location.href = data.redirect || '/dashboard';
           }, 600);
         } else {
-          showAlert(data.error || 'بيانات الدخول غير صحيحة');
           btn.disabled = false;
           btn.innerHTML = '<span>تسجيل الدخول</span> <i class="fas fa-arrow-left text-[10px]"></i>';
+          if (res.status === 403 && data.redirect) {
+            showWrongPlatformModal();
+          } else {
+            showAlert(data.error || 'بيانات الدخول غير صحيحة');
+          }
         }
       } catch (err) {
         showAlert('تعذر الاتصال بالخادم، يرجى المحاولة لاحقاً');
@@ -260,7 +353,7 @@
     });
 
     // Handle Forgot Password
-    document.getElementById('form-forgot').addEventListener('submit', async function(e) {
+    document.getElementById('form-salla-forgot').addEventListener('submit', async function(e) {
       e.preventDefault();
       hideAlert();
       const btn = document.getElementById('btn-forgot-submit');
