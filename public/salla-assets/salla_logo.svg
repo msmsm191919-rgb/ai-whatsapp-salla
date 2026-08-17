@@ -1,14 +1,23 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 120" fill="none">
-  <!-- Salla Cart Icon -->
-  <g transform="translate(145, 0)">
-    <path d="M26 16 C28 12, 33 10, 40 10 L80 10 C87 10, 92 12, 94 16 L106 86 C108 98, 98 108, 86 108 L34 108 C22 108, 12 98, 14 86 Z" 
-          stroke="currentColor" stroke-width="11" stroke-linejoin="round" stroke-linecap="round"/>
-    <path d="M34 60 C44 78, 76 78, 86 60" 
-          stroke="currentColor" stroke-width="11" stroke-linecap="round"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 160" fill="none">
+  <!-- Salla Smiling Cart Icon (Right Side) -->
+  <g transform="translate(180, 10)">
+    <path d="M 28 14 C 32 10, 38 8, 46 8 L 84 8 C 92 8, 98 10, 102 14 L 116 84 C 120 96, 110 108, 96 108 L 34 108 C 20 108, 10 96, 14 84 Z" 
+          stroke="#a6f4e6" stroke-width="14" stroke-linejoin="round" stroke-linecap="round" fill="none"/>
+    <path d="M 38 60 C 50 80, 80 80, 92 60" 
+          stroke="#a6f4e6" stroke-width="14" stroke-linecap="round" fill="none"/>
   </g>
-  <!-- Typography -->
-  <g fill="currentColor">
-    <text x="130" y="52" font-family="'Cairo', sans-serif" font-weight="900" font-size="44" text-anchor="end" letter-spacing="-0.02em">سلة</text>
-    <text x="130" y="96" font-family="'Inter', sans-serif" font-weight="900" font-size="34" text-anchor="end" letter-spacing="-0.04em">salla</text>
+  <!-- Salla Typography in Arabic & English (Left Side) -->
+  <g fill="#a6f4e6">
+    <!-- Two Dots for Ta Marbuta (ة) -->
+    <circle cx="56" cy="24" r="5.5" />
+    <circle cx="70" cy="24" r="5.5" />
+    <!-- Arabic 'سلة' -->
+    <path d="M 148 52 C 148 40, 138 34, 126 34 C 118 34, 112 38, 108 44 C 104 38, 98 34, 90 34 C 80 34, 74 42, 74 52 L 74 58 L 56 58 C 48 58, 42 52, 42 44 C 42 36, 48 32, 54 32 C 57 32, 60 33, 62 35 L 66 26 C 62 23, 56 21, 50 21 C 36 21, 28 30, 28 44 C 28 58, 38 68, 54 68 L 74 68 L 74 70 C 74 76, 78 80, 84 80 L 102 80 C 108 80, 112 76, 112 70 L 112 68 L 134 68 C 142 68, 148 61, 148 52 Z M 92 56 C 88 56, 86 52, 86 48 C 86 44, 88 42, 92 42 C 96 42, 98 44, 98 48 C 98 52, 96 56, 92 56 Z M 134 56 L 112 56 L 112 48 C 112 44, 115 42, 120 42 C 126 42, 134 46, 134 52 L 134 56 Z" />
+    <!-- English 'salla' -->
+    <path d="M 38 106 C 36 102, 32 100, 26 100 C 20 100, 16 103, 16 107 C 16 112, 20 114, 28 116 C 38 118, 46 122, 46 132 C 46 142, 37 148, 25 148 C 14 148, 6 142, 4 133 L 14 130 C 16 136, 20 139, 26 139 C 32 139, 36 136, 36 131 C 36 126, 32 124, 24 122 C 14 120, 6 116, 6 106 C 6 97, 15 91, 26 91 C 36 91, 43 96, 46 104 Z" />
+    <path d="M 76 118 L 76 146 L 66 146 L 66 140 C 62 145, 56 148, 48 148 C 37 148, 30 140, 30 129 C 30 118, 38 111, 52 110 L 66 109 L 66 106 C 66 101, 62 98, 54 98 C 47 98, 43 100, 41 104 L 33 99 C 37 93, 44 90, 55 90 C 69 90, 76 98, 76 111 Z M 66 123 L 54 124 C 45 125, 41 129, 41 134 C 41 139, 45 141, 50 141 C 59 141, 66 135, 66 127 Z" />
+    <path d="M 82 86 L 92 86 L 92 146 L 82 146 Z" />
+    <path d="M 98 86 L 108 86 L 108 146 L 98 146 Z" />
+    <path d="M 148 118 L 148 146 L 138 146 L 138 140 C 134 145, 128 148, 120 148 C 109 148, 102 140, 102 129 C 102 118, 110 111, 124 110 L 138 109 L 138 106 C 138 101, 134 98, 126 98 C 119 98, 115 100, 113 104 L 105 99 C 109 93, 116 90, 127 90 C 141 90, 148 98, 148 111 Z M 138 123 L 126 124 C 117 125, 113 129, 113 134 C 113 139, 117 141, 122 141 C 131 141, 138 135, 138 127 Z" />
   </g>
 </svg>
