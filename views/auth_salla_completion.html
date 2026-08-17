@@ -24,7 +24,7 @@
 
   <!-- Background Ambience -->
   <div class="fixed inset-0 pointer-events-none z-0">
-    <div class="absolute top-[-10%] right-[-5%] w-[500px] h-[500px] morph-blob opacity-20" style="background:radial-gradient(circle,rgba(6,214,160,.4),transparent 70%);filter:blur(80px)"></div>
+    <div class="absolute top-[-10%] right-[-5%] w-[500px] h-[500px] morph-blob opacity-20" style="background:radial-gradient(circle,rgba(0,213,167,.4),transparent 70%);filter:blur(80px)"></div>
     <div class="absolute bottom-[-10%] left-[-5%] w-[450px] h-[450px] morph-blob opacity-15" style="background:radial-gradient(circle,rgba(17,138,178,.3),transparent 70%);filter:blur(80px)"></div>
     <div class="absolute inset-0 grid-bg"></div>
   </div>
@@ -38,12 +38,14 @@
         </div>
         <span class="text-lg font-black text-white -mr-1">مبهر <span class="gt">AI</span></span>
       </a>
-      <div class="flex items-center gap-2">
-        <div class="h-8 px-3 rounded-xl bg-[#004956] border border-[#a6f4e6]/40 flex items-center justify-center">
-          <img src="/salla-assets/salla_official_full_mint.svg" alt="سلة" class="h-5 object-contain">
+
+      <!-- Salla Official Header Badge -->
+      <div class="inline-flex items-center gap-2.5 px-3.5 py-1.5 rounded-xl bg-[#004956] border border-[#00d5a7]/40 shadow-lg shadow-[#004956]/30">
+        <div class="h-6 flex items-center justify-center">
+          <img src="/salla-assets/salla_official_full_mint.svg" alt="سلة | Salla" class="h-5 object-contain">
         </div>
-        <span class="text-xs text-[#a6f4e6] bg-[#004956]/80 px-3 py-1 rounded-xl border border-[#a6f4e6]/30 font-bold hidden sm:inline-block">
-          ربط متجر سلة ✅
+        <span class="text-xs text-[#a6f4e6] font-bold border-r border-[#00d5a7]/30 pr-2.5 hidden sm:inline-block">
+          ربط متجر سلة <i class="fas fa-check-circle text-emerald-400 text-[10px] mr-1"></i>
         </span>
       </div>
     </div>
@@ -56,19 +58,19 @@
       <!-- State 1: Completion Form Card -->
       <div id="card-form" class="glass rounded-3xl p-6 sm:p-8 border border-white/10 shadow-2xl relative" style="background: rgba(10, 22, 40, 0.95);">
         
-        <!-- Connected Store Pill -->
-        <div class="p-3.5 rounded-2xl bg-[#004956]/50 border border-[#a6f4e6]/30 flex items-center justify-between mb-5">
-          <div class="flex items-center gap-2.5">
-            <div class="w-9 h-9 rounded-xl bg-[#004956] flex items-center justify-center border border-[#a6f4e6]/40 p-1.5">
+        <!-- Connected Store Pill with Official Salla Icon -->
+        <div class="p-3.5 rounded-2xl bg-[#004956]/40 border border-[#00d5a7]/40 flex items-center justify-between mb-5 shadow-lg shadow-[#004956]/20">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-[#004956] flex items-center justify-center border border-[#00d5a7]/50 p-2 shadow-inner">
               <img src="/salla-assets/salla_official_icon_mint.svg" alt="سلة" class="w-full h-full object-contain">
             </div>
             <div class="text-right">
-              <div class="text-[10px] text-gray-400">متجر سلة المربوط:</div>
+              <div class="text-[10px] text-gray-300 font-medium">متجر سلة المربوط:</div>
               <div class="text-xs font-black text-white" id="store-name-display">{{ store_name or 'متجر محتوى بلس' }}</div>
             </div>
           </div>
-          <span class="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
-            تم الربط ⚡
+          <span class="text-[10px] font-bold text-[#00d5a7] bg-[#004956] px-2.5 py-1 rounded-full border border-[#00d5a7]/40 shadow-sm flex items-center gap-1">
+            <i class="fas fa-check-circle text-[9px]"></i> تم الربط
           </span>
         </div>
 
@@ -114,6 +116,13 @@
 
       <!-- State 2: Verify Email Card -->
       <div id="card-verify" class="hidden glass rounded-3xl p-6 sm:p-8 border border-white/10 shadow-2xl relative text-center" style="background: rgba(10, 22, 40, 0.95);">
+        
+        <!-- Salla Badge in Verify Card -->
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-xl bg-[#004956] border border-[#00d5a7]/40 mb-4 shadow-sm">
+          <img src="/salla-assets/salla_official_icon_mint.svg" alt="سلة" class="w-4 h-4 object-contain">
+          <span class="text-[11px] font-bold text-[#a6f4e6]">تاجر سلة معتمد</span>
+        </div>
+
         <div class="w-16 h-16 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto mb-4 text-2xl">
           <i class="fas fa-envelope-open-text"></i>
         </div>
@@ -145,6 +154,12 @@
 
       <!-- State 3: Email Confirmed Success Card -->
       <div id="card-confirmed" class="hidden glass rounded-3xl p-6 sm:p-8 border border-emerald-500/30 shadow-2xl relative text-center" style="background: rgba(10, 22, 40, 0.95);">
+        
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-xl bg-[#004956] border border-[#00d5a7]/40 mb-4 shadow-sm">
+          <img src="/salla-assets/salla_official_icon_mint.svg" alt="سلة" class="w-4 h-4 object-contain">
+          <span class="text-[11px] font-bold text-[#a6f4e6]">تاجر سلة معتمد</span>
+        </div>
+
         <div class="w-16 h-16 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto mb-4 text-2xl animate-bounce">
           <i class="fas fa-check-circle"></i>
         </div>
@@ -163,7 +178,7 @@
   </main>
 
   <footer class="w-full py-3 text-center text-xs text-gray-500 border-t border-white/5 z-10">
-    <p>© 2026 مبهر AI — جميع الحقوق محفوظة</p>
+    <p>© 2026 مبهر AI — جميع الحقوق محفوظة للمتاجر الإلكترونية</p>
   </footer>
 
   <script>
