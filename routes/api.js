@@ -5,6 +5,29 @@ const SallaDatabase = require('../database/db_instance');
 // Helper to get DB models safely
 const getModels = () => SallaDatabase.connection.models;
 
+// Helper to resolve Tenant across both Salla and Standalone sessions
+async function resolveTenant(req) {
+    if (!req.user) return null;
+    const { Tenant } = getModels();
+    const tenantId = req.user.tenant_id || req.session?.tenantId;
+    if (tenantId) {
+        return await Tenant.findByPk(tenantId);
+    }
+    const merchantId = req.user.merchant?.id;
+    if (merchantId) {
+        return await Tenant.findOne({
+            where: {
+                [require('sequelize').Op.or]: [
+                    { salla_merchant_id: merchantId },
+                    { platform_store_id: merchantId }
+                ]
+            }
+        });
+    }
+    return null;
+}
+
+
 const BillingService = require('../services/BillingService');
 
 // GET /api/billing/simulate-success (DEV ONLY)
@@ -66,7 +89,7 @@ router.post('/billing/checkout', billingAuth, async (req, res) => {
         const { plan_id, billing_period } = req.body;
 
         // Find Tenant ID (Mocked for dev, should be req.user.merchant.id -> Tenant lookup)
-        const tenant = await getModels().Tenant.findOne({ where: { salla_merchant_id: req.user.merchant.id } });
+        const tenant = await resolveTenant(req);
         if (!tenant) return res.status(404).json({ error: 'Tenant not found' });
 
         const result = await BillingService.createCheckout(tenant.id, plan_id, billing_period);
@@ -85,10 +108,10 @@ const HandoffService = require('../services/HandoffService');
 // GET /api/conversations/paused
 router.get('/conversations/paused', async (req, res) => {
     try {
-        if (!req.user || !req.user.merchant || !req.user.merchant.id) {
+        if (!req.user || (!req.user.tenant_id && !req.user.merchant?.id)) {
             return res.status(401).json({ status: 'error', message: 'Authentication required' });
         }
-        const tenant = await getModels().Tenant.findOne({ where: { salla_merchant_id: req.user.merchant.id } });
+        const tenant = await resolveTenant(req);
         if (!tenant) return res.status(404).json({ error: 'Tenant not found' });
 
         const pausedChats = await HandoffService.listPausedChats(tenant.id);
@@ -101,13 +124,13 @@ router.get('/conversations/paused', async (req, res) => {
 // POST /api/conversations/resume
 router.post('/conversations/resume', async (req, res) => {
     try {
-        if (!req.user || !req.user.merchant || !req.user.merchant.id) {
+        if (!req.user || (!req.user.tenant_id && !req.user.merchant?.id)) {
             return res.status(401).json({ status: 'error', message: 'Authentication required' });
         }
         const { chatKey } = req.body;
         if (!chatKey) return res.status(400).json({ status: 'error', message: 'Missing chatKey' });
 
-        const tenant = await getModels().Tenant.findOne({ where: { salla_merchant_id: req.user.merchant.id } });
+        const tenant = await resolveTenant(req);
         if (!tenant) return res.status(404).json({ error: 'Tenant not found' });
 
         const resolved = HandoffService.getChatKey(chatKey);
@@ -121,11 +144,11 @@ router.post('/conversations/resume', async (req, res) => {
 // GET /api/inbox/conversations
 router.get('/inbox/conversations', async (req, res) => {
     try {
-        if (!req.user || !req.user.merchant || !req.user.merchant.id) {
+        if (!req.user || (!req.user.tenant_id && !req.user.merchant?.id)) {
             return res.status(401).json({ status: 'error', message: 'Authentication required' });
         }
         const db = SallaDatabase.connection;
-        const tenant = await getModels().Tenant.findOne({ where: { salla_merchant_id: req.user.merchant.id } });
+        const tenant = await resolveTenant(req);
         if (!tenant) return res.status(404).json({ error: 'Tenant not found' });
 
         const limit = Math.max(1, Math.min(100, parseInt(req.query.limit, 10) || 20));
@@ -175,10 +198,10 @@ router.get('/inbox/conversations', async (req, res) => {
 // GET /api/inbox/messages/:phone
 router.get('/inbox/messages/:phone', async (req, res) => {
     try {
-        if (!req.user || !req.user.merchant || !req.user.merchant.id) {
+        if (!req.user || (!req.user.tenant_id && !req.user.merchant?.id)) {
             return res.status(401).json({ status: 'error', message: 'Authentication required' });
         }
-        const tenant = await getModels().Tenant.findOne({ where: { salla_merchant_id: req.user.merchant.id } });
+        const tenant = await resolveTenant(req);
         if (!tenant) return res.status(404).json({ error: 'Tenant not found' });
 
         const phone = req.params.phone;
@@ -203,7 +226,7 @@ router.post('/inbox/send', async (req, res) => {
         if (!req.user || !req.user.merchant || !req.user.merchant.id) {
             return res.status(401).json({ status: 'error', message: 'Authentication required' });
         }
-        const tenant = await getModels().Tenant.findOne({ where: { salla_merchant_id: req.user.merchant.id } });
+        const tenant = await resolveTenant(req);
         if (!tenant) return res.status(404).json({ error: 'Tenant not found' });
 
         const { phone, message } = req.body;
@@ -249,7 +272,7 @@ router.post('/inbox/toggle-handoff', async (req, res) => {
         if (!req.user || !req.user.merchant || !req.user.merchant.id) {
             return res.status(401).json({ status: 'error', message: 'Authentication required' });
         }
-        const tenant = await getModels().Tenant.findOne({ where: { salla_merchant_id: req.user.merchant.id } });
+        const tenant = await resolveTenant(req);
         if (!tenant) return res.status(404).json({ error: 'Tenant not found' });
 
         const { phone, paused } = req.body;

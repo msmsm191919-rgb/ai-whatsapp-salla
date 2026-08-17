@@ -101,7 +101,7 @@ app.use((req, res, next) => {
 const session = require("express-session");
 const passport = require("passport");
 const nunjucks = require("nunjucks");
-const port = process.env.NODE_ENV === "production" ? 8095 : (process.env.PORT || process.argv[2] || 3000);
+const port = process.argv[2] || (process.env.PORT && process.env.PORT !== "8095" ? process.env.PORT : 8096);
 console.log("SERVER PORT:", port);
 
 /*
@@ -860,8 +860,7 @@ app.post('/admin/login', (req, res) => {
 app.use([
   '/dashboard', '/settings', '/logs', '/api/whatsapp-numbers', 
   '/automation', '/campaigns', '/ai-settings',
-  '/scenarios', '/customers', '/billing', '/pricing', '/whatsapp-simulator', '/simulator', '/whatsapp-web', '/api/wa-web/start', '/api/wa-web/status', '/api/wa-web/logout',
-  '/admin'
+  '/scenarios', '/customers', '/billing', '/pricing', '/whatsapp-simulator', '/simulator', '/whatsapp-web', '/api/wa-web/start', '/api/wa-web/status', '/api/wa-web/logout'
 ], ensureAuthenticated);
 
 // 🔒 منع الحسابات المنتهية من الوصول للمسارات التشغيلية وتحويلهم لصفحة الاشتراك
@@ -1355,6 +1354,51 @@ const PlatformRegistry = require('./services/platforms');
 const ConnectService = require('./services/ConnectService');
 
 // GET /auth/salla — صفحة تسجيل ودخول تاجر سلة المخصصة
+
+// ══════════════════════════════════════════════════════════════
+// 🎨 AUTH & ONBOARDING UI/UX PREVIEW ROUTES (PREVIEW ONLY)
+// ══════════════════════════════════════════════════════════════
+
+// Salla Account Completion Preview
+app.get('/auth/salla/complete-account', (req, res) => {
+  res.render('auth_salla_completion.html', { store_name: 'متجر الأناقة — سلة' });
+});
+
+app.get('/auth/salla/verify-email-preview', (req, res) => {
+  res.render('auth_salla_completion.html', { store_name: 'متجر الأناقة — سلة' });
+});
+
+// Standalone Email Verification Preview
+app.get('/auth/standalone/verify-email-preview', (req, res) => {
+  res.render('auth_verify_email.html', { email: req.query.email || 'you@elegancestore.sa' });
+});
+
+// Standalone Payment Setup & Trial Activation Preview
+app.get('/auth/standalone/payment-setup', (req, res) => {
+  res.render('auth_payment_setup.html');
+});
+
+app.get('/auth/standalone/trial-activated', (req, res) => {
+  res.render('auth_payment_setup.html');
+});
+
+// Unified Password Flows Previews
+app.get('/auth/forgot-password', (req, res) => {
+  res.render('auth_password_flows.html');
+});
+
+app.get('/auth/reset-password', (req, res) => {
+  res.render('auth_password_flows.html');
+});
+
+app.get('/auth/reset-password/success', (req, res) => {
+  res.render('auth_password_flows.html');
+});
+
+app.get('/auth/reset-password/expired', (req, res) => {
+  res.render('auth_password_flows.html');
+});
+
 app.get('/auth/salla', (req, res) => {
   if (req.isAuthenticated() || (req.user && req.user.merchant && req.user.merchant.id)) {
     return res.redirect('/dashboard');
@@ -1558,6 +1602,56 @@ app.post('/connect/standalone', async (req, res) => {
   }
 });
 
+// POST /auth/salla/login — تسجيل دخول تاجر سلة بالبريد وكلمة المرور
+app.post('/auth/salla/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ ok: false, error: 'البريد الإلكتروني وكلمة المرور مطلوبة' });
+    }
+
+    const db = SallaDatabase.connection;
+    const tenant = await db.models.Tenant.findOne({
+      where: { email: email.trim().toLowerCase() }
+    });
+
+    if (!tenant || !tenant.password_hash) {
+      return res.status(401).json({ ok: false, error: 'بيانات الدخول غير صحيحة' });
+    }
+
+    const isValid = ConnectService.verifyPassword(password, tenant.password_hash);
+    if (!isValid) {
+      return res.status(401).json({ ok: false, error: 'بيانات الدخول غير صحيحة' });
+    }
+
+    // 🔒 Platform-Bound Check: Only Salla tenants allowed on Salla auth
+    if (tenant.platform !== 'salla') {
+      return res.status(403).json({
+        ok: false,
+        error: 'هذا الحساب مسجل كتاجر مستقل، يرجى تسجيل الدخول من بوابة التجار المستقلين.',
+        redirect: '/auth/standalone'
+      });
+    }
+
+    const userSession = {
+      merchant: { id: tenant.salla_merchant_id || tenant.platform_store_id, name: tenant.store_name },
+      tenant_id: tenant.id,
+      platform: 'salla'
+    };
+
+    req.login(userSession, function(err) {
+      if (err) return res.status(500).json({ ok: false, error: 'فشل حفظ الجلسة' });
+      const redirectTo = req.session?.returnTo || '/dashboard';
+      if (req.session?.returnTo) delete req.session.returnTo;
+      req.session.save(() => {
+        res.json({ ok: true, redirect: redirectTo });
+      });
+    });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
 // POST /auth/standalone/login — تسجيل دخول التاجر المستقل بكلمة المرور
 app.post('/auth/standalone/login', async (req, res) => {
   try {
@@ -1580,10 +1674,19 @@ app.post('/auth/standalone/login', async (req, res) => {
       return res.status(401).json({ ok: false, error: 'بيانات الدخول غير صحيحة' });
     }
 
+    // 🔒 Platform-Bound Check: Only Standalone tenants allowed on Standalone auth
+    if (tenant.platform !== 'standalone') {
+      return res.status(403).json({
+        ok: false,
+        error: 'هذا الحساب مسجل كتاجر سلة، يرجى تسجيل الدخول من بوابة تجار سلة.',
+        redirect: '/auth/salla'
+      });
+    }
+
     const userSession = {
-      merchant: { id: tenant.platform_store_id || tenant.salla_merchant_id, name: tenant.store_name },
+      merchant: { id: tenant.platform_store_id || tenant.salla_merchant_id || tenant.id, name: tenant.store_name },
       tenant_id: tenant.id,
-      platform: tenant.platform || 'standalone'
+      platform: 'standalone'
     };
 
     req.login(userSession, function(err) {
@@ -1912,8 +2015,8 @@ app.get("/admin/logout", function (req, res) {
 });
 
 function ensureAuthenticated(req, res, next) {
-  // Skip auth for admin login/logout routes (handled separately)
-  if (req.originalUrl.startsWith('/admin/login') || req.originalUrl.startsWith('/admin/logout')) {
+  // Admin routes are handled by requireAdmin
+  if (req.originalUrl.startsWith('/admin')) {
     return next();
   }
   console.log(`\n=================== [RUNTIME AUTH DEBUG] ===================`);
@@ -4142,7 +4245,7 @@ SallaDatabase.connect().then(async (connection) => {
 
   assertRuntimeGuard();
   const startServer = (retryPort) => {
-    const host = process.env.HOST || '0.0.0.0';
+    const host = process.env.HOST || '127.0.0.1';
     const serverInstance = server.listen(retryPort, host, () => {
       console.log(`🚀 SaaS System Ready on http://${host}:${retryPort}`);
       console.log(`💻 Dashboard: http://${host}:${retryPort}/dashboard`);
