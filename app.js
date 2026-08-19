@@ -3710,13 +3710,15 @@ setInterval(createWorker(async function campaignPollerWorker() {
 app.post("/api/campaigns/send", async (req, res) => {
   try {
     // 1. Auth & Validation
-    if (!req.user) req.user = { merchant: { id: 123456789, name: 'Demo Merchant' } };
+    if (!req.isAuthenticated() && !req.user?.tenant_id && !req.user?.merchant?.id) {
+      return res.status(401).json({ error: "Authentication required" });
+    }
 
     const db = SallaDatabase.connection;
     const { Op } = require("sequelize");
 
     // Find Tenant
-    const tenant = await db.models.Tenant.findOne({ where: { salla_merchant_id: req.user.merchant.id } });
+    const tenant = await getTenantFromReq(req);
     if (!tenant) return res.status(404).json({ error: "Tenant not found" });
 
     // --- CHECK PLAN GATE ---
