@@ -1684,7 +1684,7 @@ app.post('/auth/standalone/login', async (req, res) => {
     }
 
     const userSession = {
-      merchant: { id: tenant.platform_store_id || tenant.salla_merchant_id || tenant.id, name: tenant.store_name },
+      merchant: { id: tenant.platform_store_id || tenant.salla_merchant_id || null, name: tenant.store_name },
       tenant_id: tenant.id,
       platform: 'standalone'
     };
@@ -4261,7 +4261,7 @@ SallaDatabase.connect().then(async (connection) => {
     });
   };
 
-  startServer(port);
+  startServer(parseInt(port, 10));
 });
 
 // 🔒 GRACEFUL SHUTDOWN HANDLERS (Zero-Downtime & Session Protection)
