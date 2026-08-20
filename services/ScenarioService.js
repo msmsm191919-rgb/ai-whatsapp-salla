@@ -101,7 +101,7 @@ class ScenarioService {
                 await incrementUsage(tenant.id, db.models);
 
                 // Update Stats
-                await cart.update({ status: 'recovered', recovery_attempts: (cart.recovery_attempts || 0) + 1, last_message_at: new Date() });
+                await cart.update({ recovery_attempts: (cart.recovery_attempts || 0) + 1, last_message_at: new Date() });
 
                 await db.models.MessageLog.create({
                     tenant_id: tenant.id,
