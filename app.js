@@ -1390,9 +1390,29 @@ app.get('/auth/salla/verify-email-preview', (req, res) => {
   res.render('auth_salla_completion.html', { store_name: 'متجر الأناقة — سلة' });
 });
 
-// Standalone Email Verification Preview
+// Standalone Email Verification Preview (dev/admin only — NOT used in production customer flow)
 app.get('/auth/standalone/verify-email-preview', (req, res) => {
   res.render('auth_verify_email.html', { email: req.query.email || 'you@elegancestore.sa' });
+});
+
+// Standalone Email Verification — Real pending page (production customer flow)
+app.get('/auth/standalone/verify-email-pending', (req, res) => {
+  // البريد من session أولاً، ثم query fallback للعرض فقط
+  const email = req.session?.pendingVerificationEmail || req.query.email || '';
+  if (!email) return res.redirect('/auth/standalone');
+  res.render('auth_verify_email.html', { email });
+});
+
+// POST /auth/standalone/resend-verification — إعادة إرسال رابط التحقق (Backend حقيقي)
+app.post('/auth/standalone/resend-verification', async (req, res) => {
+  try {
+    const email = req.body.email || req.session?.pendingVerificationEmail;
+    const result = await ConnectService.resendVerificationEmail(email);
+    res.json(result);
+  } catch (e) {
+    console.error('[resend-verification error]:', e.message);
+    res.json({ ok: true, message: 'إذا كان البريد مسجلاً لدينا، تم إرسال رابط التحقق.' });
+  }
 });
 
 // Standalone Payment Setup & Trial Activation Preview
@@ -1569,57 +1589,40 @@ app.get('/oauth/:platform/callback', validateOAuthState, async (req, res) => {
   }
 });
 
-// POST /connect/standalone — تسجيل مستقل دقيق ومؤمّن
+// POST /connect/standalone — تسجيل مستقل (Thin Controller → ConnectService.registerStandalone)
 app.post('/connect/standalone', async (req, res) => {
   try {
     const { store_name, email, phone, password, owner_name } = req.body;
-    if (!store_name || !email) return res.status(400).json({ ok: false, error: 'store_name & email required' });
 
-    const db = SallaDatabase.connection;
-    const existingTenant = await db.models.Tenant.findOne({
-      where: {
-        [require('sequelize').Op.or]: [
-          { email: email.trim().toLowerCase() },
-          { store_name: store_name.trim() }
-        ]
-      }
-    });
+    // ─── Delegate to single source of truth ───
+    const result = await ConnectService.registerStandalone({ store_name, email, phone, password, owner_name });
 
-    // إغلاق ثغرة الانتحال: إذا كان الحساب موجوداً مسبقاً، يرفض التسجيل المباشر ويلزم كلمة المرور
-    if (existingTenant && existingTenant.password_hash) {
-      if (!password || !ConnectService.verifyPassword(password, existingTenant.password_hash)) {
-        return res.status(401).json({
-          ok: false,
-          error: 'هذا الحساب موجود مسبقاً. يرجى إدخال كلمة المرور الصحيحة لحسابك.'
-        });
-      }
+    if (!result.ok) {
+      const status = result.case === 'EXISTING_VERIFIED' ? 409 : 400;
+      return res.status(status).json(result);
     }
 
-    const adapter = PlatformRegistry.get('standalone');
-    const tokenData = await adapter.exchangeCodeForToken(null, null, { store_name, email, phone, password, owner_name });
+    // ─── إذا SMTP فشل لا نعرض نجاح وهمي ───
+    if (result.verify_email && result.email_sent === false && result.email_error) {
+      console.error(`[standalone signup] Email send failed for tenant ${result.tenant_id}: ${result.email_error}`);
+      return res.status(500).json({
+        ok: false,
+        error: 'تم إنشاء الحساب لكن فشل إرسال رابط التحقق. يرجى المحاولة لاحقاً من صفحة إعادة الإرسال.'
+      });
+    }
 
-    const { tenant, created } = await ConnectService.upsertTenantFromOAuth({
-      platform: 'standalone',
-      tokenData
-    });
+    // ─── حفظ البريد في session للاستخدام الآمن ───
+    req.session.pendingVerificationEmail = result.email;
 
-    const userSession = {
-      merchant: { id: tenant.platform_store_id, name: tenant.store_name },
-      tenant_id: tenant.id,
-      platform: 'standalone'
-    };
-
-    req.login(userSession, function(err) {
-      if (err) {
-        console.error('[standalone login error]:', err);
-        return res.status(500).json({ ok: false, error: 'Login session initialization failed' });
-      }
-      const redirectTo = req.session?.returnTo || '/standalone/dashboard?welcome=1';
-      if (req.session?.returnTo) delete req.session.returnTo;
-      res.json({ ok: true, tenant_id: tenant.id, created, redirect: redirectTo });
+    res.json({
+      ok: true,
+      tenant_id: result.tenant_id,
+      created: result.created,
+      verify_email: true,
+      redirect: '/auth/standalone/verify-email-pending'
     });
   } catch (e) {
-    console.error('[standalone signup] error:', e);
+    console.error('[standalone signup] error:', e.message);
     res.status(500).json({ ok: false, error: e.message });
   }
 });

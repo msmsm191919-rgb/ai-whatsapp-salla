@@ -31,6 +31,253 @@ class ConnectService {
     static hashPassword(p) { return hashPassword(p); }
     static verifyPassword(p, h) { return verifyPassword(p, h); }
 
+    constructor() {
+        this.registrationLocks = new Map();
+    }
+
+    // =========================================================================
+    // Standalone Registration — Single Source of Truth
+    // =========================================================================
+
+    /**
+     * تسجيل مستقل آمن — المصدر الوحيد لجميع حالات التسجيل
+     * 
+     * Case A: Email غير موجود → إنشاء Tenant + hash password + subscription + token + email
+     * Case B: Email موجود + غير متحقق + لديه password → لا tenant جديد + token جديد + email
+     * Case C: Email موجود + متحقق → رفض مع رسالة دخول
+     * Case D: Email موجود + غير متحقق + بلا password → Legacy incomplete — تحديث password + token + email
+     *
+     * @returns {Promise<{ok, tenant_id, created, case, email_sent, error, verify_email, email}>}
+     */
+    async registerStandalone({ store_name, email, phone, password, owner_name }) {
+        if (!email || !password) {
+            return { ok: false, error: 'البريد الإلكتروني وكلمة المرور مطلوبان' };
+        }
+        if (!store_name) {
+            return { ok: false, error: 'اسم المتجر مطلوب' };
+        }
+
+        const normalizedEmail = email.trim().toLowerCase();
+
+        // Mutex queue per email to safely handle concurrent requests
+        const lockKey = `standalone:${normalizedEmail}`;
+        const previousLock = this.registrationLocks.get(lockKey) || Promise.resolve();
+
+        let releaseLock;
+        const currentLock = new Promise(resolve => { releaseLock = resolve; });
+        this.registrationLocks.set(lockKey, previousLock.then(() => currentLock));
+
+        try {
+            await previousLock;
+            return await this._executeRegisterStandalone({ store_name, normalizedEmail, phone, password, owner_name });
+        } finally {
+            releaseLock();
+            if (this.registrationLocks.get(lockKey) === currentLock) {
+                this.registrationLocks.delete(lockKey);
+            }
+        }
+    }
+
+    async _executeRegisterStandalone({ store_name, normalizedEmail, phone, password, owner_name }) {
+        // ─── Lookup by platform=standalone + normalized email ───
+        const existingTenant = await this.db.models.Tenant.findOne({
+            where: { platform: 'standalone', email: normalizedEmail }
+        });
+
+        // ─── Case C: موجود + متحقق ───
+        if (existingTenant && existingTenant.is_email_verified) {
+            return {
+                ok: false,
+                case: 'EXISTING_VERIFIED',
+                error: 'يوجد حساب بهذا البريد بالفعل، سجل الدخول أو استخدم نسيت كلمة المرور.'
+            };
+        }
+
+        // ─── Case D: موجود + غير متحقق + بلا password (Legacy) ───
+        if (existingTenant && !existingTenant.is_email_verified && !existingTenant.password_hash) {
+            const verificationToken = crypto.randomBytes(32).toString('hex');
+            const tokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+            await existingTenant.update({
+                password_hash: hashPassword(password),
+                store_name: store_name.trim() || existingTenant.store_name,
+                owner_name: owner_name || existingTenant.owner_name,
+                contact_phone: phone || existingTenant.contact_phone,
+                email_verification_token: verificationToken,
+                email_verification_expires_at: tokenExpiry
+            });
+
+            const emailResult = await EmailService.sendVerificationEmail({
+                to: normalizedEmail,
+                token: verificationToken,
+                ownerName: owner_name || store_name,
+                storeName: existingTenant.store_name
+            });
+
+            console.log(`[standalone register] Case D (legacy incomplete): tenant_id=${existingTenant.id}, email_sent=${emailResult.sent}`);
+
+            return {
+                ok: true,
+                tenant_id: existingTenant.id,
+                created: false,
+                case: 'LEGACY_INCOMPLETE_RECOVERED',
+                email_sent: emailResult.sent,
+                email_error: emailResult.error || null,
+                verify_email: true,
+                email: normalizedEmail
+            };
+        }
+
+        // ─── Case B: موجود + غير متحقق + لديه password ───
+        if (existingTenant && !existingTenant.is_email_verified && existingTenant.password_hash) {
+            // لا ننشئ tenant جديداً — لا نستبدل password — لا نغير plan — نرسل verification فقط
+            const verificationToken = crypto.randomBytes(32).toString('hex');
+            const tokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+            await existingTenant.update({
+                email_verification_token: verificationToken,
+                email_verification_expires_at: tokenExpiry
+            });
+
+            const emailResult = await EmailService.sendVerificationEmail({
+                to: normalizedEmail,
+                token: verificationToken,
+                ownerName: existingTenant.owner_name || existingTenant.store_name,
+                storeName: existingTenant.store_name
+            });
+
+            console.log(`[standalone register] Case B (existing unverified): tenant_id=${existingTenant.id}, email_sent=${emailResult.sent}`);
+
+            return {
+                ok: true,
+                tenant_id: existingTenant.id,
+                created: false,
+                case: 'EXISTING_UNVERIFIED',
+                email_sent: emailResult.sent,
+                email_error: emailResult.error || null,
+                verify_email: true,
+                email: normalizedEmail
+            };
+        }
+
+        // ─── Case A: Email غير موجود — إنشاء حساب جديد ───
+        const storeId = `standalone_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
+        const sallaMerchantId = Math.floor(100000000 + Math.random() * 900000000);
+        const verificationToken = crypto.randomBytes(32).toString('hex');
+        const tokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+        const tenant = await this.db.models.Tenant.create({
+            platform: 'standalone',
+            platform_store_id: storeId,
+            salla_merchant_id: sallaMerchantId,
+            store_name: store_name.trim() || 'متجر جديد',
+            owner_name: owner_name || store_name.trim(),
+            store_domain: null,
+            email: normalizedEmail,
+            contact_email: normalizedEmail,
+            contact_phone: phone || null,
+            password_hash: hashPassword(password),
+            is_email_verified: false,
+            email_verification_token: verificationToken,
+            email_verification_expires_at: tokenExpiry,
+            status: 'active',
+            settings: {}
+        });
+
+        // ─── Subscription تجريبي — Basic فقط ───
+        const basicPlan = await this.db.models.Plan.findOne({ where: { name: 'الأساسية' } });
+        if (basicPlan) {
+            await this.db.models.Subscription.create({
+                tenant_id: tenant.id,
+                plan_id: basicPlan.id,
+                status: 'trial',
+                is_yearly: false,
+                start_date: new Date(),
+                end_date: new Date(Date.now() + GLOBAL_TRIAL_DAYS * 24 * 60 * 60 * 1000)
+            });
+        }
+
+        // ─── Verification Email — مرة واحدة فقط ───
+        const emailResult = await EmailService.sendVerificationEmail({
+            to: normalizedEmail,
+            token: verificationToken,
+            ownerName: owner_name || store_name,
+            storeName: store_name
+        });
+
+        console.log(`[standalone register] Case A (new account): tenant_id=${tenant.id}, email_sent=${emailResult.sent}`);
+
+        return {
+            ok: true,
+            tenant_id: tenant.id,
+            created: true,
+            case: 'NEW_ACCOUNT',
+            email_sent: emailResult.sent,
+            email_error: emailResult.error || null,
+            verify_email: true,
+            email: normalizedEmail
+        };
+    }
+
+    // =========================================================================
+    // Resend Verification Email
+    // =========================================================================
+
+    /**
+     * إعادة إرسال رابط التحقق — server-side lookup + rate limit + generic response
+     * @returns {Promise<{ok, message, email_sent}>}
+     */
+    async resendVerificationEmail(email) {
+        if (!email) {
+            return { ok: false, message: 'البريد الإلكتروني مطلوب' };
+        }
+
+        const normalizedEmail = email.trim().toLowerCase();
+
+        // Rate limit check (60 seconds)
+        if (!EmailService.canSend(normalizedEmail, 'RESEND_VERIFICATION', 60000)) {
+            return { ok: true, message: 'إذا كان البريد مسجلاً لدينا، تم إرسال رابط التحقق.', email_sent: false, rate_limited: true };
+        }
+
+        const tenant = await this.db.models.Tenant.findOne({
+            where: { platform: 'standalone', email: normalizedEmail, is_email_verified: false }
+        });
+
+        if (!tenant) {
+            // Generic response — لمنع account enumeration
+            return { ok: true, message: 'إذا كان البريد مسجلاً لدينا، تم إرسال رابط التحقق.', email_sent: false };
+        }
+
+        // Token جديد — يستبدل أي token سابق
+        const verificationToken = crypto.randomBytes(32).toString('hex');
+        const tokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+        await tenant.update({
+            email_verification_token: verificationToken,
+            email_verification_expires_at: tokenExpiry
+        });
+
+        const emailResult = await EmailService.sendVerificationEmail({
+            to: normalizedEmail,
+            token: verificationToken,
+            ownerName: tenant.owner_name || tenant.store_name,
+            storeName: tenant.store_name
+        });
+
+        console.log(`[resend verification] tenant_id=${tenant.id}, email_sent=${emailResult.sent}`);
+
+        return {
+            ok: true,
+            message: 'إذا كان البريد مسجلاً لدينا، تم إرسال رابط التحقق.',
+            email_sent: emailResult.sent,
+            email_error: emailResult.error || null
+        };
+    }
+
+    // =========================================================================
+    // OAuth Upsert (Salla / other platforms) — لم يتغير
+    // =========================================================================
+
     /**
      * بعد ما تنجح عملية OAuth (أي منصة) — نسجّل التاجر في النظام
      * @param {Object} params
@@ -60,7 +307,7 @@ class ConnectService {
 
         if (!tenant && platform === 'standalone') {
             if (email) {
-                tenant = await this.db.models.Tenant.findOne({ where: { email: email.trim().toLowerCase() } });
+                tenant = await this.db.models.Tenant.findOne({ where: { platform: 'standalone', email: email.trim().toLowerCase() } });
             }
         } else if (!tenant && platform === 'salla') {
             const numericId = Number(store_id);

@@ -62,9 +62,11 @@
           {{ email or 'owner@elegancestore.sa' }}
         </div>
 
+        <div id="resend-feedback" class="hidden mb-4 p-3 rounded-xl text-xs font-bold"></div>
+
         <div class="space-y-3">
-          <button type="button" onclick="alert('تمت إعادة إرسال رابط التحقق بنجاح!')" class="glow-btn w-full py-3 px-4 text-white rounded-xl text-xs font-bold border-0 cursor-pointer">
-            إعادة إرسال رابط التحقق
+          <button type="button" id="btn-resend" onclick="handleResendVerification()" class="glow-btn w-full py-3 px-4 text-white rounded-xl text-xs font-bold border-0 cursor-pointer">
+            <span id="btn-resend-text">إعادة إرسال رابط التحقق</span>
           </button>
           <a href="/auth/standalone?mode=register" class="block w-full py-2 text-xs font-bold text-gray-400 hover:text-white text-decoration-none">
             تغيير البريد الإلكتروني
@@ -72,14 +74,69 @@
         </div>
 
         <div class="mt-6 pt-4 border-t border-white/10">
-          <a href="/auth/standalone/payment-setup" class="text-xs font-bold text-teal-300 hover:underline">
-            المتابعة لإضافة وسيلة الدفع وتفعيل التجربة ←
+          <a href="/auth/standalone" class="text-xs font-bold text-teal-300 hover:underline">
+            العودة لصفحة تسجيل الدخول ←
           </a>
         </div>
 
       </div>
     </div>
   </main>
+
+  <script>
+    let countdownInterval = null;
+
+    async function handleResendVerification() {
+      const btn = document.getElementById('btn-resend');
+      const btnText = document.getElementById('btn-resend-text');
+      const feedback = document.getElementById('resend-feedback');
+      const emailElem = document.getElementById('target-email');
+      const email = emailElem ? emailElem.innerText.trim() : '';
+
+      btn.disabled = true;
+      btn.classList.add('opacity-70', 'cursor-not-allowed');
+      btnText.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> جاري الإرسال...';
+      feedback.className = 'hidden mb-4 p-3 rounded-xl text-xs font-bold';
+
+      try {
+        const res = await fetch('/auth/standalone/resend-verification', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email })
+        });
+        const data = await res.json();
+        
+        feedback.className = 'mb-4 p-3 rounded-xl text-xs font-bold bg-teal-500/20 text-teal-300 border border-teal-500/30';
+        feedback.innerText = data.message || 'تم إرسال رابط التحقق بنجاح إذا كان البريد مسجلاً لدينا.';
+        feedback.classList.remove('hidden');
+
+        // Start 60s cooldown timer
+        let timeLeft = 60;
+        btnText.innerText = `إعادة الإرسال بعد (${timeLeft}) ثانية`;
+        if (countdownInterval) clearInterval(countdownInterval);
+        
+        countdownInterval = setInterval(() => {
+          timeLeft--;
+          if (timeLeft <= 0) {
+            clearInterval(countdownInterval);
+            btn.disabled = false;
+            btn.classList.remove('opacity-70', 'cursor-not-allowed');
+            btnText.innerText = 'إعادة إرسال رابط التحقق';
+          } else {
+            btnText.innerText = `إعادة الإرسال بعد (${timeLeft}) ثانية`;
+          }
+        }, 1000);
+
+      } catch (err) {
+        feedback.className = 'mb-4 p-3 rounded-xl text-xs font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30';
+        feedback.innerText = 'تعذر الاتصال بالخادم، يرجى المحاولة لاحقاً.';
+        feedback.classList.remove('hidden');
+        btn.disabled = false;
+        btn.classList.remove('opacity-70', 'cursor-not-allowed');
+        btnText.innerText = 'إعادة إرسال رابط التحقق';
+      }
+    }
+  </script>
 
   <footer class="w-full py-3 text-center text-xs text-gray-500 border-t border-white/5 z-10">
     <p>© 2026 مبهر AI — جميع الحقوق محفوظة للمتاجر الإلكترونية</p>

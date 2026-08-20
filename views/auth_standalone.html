@@ -374,9 +374,9 @@
         });
         const data = await res.json();
         if (data.ok) {
-          showAlert('تم إنشاء الحساب بنجاح! جاري تحويلك للوحة التحكم...', true);
+          showAlert('تم إنشاء الحساب بنجاح! جاري تحويلك...', true);
           setTimeout(() => {
-            window.location.href = '/auth/standalone/verify-email-preview?email=' + encodeURIComponent(payload.email);
+            window.location.href = data.redirect || '/auth/standalone/verify-email-pending';
           }, 800);
         } else {
           showAlert(data.error || 'فشل إنشاء الحساب');
