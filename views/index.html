@@ -1193,22 +1193,22 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
       </a>
 
-      <!-- 2. Standalone Merchant Card (قسم التاجر المستقل) -->
-      <a href="/auth/standalone" id="modal-card-standalone" class="group block p-5 rounded-2xl transition-all duration-200 hover:scale-[1.02] text-right cursor-pointer"
-         style="background: linear-gradient(135deg, rgba(13, 148, 136, 0.18) 0%, rgba(15, 23, 42, 0.65) 100%); border: 1.5px solid rgba(20, 184, 166, 0.3); text-decoration: none;">
-        <div class="flex items-center gap-4 pointer-events-none">
-          <div class="w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg" style="background: rgba(13, 148, 136, 0.25); border: 1px solid rgba(20, 184, 166, 0.4);">
-            <img src="/images/platforms/standalone.svg" alt="مستقل" class="w-7 h-7 object-contain">
+      <!-- 2. Standalone Merchant Card (قسم التاجر المستقل — قريباً) -->
+      <div id="modal-card-standalone" class="block p-5 rounded-2xl text-right opacity-60 cursor-not-allowed select-none"
+           style="background: linear-gradient(135deg, rgba(15, 23, 42, 0.6) 0%, rgba(15, 23, 42, 0.8) 100%); border: 1.5px solid rgba(255, 255, 255, 0.08);">
+        <div class="flex items-center gap-4">
+          <div class="w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1);">
+            <img src="/images/platforms/standalone.svg" alt="مستقل" class="w-7 h-7 object-contain opacity-70 grayscale">
           </div>
           <div class="flex-1 min-w-0">
             <div class="flex items-center justify-between mb-1">
-              <h4 class="text-base font-bold text-white group-hover:text-teal-300 transition">التاجر المستقل (موقع أو تطبيق خاص)</h4>
+              <h4 class="text-base font-bold text-gray-300">تاجر مستقل</h4>
+              <span class="text-[10px] font-bold text-amber-300 bg-amber-500/20 border border-amber-500/30 px-2 py-0.5 rounded-full">قريباً</span>
             </div>
-            <p class="text-xs text-gray-300 leading-relaxed">تسجيل حساب مباشر بالبريد الإلكتروني للأنظمة والمواقع الخاصة</p>
+            <p class="text-xs text-gray-400 leading-relaxed">لمتجرك أو نشاطك الإلكتروني المستقل</p>
           </div>
-          <i class="fa-solid fa-chevron-left text-xs text-gray-400 group-hover:text-white group-hover:-translate-x-1 transition-transform shrink-0"></i>
         </div>
-      </a>
+      </div>
     </div>
 
     <!-- Footer Security Note -->
