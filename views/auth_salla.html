@@ -363,7 +363,7 @@
       btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> جاري الإرسال...';
 
       try {
-        const res = await fetch('/auth/standalone/forgot-password', {
+        const res = await fetch('/auth/salla/forgot-password', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email })

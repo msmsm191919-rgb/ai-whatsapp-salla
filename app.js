@@ -1327,6 +1327,27 @@ function validateOAuthState(req, res, next) {
   next();
 }
 
+// ═══════════════════════════════════════════════════════════════════
+// 🔒 Feature Flag: Standalone Public Launch Gate (Coming Soon)
+// ═══════════════════════════════════════════════════════════════════
+const STANDALONE_PUBLIC_ENABLED = process.env.STANDALONE_PUBLIC_ENABLED === 'true'; // Default: false (Coming Soon)
+
+function guardStandalonePublic(req, res, next) {
+  if (!STANDALONE_PUBLIC_ENABLED) {
+    if (req.method === 'GET') {
+      return res.render('auth_standalone.html', {
+        user: req.user || null,
+        support_whatsapp: process.env.SUPPORT_WHATSAPP_NUMBER || ''
+      });
+    }
+    return res.status(403).json({
+      ok: false,
+      error: 'التاجر المستقل سيكون متاحاً قريباً'
+    });
+  }
+  next();
+}
+
 app.get("/oauth/redirect", passport.authenticate("salla"));
 app.get("/login", (req, res) => {
   if (req.isAuthenticated() || (req.user && req.user.merchant && req.user.merchant.id)) {
@@ -1396,15 +1417,14 @@ app.get('/auth/standalone/verify-email-preview', (req, res) => {
 });
 
 // Standalone Email Verification — Real pending page (production customer flow)
-app.get('/auth/standalone/verify-email-pending', (req, res) => {
-  // البريد من session أولاً، ثم query fallback للعرض فقط
+app.get('/auth/standalone/verify-email-pending', guardStandalonePublic, (req, res) => {
   const email = req.session?.pendingVerificationEmail || req.query.email || '';
   if (!email) return res.redirect('/auth/standalone');
   res.render('auth_verify_email.html', { email });
 });
 
 // POST /auth/standalone/resend-verification — إعادة إرسال رابط التحقق (Backend حقيقي)
-app.post('/auth/standalone/resend-verification', async (req, res) => {
+app.post('/auth/standalone/resend-verification', guardStandalonePublic, async (req, res) => {
   try {
     const email = req.body.email || req.session?.pendingVerificationEmail;
     const result = await ConnectService.resendVerificationEmail(email);
@@ -1590,7 +1610,7 @@ app.get('/oauth/:platform/callback', validateOAuthState, async (req, res) => {
 });
 
 // POST /connect/standalone — تسجيل مستقل (Thin Controller → ConnectService.registerStandalone)
-app.post('/connect/standalone', async (req, res) => {
+app.post('/connect/standalone', guardStandalonePublic, async (req, res) => {
   try {
     const { store_name, email, phone, password, owner_name } = req.body;
 
@@ -1677,8 +1697,43 @@ app.post('/auth/salla/login', async (req, res) => {
   }
 });
 
+// POST /auth/salla/forgot-password — طلب استعادة كلمة المرور لتاجر سلة
+app.post('/auth/salla/forgot-password', async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ ok: false, error: 'البريد الإلكتروني مطلوب' });
+
+    const db = SallaDatabase.connection;
+    const tenant = await db.models.Tenant.findOne({
+      where: { platform: 'salla', email: email.trim().toLowerCase() }
+    });
+
+    if (tenant) {
+      const crypto = require('crypto');
+      const resetToken = crypto.randomBytes(32).toString('hex');
+      const resetExpires = new Date(Date.now() + 60 * 60 * 1000);
+
+      await tenant.update({
+        password_reset_token: resetToken,
+        password_reset_expires_at: resetExpires
+      });
+
+      const EmailService = require('./services/EmailService');
+      await EmailService.sendPasswordResetEmail({
+        to: tenant.email,
+        token: resetToken,
+        ownerName: tenant.owner_name || tenant.store_name
+      });
+    }
+
+    res.json({ ok: true, message: 'إذا كان البريد مسجلاً لدينا، تم إرسال رابط إعادة التعيين.' });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
 // POST /auth/standalone/login — تسجيل دخول التاجر المستقل بكلمة المرور
-app.post('/auth/standalone/login', async (req, res) => {
+app.post('/auth/standalone/login', guardStandalonePublic, async (req, res) => {
   try {
     const { email, password } = req.body;
     if (!email || !password) {
@@ -1757,7 +1812,7 @@ app.get('/auth/standalone/verify-email', async (req, res) => {
 });
 
 // POST /auth/standalone/forgot-password — طلب إعادة تعيين كلمة المرور
-app.post('/auth/standalone/forgot-password', async (req, res) => {
+app.post('/auth/standalone/forgot-password', guardStandalonePublic, async (req, res) => {
   try {
     const { email } = req.body;
     if (!email) return res.status(400).json({ ok: false, error: 'البريد الإلكتروني مطلوب' });
@@ -1919,7 +1974,7 @@ app.get('/auth/standalone/reset-password', async (req, res) => {
 });
 
 // POST /auth/standalone/reset-password — تطبيق كلمة المرور الجديدة
-app.post('/auth/standalone/reset-password', async (req, res) => {
+app.post('/auth/standalone/reset-password', guardStandalonePublic, async (req, res) => {
   try {
     const { token, new_password } = req.body;
     if (!token || !new_password || new_password.length < 8) {
