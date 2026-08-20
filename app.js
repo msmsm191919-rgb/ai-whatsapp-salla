@@ -101,7 +101,7 @@ app.use((req, res, next) => {
 const session = require("express-session");
 const passport = require("passport");
 const nunjucks = require("nunjucks");
-const port = process.argv[2] || (process.env.PORT && process.env.PORT !== "8095" ? process.env.PORT : 8096);
+const port = process.argv[2] || process.env.PORT || 8095;
 console.log("SERVER PORT:", port);
 
 /*
