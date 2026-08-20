@@ -3709,17 +3709,19 @@ setInterval(createWorker(async function campaignPollerWorker() {
 
 app.post("/api/campaigns/send", async (req, res) => {
   try {
-    // 1. Auth & Validation
-    if (!req.isAuthenticated() && !req.user?.tenant_id && !req.user?.merchant?.id) {
+    // 1. Auth & Validation — Explicit & Server-Side Resolved
+    if (!req.isAuthenticated() || !req.user) {
       return res.status(401).json({ error: "Authentication required" });
     }
 
     const db = SallaDatabase.connection;
     const { Op } = require("sequelize");
 
-    // Find Tenant
+    // Find Tenant strictly from authenticated session
     const tenant = await getTenantFromReq(req);
-    if (!tenant) return res.status(404).json({ error: "Tenant not found" });
+    if (!tenant) {
+      return res.status(401).json({ error: "Invalid session or tenant not found" });
+    }
 
     // --- CHECK PLAN GATE ---
     const planGate = require('./services/planGate');
