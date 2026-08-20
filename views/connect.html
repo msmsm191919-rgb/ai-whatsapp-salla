@@ -28,7 +28,6 @@
     <title>اربط متجرك | مبهر AI</title>
     <link href="/css/tailwind-v2.min.css" rel="stylesheet">
     <link href="/css/fonts.css" rel="stylesheet">
-    <link href="/css/design-system.css" rel="stylesheet">
     <link href="/css/all.min.css" rel="stylesheet">
     <style>
         body { font-family: 'Cairo', sans-serif; background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); min-height: 100vh; }
@@ -66,10 +65,14 @@
                 <div onclick="alert('قريباً — هذه المنصة تحت التطوير')" class="platform-card rounded-2xl p-5 sm:p-6 text-center disabled"
                    style="background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1); backdrop-filter:blur(8px); cursor:not-allowed; opacity: 0.55;">
 
-                    <!-- Logo placeholder -->
+                    <!-- Logo container -->
                     <div class="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center mb-4 text-white text-2xl font-black shadow-lg" style="background:linear-gradient(135deg, {{ p.color }}, {{ p.color_accent }});">
-                        {% if p.platform == 'zid' %}<i class="fa-solid fa-z"></i>
-                        {% elif p.platform == 'shopify' %}<i class="fa-brands fa-shopify"></i>
+                        {% if p.platform == 'zid' %}
+                        <img src="/images/platforms/zid.svg" alt="Zid" class="w-9 h-9 object-contain opacity-80">
+                        {% elif p.platform == 'shopify' %}
+                        <img src="/images/platforms/shopify.svg" alt="Shopify" class="w-9 h-9 object-contain opacity-80">
+                        {% else %}
+                        <img src="/images/platforms/salla.svg" alt="Salla" class="w-10 h-10 object-contain opacity-80">
                         {% endif %}
                     </div>
 
@@ -89,10 +92,16 @@
                 <a href="/connect/{{ p.platform }}" class="platform-card rounded-2xl p-5 sm:p-6 text-center {{ 'disabled' if not p.isReady and p.platform != 'standalone' else '' }}"
                    style="background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1); backdrop-filter:blur(8px); text-decoration:none;">
 
-                    <!-- Logo placeholder -->
+                    <!-- Logo container -->
                     <div class="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center mb-4 text-white text-2xl font-black shadow-lg" style="background:linear-gradient(135deg, {{ p.color }}, {{ p.color_accent }});">
-                        {% if p.platform == 'salla' %}<i class="fa-solid fa-shop"></i>
-                        {% else %}<i class="fa-solid fa-globe"></i>
+                        {% if p.platform == 'salla' %}
+                        <img src="/images/platforms/salla.svg" alt="Salla" class="w-10 h-10 object-contain drop-shadow">
+                        {% elif p.platform == 'zid' %}
+                        <img src="/images/platforms/zid.svg" alt="Zid" class="w-9 h-9 object-contain">
+                        {% elif p.platform == 'shopify' %}
+                        <img src="/images/platforms/shopify.svg" alt="Shopify" class="w-9 h-9 object-contain">
+                        {% else %}
+                        <img src="/images/platforms/standalone.svg" alt="Direct" class="w-8 h-8 object-contain">
                         {% endif %}
                     </div>
 

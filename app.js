@@ -1360,8 +1360,30 @@ const ConnectService = require('./services/ConnectService');
 // ══════════════════════════════════════════════════════════════
 
 // Salla Account Completion Preview
-app.get('/auth/salla/complete-account', (req, res) => {
-  res.render('auth_salla_completion.html', { store_name: 'متجر الأناقة — سلة' });
+app.get('/auth/salla/complete-account', async (req, res) => {
+  const tenant = await getTenantFromReq(req);
+  res.render('auth_salla_completion.html', {
+    store_name: tenant?.store_name || 'متجر سلة',
+    email: tenant?.email || ''
+  });
+});
+
+app.post('/auth/salla/complete-account', async (req, res) => {
+  try {
+    const tenant = await getTenantFromReq(req);
+    if (!tenant) return res.status(401).json({ ok: false, error: 'يجب تسجيل الدخول أولاً' });
+    const { email, password } = req.body;
+    if (!email || !password) return res.status(400).json({ ok: false, error: 'البريد الإلكتروني وكلمة المرور مطلوبة' });
+
+    const updates = {
+      email: email.trim().toLowerCase(),
+      password_hash: ConnectService.hashPassword(password)
+    };
+    await tenant.update(updates);
+    res.json({ ok: true, redirect: '/dashboard' });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
 });
 
 app.get('/auth/salla/verify-email-preview', (req, res) => {
@@ -1981,15 +2003,8 @@ app.get("/refreshToken", ensureAuthenticated, function (req, res) {
     .catch((err) => res.send(err));
 });
 
-app.get("/orders", ensureAuthenticated, async function (req, res) {
-  try {
-    res.render("orders.html", {
-      orders: await SallaAPI.getAllOrders(),
-      isLogin: req.user,
-    });
-  } catch (err) {
-    res.send(err.message);
-  }
+app.get("/orders", ensureAuthenticated, function (req, res) {
+  return res.redirect("/automation/orders");
 });
 
 // (Legacy /customers route removed - see proper route below)

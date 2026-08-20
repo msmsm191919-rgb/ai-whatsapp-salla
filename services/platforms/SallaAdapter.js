@@ -13,15 +13,15 @@ class SallaAdapter extends BaseAdapter {
             name: 'Salla',
             name_ar: 'سلة',
             logo: '/images/platforms/salla.svg',
-            color: '#0F2D2A',
-            color_accent: '#9bcb3b',
+            color: '#004956',
+            color_accent: '#002d35',
             description: 'منصة المتاجر الإلكترونية الرائدة في السعودية',
             domain: 'salla.sa'
         };
     }
 
     static get isReady() {
-        return !!(process.env.SALLA_OAUTH_CLIENT_ID && process.env.SALLA_OAUTH_CLIENT_SECRET && !process.env.SALLA_OAUTH_CLIENT_ID.startsWith('mock_'));
+        return !!(process.env.SALLA_OAUTH_CLIENT_ID && process.env.SALLA_OAUTH_CLIENT_SECRET);
     }
 
     static getAuthorizationUrl(state, redirectUri) {
@@ -98,11 +98,11 @@ class SallaAdapter extends BaseAdapter {
 
     static _mockStoreInfo(storeId = `salla_mock_${Date.now()}`) {
         return {
-            store_id: '99887766',
-            store_name: 'متجر الأناقة السعودية',
-            store_domain: 'elegance-sa.salla.sa',
-            email: 'salla-merchant@mubhir-preview.test',
-            owner_name: 'سلطان القحطاني'
+            store_id: storeId,
+            store_name: 'متجر سلة تجريبي',
+            store_domain: `${storeId}.salla.sa`,
+            email: 'demo@salla-mock.test',
+            owner_name: 'تاجر سلة'
         };
     }
 

@@ -184,14 +184,14 @@
           </nav>
           <div class="flex items-center gap-1.5 sm:gap-2.5">
             {% if isLogin %}
-            <a href="/dashboard" class="glow-btn inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-2 sm:py-2.5 text-white font-bold rounded-xl text-[12px] sm:text-sm">
+            <a href="{{ APP_URL }}/dashboard" class="glow-btn inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-2 sm:py-2.5 text-white font-bold rounded-xl text-[12px] sm:text-sm">
               <i class="fa-solid fa-rocket text-[10px] sm:text-xs"></i> لوحة التحكم
             </a>
             {% else %}
-            <a href="javascript:void(0)" onclick="openMerchantModal()" class="hidden sm:inline-flex items-center gap-1.5 px-4 py-2 text-[13px] text-gray-400 hover:text-white transition">تسجيل الدخول</a>
-            <a href="javascript:void(0)" onclick="openMerchantModal()" class="glow-btn inline-flex items-center gap-1.5 px-3 sm:px-5 py-2 sm:py-2.5 text-white font-bold rounded-xl text-[12px] sm:text-[13px]">
+            <button onclick="openAuthModal()" class="hidden sm:inline-flex items-center gap-1.5 px-4 py-2 text-[13px] text-gray-400 hover:text-white transition bg-transparent border-0 cursor-pointer">تسجيل الدخول</button>
+            <button onclick="openAuthModal()" class="glow-btn inline-flex items-center gap-1.5 px-3 sm:px-5 py-2 sm:py-2.5 text-white font-bold rounded-xl text-[12px] sm:text-[13px] border-0 cursor-pointer">
               <i class="fa-solid fa-wand-magic-sparkles text-[9px] sm:text-[10px]"></i> ابدأ مجاناً
-            </a>
+            </button>
             {% endif %}
             <button class="lg:hidden w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center text-gray-400 hover:text-white rounded-lg transition" onclick="document.getElementById('mob').classList.toggle('hidden')">
               <i class="fa-solid fa-bars text-sm sm:text-base"></i>
@@ -201,18 +201,18 @@
         <div id="mob" class="hidden lg:hidden pb-4 pt-2 space-y-1 border-t border-white/[.06]">
           {% if isLogin %}
           <div class="px-2 py-2 mb-2">
-            <a href="/dashboard" class="flex items-center justify-center gap-1.5 px-4 py-2.5 text-sm font-bold text-white bg-gradient-to-r from-teal-500 to-emerald-500 rounded-xl transition text-center shadow-lg shadow-teal-500/10">
+            <a href="{{ APP_URL }}/dashboard" class="flex items-center justify-center gap-1.5 px-4 py-2.5 text-sm font-bold text-white bg-gradient-to-r from-teal-500 to-emerald-500 rounded-xl transition text-center shadow-lg shadow-teal-500/10">
               <i class="fa-solid fa-rocket text-xs"></i> لوحة التحكم
             </a>
           </div>
           {% else %}
           <div class="grid grid-cols-2 gap-2 px-2 py-2 mb-2">
-            <a href="javascript:void(0)" onclick="openMerchantModal()" class="flex items-center justify-center gap-1.5 px-4 py-2.5 text-xs text-gray-300 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition text-center font-bold">
+            <button onclick="openAuthModal()" class="flex items-center justify-center gap-1.5 px-4 py-2.5 text-xs text-gray-300 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition text-center font-bold">
               <i class="fa-solid fa-right-to-bracket text-[10px]"></i> تسجيل الدخول
-            </a>
-            <a href="javascript:void(0)" onclick="openMerchantModal()" class="flex items-center justify-center gap-1.5 px-4 py-2.5 text-xs font-bold text-white bg-gradient-to-r from-teal-500 to-emerald-500 rounded-xl transition text-center shadow-lg shadow-teal-500/10">
+            </button>
+            <button onclick="openAuthModal()" class="flex items-center justify-center gap-1.5 px-4 py-2.5 text-xs font-bold text-white bg-gradient-to-r from-teal-500 to-emerald-500 rounded-xl transition text-center shadow-lg shadow-teal-500/10 border-0">
               <i class="fa-solid fa-wand-magic-sparkles text-[10px]"></i> ابدأ مجاناً
-            </a>
+            </button>
           </div>
           {% endif %}
           <div class="h-px bg-white/[.06] my-2"></div>
@@ -239,10 +239,15 @@
 
 <div class="max-w-5xl mx-auto px-4 sm:px-6 relative z-20 text-center" style="isolation: isolate;">
     <!-- Badge -->
-    <div class="inline-flex items-center gap-2 glass px-5 py-2 rounded-full mb-8" style="animation:slide-up .8s ease forwards">
+    <div class="inline-flex items-center gap-2.5 glass px-5 py-2 rounded-full mb-8" style="animation:slide-up .8s ease forwards">
       <span class="relative flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-400"></span></span>
       <span class="text-xs font-semibold text-emerald-300">المساعد الذكي #1 لمتاجر سلّة</span>
-      <span class="text-[10px] text-gray-500 px-2 py-0.5 bg-white/[.06] rounded-full">🚀 متكامل مع منصة سلة</span>
+      <span class="text-[10px] text-emerald-200 px-2.5 py-0.5 bg-[#004956]/50 border border-[#00B4D8]/30 rounded-full inline-flex items-center gap-1.5 font-medium shadow-sm">
+        <svg class="w-3 h-3 text-[#00B4D8] shrink-0 inline-block" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M18.862 13.439a1.27 1.27 0 0 0-.81-.555a1.27 1.27 0 0 0-.964.18c-3.422 2.231-6.75 2.231-10.178 0a1.27 1.27 0 0 0-.964-.18 1.283 1.283 0 0 0-.434 2.327c2.142 1.394 4.326 2.1 6.49 2.1 2.166 0 4.348-.706 6.488-2.102a1.27 1.27 0 0 0 .555-.81 1.27 1.27 0 0 0-.18-.964zm5.103 2.82-1.171-9.764a5.24 5.24 0 0 0-5.2-4.614H6.406a5.236 5.236 0 0 0-5.198 4.612l-1.17 9.766a5.235 5.235 0 0 0 5.198 5.86h13.529a5.238 5.238 0 0 0 5.198-5.86zm-3.21 2.4c-.532.6-1.265.929-2.066.929H5.311c-.801 0-1.536-.33-2.066-.929a2.73 2.73 0 0 1-.676-2.16l1.157-9.657A2.764 2.764 0 0 1 6.468 4.41h11.064a2.765 2.765 0 0 1 2.742 2.432l1.157 9.656a2.72 2.72 0 0 1-.676 2.161"/>
+        </svg>
+        متكامل مع منصة سلة
+      </span>
     </div>
 
     <!-- Headline -->
@@ -266,15 +271,15 @@
     <!-- CTA -->
     <div class="flex flex-col sm:flex-row gap-3 justify-center mb-14" style="animation:slide-up .8s ease forwards .3s;opacity:0">
       {% if isLogin %}
-      <a href="/dashboard" class="glow-btn group inline-flex items-center justify-center gap-2.5 px-8 py-4 text-white font-bold rounded-2xl text-sm">
+      <a href="{{ APP_URL }}/dashboard" class="glow-btn group inline-flex items-center justify-center gap-2.5 px-8 py-4 text-white font-bold rounded-2xl text-sm">
         <i class="fa-solid fa-rocket text-xs"></i> الدخول للوحة التحكم
         <i class="fa-solid fa-arrow-left text-[10px] opacity-60 group-hover:-translate-x-1 transition-transform"></i>
       </a>
       {% else %}
-      <a href="javascript:void(0)" onclick="openMerchantModal()" class="glow-btn group inline-flex items-center justify-center gap-2.5 px-8 py-4 text-white font-bold rounded-2xl text-sm">
+      <button onclick="openAuthModal()" class="glow-btn group inline-flex items-center justify-center gap-2.5 px-8 py-4 text-white font-bold rounded-2xl text-sm border-0 cursor-pointer">
         <i class="fa-solid fa-wand-magic-sparkles text-xs"></i> ابدأ تجربة مجانية — 3 أيام
         <i class="fa-solid fa-arrow-left text-[10px] opacity-60 group-hover:-translate-x-1 transition-transform"></i>
-      </a>
+      </button>
       <a href="#how" class="inline-flex items-center justify-center gap-2 px-8 py-4 glass text-gray-300 font-semibold rounded-2xl hover:bg-white/[.08] transition-all text-sm">
         <i class="fa-solid fa-play text-emerald-400 text-[10px]"></i> شاهد كيف يعمل
       </a>
@@ -378,8 +383,12 @@
         <div class="w-10 h-10 mx-auto mb-3 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center group-hover:scale-110 transition-transform"><i class="fa-solid fa-brain text-purple-400 text-lg"></i></div>
         <div class="text-[11px] font-bold">محرك ردود ذكية</div><div class="text-[10px] text-gray-500">ردود ذكية بالذكاء الاصطناعي</div>
       </div>
-      <div class="group glass rounded-2xl p-4 text-center hover:bg-white/[.06] hover:border-sky-400/20 transition-all duration-300">
-        <div class="w-10 h-10 mx-auto mb-3 rounded-xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center group-hover:scale-110 transition-transform"><i class="fa-solid fa-store text-sky-400 text-lg"></i></div>
+      <div class="group glass rounded-2xl p-4 text-center hover:bg-white/[.06] hover:border-[#00B4D8]/30 transition-all duration-300">
+        <div class="w-10 h-10 mx-auto mb-3 rounded-xl bg-[#004956]/40 border border-[#00B4D8]/30 flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-[#004956]/20">
+          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="#00B4D8">
+            <path d="M18.862 13.439a1.27 1.27 0 0 0-.81-.555a1.27 1.27 0 0 0-.964.18c-3.422 2.231-6.75 2.231-10.178 0a1.27 1.27 0 0 0-.964-.18 1.283 1.283 0 0 0-.434 2.327c2.142 1.394 4.326 2.1 6.49 2.1 2.166 0 4.348-.706 6.488-2.102a1.27 1.27 0 0 0 .555-.81 1.27 1.27 0 0 0-.18-.964zm5.103 2.82-1.171-9.764a5.24 5.24 0 0 0-5.2-4.614H6.406a5.236 5.236 0 0 0-5.198 4.612l-1.17 9.766a5.235 5.235 0 0 0 5.198 5.86h13.529a5.238 5.238 0 0 0 5.198-5.86zm-3.21 2.4c-.532.6-1.265.929-2.066.929H5.311c-.801 0-1.536-.33-2.066-.929a2.73 2.73 0 0 1-.676-2.16l1.157-9.657A2.764 2.764 0 0 1 6.468 4.41h11.064a2.765 2.765 0 0 1 2.742 2.432l1.157 9.656a2.72 2.72 0 0 1-.676 2.161"/>
+          </svg>
+        </div>
         <div class="text-[11px] font-bold">Salla API</div><div class="text-[10px] text-gray-500">ربط مع سلّة</div>
       </div>
       <div class="group glass rounded-2xl p-4 text-center hover:bg-white/[.06] hover:border-amber-400/20 transition-all duration-300">
@@ -462,9 +471,9 @@
 
     <p class="text-center text-[11px] text-gray-500 mt-4">💡 هذي تجربة توضيحية. مع الاشتراك، يربط مبهر بياناتك الحقيقية من سلّة ويرد على عملائك تلقائياً بالردود الذكية بالذكاء الاصطناعي.</p>
     <div class="text-center mt-6 reveal">
-      <a href="javascript:void(0)" onclick="openMerchantModal()" class="inline-flex items-center gap-2 bg-gradient-to-l from-emerald-500 to-sky-500 text-white font-black px-8 py-4 rounded-2xl hover:scale-105 transition-transform shadow-lg shadow-emerald-500/20">
+      <button onclick="openAuthModal()" class="inline-flex items-center gap-2 bg-gradient-to-l from-emerald-500 to-sky-500 text-white font-black px-8 py-4 rounded-2xl hover:scale-105 transition-transform shadow-lg shadow-emerald-500/20 border-0 cursor-pointer text-sm">
         أعجبك؟ ابدأ تجربتك المجانية 3 أيام <i class="fa-solid fa-arrow-left"></i>
-      </a>
+      </button>
     </div>
   </div>
 </section>
@@ -641,7 +650,7 @@
               <li class="flex items-center gap-2.5"><i class="fa-solid fa-circle-check text-emerald-400 text-xs"></i><span>تجربة مجانية 3 أيام</span></li>
             </ul>
           </div>
-          <a href="javascript:void(0)" onclick="openMerchantModal()" class="glow-btn block w-full py-4 mt-6 text-center text-white font-bold rounded-xl text-sm">اشترك الآن <i class="fa-solid fa-arrow-left mr-1"></i></a>
+          <button onclick="openAuthModal()" class="glow-btn block w-full py-4 mt-6 text-center text-white font-bold rounded-xl text-sm border-0 cursor-pointer">اشترك الآن <i class="fa-solid fa-arrow-left mr-1"></i></button>
         </div>
       </div>
 
@@ -681,7 +690,7 @@
               <li class="flex items-center gap-2.5"><i class="fa-solid fa-circle-check text-emerald-400 text-xs"></i><span>تجربة مجانية 3 أيام</span></li>
             </ul>
           </div>
-          <a href="javascript:void(0)" onclick="openMerchantModal()" class="glow-btn block w-full py-4 mt-6 text-center text-white font-bold rounded-xl text-sm">اشترك الآن <i class="fa-solid fa-arrow-left mr-1"></i></a>
+          <button onclick="openAuthModal()" class="glow-btn block w-full py-4 mt-6 text-center text-white font-bold rounded-xl text-sm border-0 cursor-pointer">اشترك الآن <i class="fa-solid fa-arrow-left mr-1"></i></button>
         </div>
       </div>
 
@@ -712,7 +721,7 @@
               <li class="flex items-center gap-2.5"><i class="fa-solid fa-circle-check text-emerald-400 text-xs"></i><span>تجربة مجانية 3 أيام</span></li>
             </ul>
           </div>
-          <a href="javascript:void(0)" onclick="openMerchantModal()" class="glow-btn block w-full py-4 mt-6 text-center text-white font-bold rounded-xl text-sm">اشترك الآن <i class="fa-solid fa-arrow-left mr-1"></i></a>
+          <button onclick="openAuthModal()" class="glow-btn block w-full py-4 mt-6 text-center text-white font-bold rounded-xl text-sm border-0 cursor-pointer">اشترك الآن <i class="fa-solid fa-arrow-left mr-1"></i></button>
         </div>
       </div>
     </div>
@@ -783,7 +792,7 @@
       </details>
       <details class="group glass rounded-2xl p-6 [&_summary::-webkit-details-marker]:hidden">
         <summary class="flex cursor-pointer items-center justify-between gap-1.5 font-bold"><span class="text-base">هل الخدمة تعمل مع منصة غير سلّة؟</span><span class="relative h-5 w-5 shrink-0"><i class="fa-solid fa-plus absolute inset-0 text-emerald-400 opacity-100 group-open:opacity-0 transition"></i><i class="fa-solid fa-minus absolute inset-0 text-emerald-400 opacity-0 group-open:opacity-100 transition"></i></span></summary>
-        <p class="mt-4 leading-relaxed text-gray-400">يدعم مبهر حالياً متاجر منصة سلة بالربط المباشر، بالإضافة إلى المتاجر الإلكترونية المستقلة بالربط السحابي مع دعم كامل لجميع المزايا.</p>
+        <p class="mt-4 leading-relaxed text-gray-400">حالياً نحن متخصصون في منصة سلة. وقريباً سنضيف دعم منصات أخرى مثل زد وشوبيفاي.</p>
       </details>
       <details class="group glass rounded-2xl p-6 [&_summary::-webkit-details-marker]:hidden">
         <summary class="flex cursor-pointer items-center justify-between gap-1.5 font-bold"><span class="text-base">هل يمكنني تجربة الخدمة قبل الاشتراك؟</span><span class="relative h-5 w-5 shrink-0"><i class="fa-solid fa-plus absolute inset-0 text-emerald-400 opacity-100 group-open:opacity-0 transition"></i><i class="fa-solid fa-minus absolute inset-0 text-emerald-400 opacity-0 group-open:opacity-100 transition"></i></span></summary>
@@ -800,10 +809,10 @@
     <div class="glass rounded-3xl p-12 sm:p-16">
       <h2 class="text-3xl sm:text-4xl font-black mb-6">جاهز تطلق بوتك الذكي؟</h2>
       <p class="text-gray-400 text-lg mb-10 max-w-xl mx-auto">انضم لأكثر من 200 متجر سعودي يستخدمون مبهر AI لزيادة مبيعاتهم وتحسين خدمة عملائهم.</p>
-      <a href="javascript:void(0)" onclick="openMerchantModal()" class="glow-btn inline-flex items-center gap-3 px-10 py-5 text-white font-bold rounded-2xl text-lg">
+      <button onclick="openAuthModal()" id="btn-cta-bottom" class="glow-btn inline-flex items-center gap-3 px-10 py-5 text-white font-bold rounded-2xl text-lg border-0 cursor-pointer">
         <i class="fa-solid fa-rocket"></i> ابدأ تجربتك المجانية الآن
-      </a>
-      <p class="text-gray-500 text-sm mt-6">بدون بطاقة ائتمان • تفعيل فوري • إلغاء في أي وقت</p>
+      </button>
+      <p class="text-gray-500 text-sm mt-6">إضافة وسيلة الدفع لترخيص التجربة • لن يتم الخصم خلال فترة التجربة (3 أيام) • إلغاء في أي وقت</p>
     </div>
   </div>
 </section>
@@ -1113,103 +1122,104 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.open(`https://wa.me/${SUPPORT_WHATSAPP_NUMBER}?text=${encodeURIComponent(text)}`, '_blank');
   }
+
+  // ════ Auth & Platform Selection Modal ════
+  function openAuthModal() {
+    const modal = document.getElementById('authModal');
+    const card = document.getElementById('authModalCard');
+    if (!modal) return;
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    setTimeout(() => {
+      modal.classList.remove('opacity-0');
+      if (card) {
+        card.classList.remove('scale-95', 'opacity-0');
+        card.classList.add('scale-100', 'opacity-100');
+      }
+    }, 10);
+  }
+
+  function closeAuthModal() {
+    const modal = document.getElementById('authModal');
+    const card = document.getElementById('authModalCard');
+    if (!modal) return;
+    modal.classList.add('opacity-0');
+    if (card) {
+      card.classList.remove('scale-100', 'opacity-100');
+      card.classList.add('scale-95', 'opacity-0');
+    }
+    setTimeout(() => {
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }, 250);
+  }
 </script>
 
-<!-- ═══ MERCHANT SELECTOR MODAL (ابدأ مع مبهر) ═══ -->
-<div id="merchantModal" class="fixed inset-0 z-[100] hidden items-center justify-center p-4 bg-black/80 backdrop-blur-md transition-all select-none">
-  <div class="relative w-full max-w-2xl glass rounded-3xl p-6 sm:p-8 border border-white/10 shadow-2xl overflow-hidden" style="background: rgba(10, 22, 40, 0.96);">
-    <!-- Glow Background -->
-    <div class="absolute -top-24 -right-24 w-64 h-64 bg-[#00d5a7]/15 rounded-full blur-3xl pointer-events-none"></div>
-    <div class="absolute -bottom-24 -left-24 w-64 h-64 bg-teal-500/15 rounded-full blur-3xl pointer-events-none"></div>
-
-    <!-- Close button -->
-    <button type="button" onclick="closeMerchantModal()" class="absolute top-4 left-4 w-9 h-9 rounded-xl bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white flex items-center justify-center transition border border-white/10 cursor-pointer">
-      <i class="fa-solid fa-xmark text-base"></i>
+<!-- ═══ MODAL: AUTH / MERCHANT TYPE SELECTION (نافذة اختيار نوع التاجر) ═══ -->
+<div id="authModal" class="fixed inset-0 z-[100] hidden items-center justify-center p-4 bg-black/75 backdrop-blur-md opacity-0 transition-opacity duration-300" onclick="if(event.target === this) closeAuthModal()">
+  <div class="relative w-full max-w-lg glass rounded-3xl p-6 sm:p-8 shadow-2xl border border-white/10 overflow-hidden transform scale-95 opacity-0 transition-all duration-300" id="authModalCard" onclick="event.stopPropagation()">
+    <!-- Close Button -->
+    <button onclick="closeAuthModal()" class="absolute top-5 left-5 w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white flex items-center justify-center transition border-0 cursor-pointer z-20">
+      <i class="fa-solid fa-xmark text-sm"></i>
     </button>
 
     <!-- Header -->
-    <div class="text-center mb-8 relative z-10">
-      <div class="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 text-xs font-bold mb-3 border border-emerald-500/20">
-        <i class="fa-solid fa-rocket"></i> نقطة البداية الفورية
+    <div class="text-center mb-6">
+      <div class="w-16 h-16 mx-auto mb-3 flex items-center justify-center relative group">
+        <div class="absolute inset-0 bg-[#06d6a0]/20 rounded-2xl blur-lg"></div>
+        <img src="/salla-assets/salla_app_icon_512_transparent_white.png" alt="شعار مبهر AI" class="relative w-full h-full object-contain drop-shadow-md">
       </div>
-      <h3 class="text-2xl sm:text-3xl font-black text-white mb-2">ابدأ مع مبهر — اختر نوع متجرك</h3>
-      <p class="text-sm text-gray-400 font-medium">حدد المنصة التي تدير بها متجرك للمتابعة السريعة:</p>
+      <h3 class="text-xl sm:text-2xl font-black text-white mb-1.5">اختر نوع حسابك للبدء</h3>
+      <p class="text-xs text-gray-400">اربط متجرك بضغطة زر وفَعّل موظفك الذكي على واتساب</p>
     </div>
 
-    <!-- 2 Cards Grid -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 gap-5 relative z-10">
-      <!-- Salla with Official Salla Logo -->
-      <a href="/auth/salla" class="group p-5 rounded-2xl bg-[#004956]/20 hover:bg-[#004956]/40 border-2 border-[#00d5a7]/40 hover:border-[#00d5a7] transition-all flex flex-col justify-between text-right shadow-lg shadow-[#004956]/10 hover:shadow-[#00d5a7]/20 hover:-translate-y-0.5">
-        <div>
-          <!-- Official Salla Full Logo & Badge -->
-          <div class="flex items-center justify-between mb-3">
-            <div class="h-12 px-3 py-1.5 rounded-xl bg-[#004956] border border-[#00d5a7]/50 flex items-center justify-center shadow-md group-hover:scale-105 transition-transform">
-              <img src="/salla-assets/salla_official_full_mint.svg" alt="سلة | Salla" class="h-full object-contain">
-            </div>
-            <span class="px-2.5 py-0.5 rounded-full bg-[#004956]/80 text-[#a6f4e6] border border-[#00d5a7]/40 text-[10px] font-black">
-              شريك معتمد
-            </span>
+    <!-- Options Grid -->
+    <div class="space-y-4">
+      <!-- 1. Salla Merchant Card (قسم تجار سلة) -->
+      <a href="/auth/salla" id="modal-card-salla" class="group block p-5 rounded-2xl transition-all duration-200 hover:scale-[1.02] text-right cursor-pointer"
+         style="background: linear-gradient(135deg, rgba(0, 73, 86, 0.45) 0%, rgba(0, 45, 53, 0.65) 100%); border: 1.5px solid rgba(0, 180, 216, 0.4); text-decoration: none;">
+        <div class="flex items-center gap-4 pointer-events-none">
+          <div class="w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg" style="background: #004956; border: 1px solid rgba(186, 243, 230, 0.3);">
+            <img src="/images/platforms/salla.svg" alt="سلة" class="w-8 h-8 object-contain drop-shadow">
           </div>
-
-          <h4 class="text-base font-black text-white mb-1">تاجر سلة (Salla)</h4>
-          <p class="text-[11px] text-gray-300 leading-relaxed font-medium">ربط فوري بنقرة واحدة عبر متجر تطبيقات سلة ومزامنة تلقائية للكتالوج والسلات والطلبات.</p>
-        </div>
-
-        <div class="mt-4 pt-3 border-t border-[#00d5a7]/20 flex items-center justify-between text-xs font-bold text-[#00d5a7]">
-          <span>دخول / تسجيل تاجر سلة</span>
-          <i class="fa-solid fa-arrow-left group-hover:-translate-x-1 transition-transform text-[10px]"></i>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center justify-between mb-1">
+              <h4 class="text-base font-bold text-white group-hover:text-emerald-300 transition">تجار منصة سلة</h4>
+              <span class="text-[10px] font-bold text-[#BAF3E6] bg-[#00B4D8]/20 border border-[#00B4D8]/30 px-2 py-0.5 rounded-full">ربط فوري ⚡</span>
+            </div>
+            <p class="text-xs text-gray-300 leading-relaxed">دخول سريع وربط متجرك مع سلة</p>
+          </div>
+          <i class="fa-solid fa-chevron-left text-xs text-gray-400 group-hover:text-white group-hover:-translate-x-1 transition-transform shrink-0"></i>
         </div>
       </a>
 
-      <!-- Standalone Merchant -->
-      <a href="/auth/standalone" class="group p-6 rounded-2xl bg-teal-950/20 hover:bg-teal-950/40 border-2 border-teal-500/40 hover:border-teal-400 transition-all flex flex-col justify-between text-right shadow-lg shadow-teal-950/10 hover:shadow-teal-500/20 hover:-translate-y-1">
-        <div>
-          <!-- Icon Box & Badge -->
-          <div class="flex items-center justify-between mb-5">
-            <div class="w-14 h-14 rounded-2xl bg-teal-900 border border-teal-500/50 flex items-center justify-center p-2.5 text-teal-300 shadow-md group-hover:scale-105 group-hover:shadow-lg group-hover:shadow-teal-500/30 transition-transform">
-              <i class="fa-solid fa-cubes text-2xl"></i>
-            </div>
-            <span class="px-3 py-1 rounded-full bg-teal-900/80 text-teal-300 border border-teal-500/40 text-xs font-black">
-              متجر مستقل
-            </span>
+      <!-- 2. Standalone Merchant Card (قسم التاجر المستقل) -->
+      <a href="/auth/standalone" id="modal-card-standalone" class="group block p-5 rounded-2xl transition-all duration-200 hover:scale-[1.02] text-right cursor-pointer"
+         style="background: linear-gradient(135deg, rgba(13, 148, 136, 0.18) 0%, rgba(15, 23, 42, 0.65) 100%); border: 1.5px solid rgba(20, 184, 166, 0.3); text-decoration: none;">
+        <div class="flex items-center gap-4 pointer-events-none">
+          <div class="w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg" style="background: rgba(13, 148, 136, 0.25); border: 1px solid rgba(20, 184, 166, 0.4);">
+            <img src="/images/platforms/standalone.svg" alt="مستقل" class="w-7 h-7 object-contain">
           </div>
-
-          <h4 class="text-xl font-black text-white mb-2">متجر مستقل (Standalone)</h4>
-          <p class="text-xs text-gray-300 leading-relaxed font-medium">تسجيل مباشر بالبريد وكلمة المرور مع ربط قنوات واتساب السحابية والذكاء الاصطناعي.</p>
-        </div>
-
-        <div class="mt-6 pt-4 border-t border-teal-500/20 flex items-center justify-between text-xs font-bold text-teal-300">
-          <span>دخول / تسجيل متجر مستقل</span>
-          <i class="fa-solid fa-arrow-left group-hover:-translate-x-1.5 transition-transform"></i>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center justify-between mb-1">
+              <h4 class="text-base font-bold text-white group-hover:text-teal-300 transition">التاجر المستقل (موقع أو تطبيق خاص)</h4>
+            </div>
+            <p class="text-xs text-gray-300 leading-relaxed">تسجيل حساب مباشر بالبريد الإلكتروني للأنظمة والمواقع الخاصة</p>
+          </div>
+          <i class="fa-solid fa-chevron-left text-xs text-gray-400 group-hover:text-white group-hover:-translate-x-1 transition-transform shrink-0"></i>
         </div>
       </a>
+    </div>
+
+    <!-- Footer Security Note -->
+    <div class="mt-6 pt-4 border-t border-white/10 text-center">
+      <p class="text-[11px] text-gray-400 flex items-center justify-center gap-1.5">
+        <i class="fa-solid fa-shield-halved text-emerald-400"></i>
+        تجربة مجانية 3 أيام • اتصال مشفر وآمن وفق معايير الحماية
+      </p>
     </div>
   </div>
 </div>
-
-<script>
-  function openMerchantModal() {
-    const modal = document.getElementById('merchantModal');
-    if (modal) {
-      modal.classList.remove('hidden');
-      modal.classList.add('flex');
-    }
-  }
-  function closeMerchantModal() {
-    const modal = document.getElementById('merchantModal');
-    if (modal) {
-      modal.classList.add('hidden');
-      modal.classList.remove('flex');
-    }
-  }
-  // Close modal on click outside
-  window.addEventListener('click', function(e) {
-    const modal = document.getElementById('merchantModal');
-    if (e.target === modal) {
-      closeMerchantModal();
-    }
-  });
-</script>
 
 </body>
 </html>
