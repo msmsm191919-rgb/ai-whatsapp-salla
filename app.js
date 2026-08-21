@@ -1975,8 +1975,8 @@ app.get('/auth/standalone/reset-password', async (req, res) => {
   }
 });
 
-// POST /auth/standalone/reset-password — تطبيق كلمة المرور الجديدة
-app.post('/auth/standalone/reset-password', guardStandalonePublic, async (req, res) => {
+// POST /auth/standalone/reset-password & /auth/salla/reset-password — تطبيق كلمة المرور الجديدة
+const handlePasswordResetPost = async (req, res) => {
   try {
     const { token, new_password } = req.body;
     if (!token || !new_password || new_password.length < 8) {
@@ -1988,12 +1988,13 @@ app.post('/auth/standalone/reset-password', guardStandalonePublic, async (req, r
       where: { password_reset_token: token }
     });
 
-    if (!tenant) return res.status(400).json({ ok: false, error: 'رمز التعيين غير صالحة' });
+    if (!tenant) return res.status(400).json({ ok: false, error: 'رمز التعيين غير صالح' });
 
     if (tenant.password_reset_expires_at && new Date(tenant.password_reset_expires_at) < new Date()) {
       return res.status(400).json({ ok: false, error: 'رمز التعيين منتهي الصلاحية' });
     }
 
+    const ConnectService = require('./services/ConnectService');
     await tenant.update({
       password_hash: ConnectService.hashPassword(new_password),
       password_reset_token: null,
@@ -2004,7 +2005,11 @@ app.post('/auth/standalone/reset-password', guardStandalonePublic, async (req, r
   } catch (e) {
     res.status(500).json({ ok: false, error: e.message });
   }
-});
+};
+
+app.post('/auth/standalone/reset-password', handlePasswordResetPost);
+app.post('/auth/salla/reset-password', handlePasswordResetPost);
+app.post('/auth/reset-password', handlePasswordResetPost);
 
 app.get("/", async function (req, res) {
   const host = (req.headers.host || '').toLowerCase();
