@@ -23,7 +23,7 @@
     "@salla.sa/passport-strategy": "^1.0.6",
     "@salla.sa/webhooks-actions": "^1.0",
     "axios": "^1.13.3",
-    "body-parser": "2.2.0",
+    "body-parser": "2.2.2",
     "chart.js": "^4.5.1",
     "consolidate": "~0.16.0",
     "dotenv": "16.5.0",
