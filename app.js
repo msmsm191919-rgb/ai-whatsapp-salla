@@ -1465,10 +1465,7 @@ app.get('/auth/salla', (req, res) => {
   if (req.isAuthenticated() || (req.user && req.user.merchant && req.user.merchant.id)) {
     return res.redirect('/dashboard');
   }
-  res.render('auth_salla.html', {
-    user: req.user || null,
-    support_whatsapp: process.env.SUPPORT_WHATSAPP_NUMBER || ''
-  });
+  res.redirect('/');
 });
 
 // GET /auth/standalone — صفحة تسجيل ودخول التاجر المستقل المخصصة
