@@ -1704,8 +1704,9 @@ app.post('/auth/salla/forgot-password', async (req, res) => {
     if (!email) return res.status(400).json({ ok: false, error: 'البريد الإلكتروني مطلوب' });
 
     const db = SallaDatabase.connection;
+    const normalizedEmail = email.trim().toLowerCase();
     const tenant = await db.models.Tenant.findOne({
-      where: { platform: 'salla', email: email.trim().toLowerCase() }
+      where: { email: normalizedEmail }
     });
 
     if (tenant) {
@@ -1724,6 +1725,7 @@ app.post('/auth/salla/forgot-password', async (req, res) => {
         token: resetToken,
         ownerName: tenant.owner_name || tenant.store_name
       });
+      console.log(`[salla forgot-password] Password reset email sent to ${tenant.email} (tenant ${tenant.id})`);
     }
 
     res.json({ ok: true, message: 'إذا كان البريد مسجلاً لدينا، تم إرسال رابط إعادة التعيين.' });
