@@ -13,6 +13,7 @@ const Cart = require("./models/cart");
 const Payment = require("./models/payment");
 const WebhookEvent = require("./models/webhookevent");
 const AiUsageLog = require("./models/aiusagelog");
+const SallaLaunchTicket = require("./models/sallalaunchticket");
 // const User = require("./models/user"); // Deprecated
 // const OauthTokens = require("./models/oauthtokens"); // Deprecated
 
@@ -72,6 +73,7 @@ module.exports = {
       Payment,
       WebhookEvent,
       AiUsageLog,
+      SallaLaunchTicket,
     ];
 
     // 1. Init all models

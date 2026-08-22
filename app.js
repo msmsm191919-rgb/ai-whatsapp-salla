@@ -1348,7 +1348,276 @@ function guardStandalonePublic(req, res, next) {
   next();
 }
 
-app.get("/oauth/redirect", passport.authenticate("salla"));
+// Easy Mode "Open App" entry point. Salla does not send a verifiable merchant
+// identity here — this app has no redirect_uri registered in Salla Partner Portal
+// (Easy Mode never needed one; tokens arrive only via the app.store.authorize
+// webhook). Never guess the tenant on this route. Only trust an existing session
+// that is specifically a Salla-platform session with a canonical tenant_id —
+// a standalone (or any other non-Salla) session must not be treated as valid here.
+app.get("/oauth/redirect", (req, res) => {
+  const hasValidSallaSession = req.isAuthenticated() &&
+    req.user &&
+    req.user.platform === 'salla' &&
+    !!req.user.tenant_id &&
+    req.user.merchant && !!req.user.merchant.id;
+
+  if (hasValidSallaSession) {
+    return res.redirect('/dashboard');
+  }
+  res.redirect('/auth/salla');
+});
+
+// ═══════════════════════════════════════════════════════════════════
+// Salla Embedded App — bootstrap / session / launch-consume.
+// Separate concern from /oauth/redirect above and from the app.store.authorize
+// webhook (API authorization / store tokens — both untouched). A merchant_id
+// from the client is never trusted directly — only a merchant_id returned by
+// Salla's own server-side introspection is used, and only an exact
+// platform+salla_merchant_id Tenant match is accepted (never a
+// "latest/first/updated_at" fallback — duplicate matches are a security error).
+//
+// SDK: @salla.sa/embedded-sdk v0.2.6 (verified directly from the published
+// npm tarball's dist/types/index.d.ts and dist/umd/index.js — not guessed).
+// Real API used: embedded.init(), embedded.auth.getToken() (SYNCHRONOUS —
+// reads the ?token= URL param, does not itself call the host), embedded.ready(),
+// embedded.destroy(), embedded.page.redirect(url) ("full page reload, for
+// external URLs" — exactly our case). The UMD bundle exposes the singleton as
+// window.Salla.embedded (confirmed in the bundle: window.Salla.embedded=V),
+// matching the README's documented usage.
+//
+// We deliberately do NOT use the SDK's own embedded.auth.introspect() — that
+// call would run client-side, meaning we'd have to trust the browser's own
+// report of the verification result. Instead the raw token is sent to our
+// own backend, which independently calls Salla's introspection REST API
+// server-side — the browser never gets to characterize its own verification.
+//
+// The iframe (Salla origin) and the top-level Mubhir origin are different
+// sites, and this project's session cookie has no explicit `secure`/`sameSite`
+// config (plain express-session defaults) — a session created while embedded
+// in Salla's iframe is NOT reliably usable after navigating to the top-level
+// Mubhir origin. So the embedded step never establishes the real Mubhir
+// session directly; it only mints a one-time, 60s-lived, tenant-bound launch
+// ticket (hashed at rest, single-use, cannot carry an arbitrary tenant_id).
+// The ticket travels only in the URL FRAGMENT (#ticket=...), which browsers
+// never send to the server — so it never appears in nginx/access logs — and
+// is redeemed via a same-origin POST once the top-level page has loaded.
+// ═══════════════════════════════════════════════════════════════════
+
+// Route-specific frame policy (CSP frame-ancestors). Scoped to the single
+// confirmed embedding host only — never a bare wildcard, and not widened on
+// the strength of the SDK's own postMessage origin allowlist either: that
+// list (["localhost","merchants.workers.dev","s.salla.sa",".salla.group",
+// ".salla.sa"]) governs which origins the SDK will ACCEPT postMessage from —
+// a different, broader concern than which origin is actually allowed to
+// frame this specific route. The known real embedding host is
+// https://s.salla.sa/embedded/app/{appId}/... — start least-privilege with
+// exactly that, and widen only if a real embed test proves another parent
+// origin is required. Global Dashboard headers are untouched; this applies
+// to the embedded bootstrap route alone.
+const embeddedFramePolicy = (req, res, next) => {
+  res.setHeader('Content-Security-Policy', "frame-ancestors https://s.salla.sa");
+  next();
+};
+
+const SALLA_EMBEDDED_SDK_VERSION = '0.2.6';
+
+// GET /salla/embedded — the embedded bootstrap page (No-Chrome). Loads inside
+// Salla's iframe, obtains a short-lived token from the Salla Embedded SDK, and
+// POSTs it to /api/salla/embedded/session. No manual window.top/window.parent
+// navigation anywhere — all navigation goes through the official SDK API.
+app.get('/salla/embedded', embeddedFramePolicy, (req, res) => {
+  res.status(200).send(`<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>Mubhir</title></head>
+<body>
+  <div id="loading">جاري التحقق...</div>
+  <script src="https://unpkg.com/@salla.sa/embedded-sdk@${SALLA_EMBEDDED_SDK_VERSION}/dist/umd/index.js"></script>
+  <script>
+    (function () {
+      var embedded = window.Salla && window.Salla.embedded;
+
+      function fail(message) {
+        document.getElementById('loading').textContent = message;
+        if (embedded && typeof embedded.destroy === 'function') {
+          embedded.destroy();
+        }
+      }
+
+      if (!embedded) {
+        fail('تعذر تحميل الصفحة');
+        return;
+      }
+
+      embedded.init().then(function () {
+        var token = embedded.auth.getToken(); // synchronous
+        if (!token) {
+          fail('تعذر التحقق من الحساب');
+          return;
+        }
+
+        return fetch('/api/salla/embedded/session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token: token })
+        })
+          .then(function (resp) { return resp.json().then(function (result) { return { resp: resp, result: result }; }); })
+          .then(function (r) {
+            if (!r.resp.ok || !r.result.ok) {
+              fail('تعذر التحقق من الحساب');
+              return;
+            }
+
+            embedded.ready();
+
+            // Ticket travels in the URL fragment only — never sent to any
+            // server, never logged. window.location here is this iframe
+            // document's own Mubhir origin, not the parent/embedder's.
+            var launchUrl = window.location.origin + '/salla/launch#ticket=' + encodeURIComponent(r.result.ticket);
+            embedded.page.redirect(launchUrl);
+          });
+      }).catch(function () {
+        fail('تعذر تحميل الصفحة');
+      });
+    })();
+  </script>
+</body>
+</html>`);
+});
+
+// POST /api/salla/embedded/session — accepts the embedded token, verifies it
+// server-side via Salla introspection, resolves the exact Tenant, and returns
+// only an opaque single-use launch ticket (never a session, never a tenant_id).
+app.post('/api/salla/embedded/session', async (req, res) => {
+  try {
+    const token = req.body?.token;
+    if (!token) {
+      return res.status(401).json({ ok: false, error: 'missing_token' });
+    }
+
+    const SallaEmbeddedAuthService = require('./services/SallaEmbeddedAuthService');
+    const verification = await SallaEmbeddedAuthService.verifyEmbeddedToken(token);
+
+    if (!verification.verified) {
+      console.warn('[salla/embedded/session] Token verification failed:', verification.reason);
+      return res.status(401).json({ ok: false, error: 'authentication_failed' });
+    }
+
+    const db = SallaDatabase.connection;
+    if (!db || !db.models?.Tenant) {
+      return res.status(503).json({ ok: false, error: 'service_unavailable' });
+    }
+
+    const resolution = await SallaEmbeddedAuthService.resolveTenantForMerchant(db, verification.merchantId);
+
+    if (resolution.status === 'not_linked') {
+      console.warn(`[salla/embedded/session] No tenant linked for merchant ${verification.merchantId}`);
+      return res.status(404).json({ ok: false, error: 'store_not_linked' });
+    }
+
+    if (resolution.status === 'duplicate') {
+      return res.status(500).json({ ok: false, error: 'account_resolution_error' });
+    }
+
+    const rawTicket = await SallaEmbeddedAuthService.createLaunchTicket(db, resolution.tenant);
+    return res.status(200).json({ ok: true, ticket: rawTicket });
+  } catch (e) {
+    console.error('[salla/embedded/session] Error:', e.message);
+    return res.status(500).json({ ok: false, error: 'internal_error' });
+  }
+});
+
+// GET /salla/launch — top-level (non-iframe), first-party bootstrap page.
+// The ticket arrives only as a URL fragment (#ticket=...), which the browser
+// never transmits to the server, so this handler never sees it and there is
+// nothing ticket-related to log here. The page's own JS reads location.hash,
+// immediately strips it via history.replaceState, and POSTs the ticket (in
+// the JSON body, not the URL) to /api/salla/launch/consume.
+app.get('/salla/launch', (req, res) => {
+  res.status(200).send(`<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>Mubhir</title></head>
+<body>
+  <div id="loading">جاري تسجيل الدخول...</div>
+  <script>
+    (function () {
+      var hash = window.location.hash || '';
+      var match = hash.match(/ticket=([^&]+)/);
+      var ticket = match ? decodeURIComponent(match[1]) : null;
+
+      // Strip the ticket from the URL immediately — before any network call —
+      // so it never lingers in browser history either.
+      history.replaceState(null, '', window.location.pathname);
+
+      if (!ticket) {
+        document.getElementById('loading').textContent = 'رابط الدخول غير صالح';
+        return;
+      }
+
+      fetch('/api/salla/launch/consume', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ticket: ticket })
+      })
+        .then(function (resp) { return resp.json().then(function (result) { return { resp: resp, result: result }; }); })
+        .then(function (r) {
+          if (!r.resp.ok || !r.result.ok || !r.result.next) {
+            document.getElementById('loading').textContent = 'تعذر تسجيل الدخول';
+            return;
+          }
+          window.location.href = r.result.next;
+        })
+        .catch(function () {
+          document.getElementById('loading').textContent = 'تعذر تسجيل الدخول';
+        });
+    })();
+  </script>
+</body>
+</html>`);
+});
+
+// POST /api/salla/launch/consume — the ONLY place the real first-party Mubhir
+// session is created. Runs at the top level (never inside Salla's iframe), so
+// the session cookie is set in a reliable first-party context. Consumes the
+// ticket exactly once (atomic, replay-blocked) and returns only a safe next
+// path — never a tenant_id, never any tenant data.
+app.post('/api/salla/launch/consume', async (req, res) => {
+  try {
+    const rawTicket = req.body?.ticket;
+    const db = SallaDatabase.connection;
+    if (!db || !db.models?.SallaLaunchTicket) {
+      return res.status(503).json({ ok: false, error: 'service_unavailable' });
+    }
+
+    const SallaEmbeddedAuthService = require('./services/SallaEmbeddedAuthService');
+    const consumption = await SallaEmbeddedAuthService.consumeLaunchTicket(db, rawTicket);
+
+    if (!consumption.valid) {
+      console.warn('[salla/launch/consume] Ticket redemption failed:', consumption.reason);
+      return res.status(401).json({ ok: false, error: 'invalid_or_expired_ticket' });
+    }
+
+    const tenant = consumption.tenant;
+    const userSession = SallaEmbeddedAuthService.buildSallaSession(tenant);
+
+    req.login(userSession, (err) => {
+      if (err) {
+        console.error('[salla/launch/consume] Session login error:', err.message);
+        return res.status(500).json({ ok: false, error: 'session_error' });
+      }
+      req.session.save((saveErr) => {
+        if (saveErr) {
+          console.error('[salla/launch/consume] Session save error:', saveErr.message);
+          return res.status(500).json({ ok: false, error: 'session_error' });
+        }
+        const next = tenant.password_hash ? '/dashboard' : '/auth/salla/complete-account';
+        return res.status(200).json({ ok: true, next });
+      });
+    });
+  } catch (e) {
+    console.error('[salla/launch/consume] Error:', e.message);
+    return res.status(500).json({ ok: false, error: 'internal_error' });
+  }
+});
 app.get("/login", (req, res) => {
   if (req.isAuthenticated() || (req.user && req.user.merchant && req.user.merchant.id)) {
     return res.redirect('/dashboard');
